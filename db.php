@@ -1,5 +1,5 @@
 <?php
-echo("loading db<BR>");
+error_log("loading db<BR>");
 $GLOBALS['db'] = FALSE;
 if ($GLOBALS['config'] !== FALSE) {
     try {

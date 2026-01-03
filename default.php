@@ -6,6 +6,7 @@
     <body>
 <?php
 
+error_log("default");
 require_once "config.php" || die("unable to load config");
 require_once "db.php" || die("unable to load db");
 

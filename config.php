@@ -1,6 +1,6 @@
 <?php
 
-echo("loading config<BR>");
+error_log("loading config<BR>");
 
 $GLOBALS['config'] = FALSE;
 $configPath = realpath(__DIR__ . '/../../config/rockband_scheduler_config.ini');
