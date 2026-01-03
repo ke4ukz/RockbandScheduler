@@ -7,8 +7,8 @@
 <?php
 
 error_log("default");
-require_once "config.php" || die("unable to load config");
-require_once "db.php" || die("unable to load db");
+require_once 'config.php';
+require_once 'db.php';
 
 echo($GLOBALS['config']);
 echo($GLOBALS['db']);
