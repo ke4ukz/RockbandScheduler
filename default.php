@@ -5,24 +5,13 @@
     </head>
     <body>
 <?php
-// Ensure this file is outside your web root!
-echo(__DIR__ . '<BR>');
-$configPath = realpath(__DIR__ . '/../../config/rockband_scheduler_config.ini');
-echo($configPath.'<BR>');
-file_exists($configPath) || die("Configuration file not found.");
 
-$dbSettings = parse_ini_file($configPath, true);
+require_once "config.php";
+require_once "db.php";
 
-if (!$dbSettings) {
-    die("Failed to parse configuration file.");
-}
+echo $GLOBALS['config'];
+echo $GLOBALS['db'];
 
-$dbHost = $dbSettings['database']['host'];
-$dbName = $dbSettings['database']['dbname'];
-$dbUser = $dbSettings['database']['username'];
-$dbPass = $dbSettings['database']['password'];
-
-echo ("config loaded");
 ?>
     </body>
 </html>
