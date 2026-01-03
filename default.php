@@ -9,6 +9,11 @@
 echo(__DIR__ . "\n\n");
 $configPath = __DIR__ . '../../config/rockband_scheduler_config.ini'; // Adjust path as needed
 
+echo(file_exists(__DIR__).'<BR>');
+echo(file_exists(__DIR__ . "../").'<BR>');
+echo(file_exists(__DIR__ . "../../").'<BR>');
+echo(file_exists(__DIR__ . "../../config").'<BR>');
+
 file_exists($configPath) || die("Configuration file not found.");
 
 $dbSettings = parse_ini_file($configPath, true);
