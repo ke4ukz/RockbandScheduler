@@ -8,9 +8,9 @@
 
 error_log("default");
 require_once 'config.php';
-require_once 'db.php';
-
 echo($GLOBALS['config']);
+
+require_once 'db.php';
 echo($GLOBALS['db']);
 
 ?>

@@ -1,15 +1,13 @@
 <?php
 
-error_log("loading config<BR>");
+error_log("loading config");
 
 $GLOBALS['config'] = FALSE;
 $configPath = realpath(__DIR__ . '/../../config/rockband_scheduler_config.ini');
 if (file_exists($configPath)) {
     $GLOBALS['config'] = parse_ini_file($configPath, true);
+    error_log('config loaded');
 }
-
-
-
 unset($configPath);
 
 ?>
