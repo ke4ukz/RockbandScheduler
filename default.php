@@ -19,6 +19,8 @@ $db = $GLOBALS['db'];
 //     print_r($row);
 // }
 
+print_r($_GET['eventid']);
+
 
 ?>
     </body>
