@@ -5,3 +5,16 @@
   AddHandler application/x-httpd-ea-php84___lsphp .php .php8 .phtml
 </IfModule>
 # php -- END cPanel-generated handler, do not edit
+
+<IfModule mod_dir.c>
+    DirectoryIndex default.php default.html default.htm
+</IfModule>
+
+
+# ------------------------------------------------------------------
+#  Deny access to any file that starts with a dot or ends with .ini
+# ------------------------------------------------------------------
+<FilesMatch "^\..*|.*\.ini$">
+    Require all denied
+</FilesMatch>
+
