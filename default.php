@@ -13,11 +13,11 @@ echo($GLOBALS['config']);
 require_once 'db.php';
 
 $db = $GLOBALS['db'];
-$stmt = $db->query('DESCRIBE songs;');
+//$stmt = $db->query('DESCRIBE songs;');
 
-foreach ($stmt as $row) {
-    print_r($row);
-}
+// foreach ($stmt as $row) {
+//     print_r($row);
+// }
 
 
 ?>
