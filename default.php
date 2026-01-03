@@ -11,7 +11,6 @@ require_once 'config.php';
 echo($GLOBALS['config']);
 
 require_once 'db.php';
-echo($GLOBALS['db']);
 
 $db = $GLOBALS['db'];
 $stmt = $db->query('DESCRIBE songs;');
