@@ -6,6 +6,7 @@
     <body>
 <?php
 // Ensure this file is outside your web root!
+echo(__DIR__ . "\n\n");
 $configPath = __DIR__ . '../../config/rockband_scheduler_config.ini'; // Adjust path as needed
 
 file_exists($configPath) || die("Configuration file not found.");
