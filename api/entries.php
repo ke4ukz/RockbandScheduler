@@ -149,7 +149,7 @@ function listEntries($db, $eventId, $isAdmin) {
 
     $stmt = $db->prepare('
         SELECT e.entry_id, e.position, e.performer_name, e.modified,
-               s.song_id, s.title, s.artist, s.album, s.preview_url,
+               s.song_id, s.title, s.artist, s.album, s.preview_url, s.deezer_id,
                TO_BASE64(s.album_art) as album_art
         FROM entries e
         LEFT JOIN songs s ON e.song_id = s.song_id
@@ -168,7 +168,7 @@ function listEntries($db, $eventId, $isAdmin) {
 
     // Also fetch available songs for user selection
     $stmt = $db->query('
-        SELECT song_id, artist, title, preview_url,
+        SELECT song_id, artist, title, preview_url, deezer_id,
                TO_BASE64(album_art) as album_art
         FROM songs
         ORDER BY artist, title

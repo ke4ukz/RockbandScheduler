@@ -182,6 +182,14 @@ if (!$eventId) {
             background: #198754;
         }
 
+        .preview-btn.error {
+            background: #dc3545;
+        }
+
+        .preview-btn.loading {
+            background: rgba(255,255,255,0.2);
+        }
+
         /* Sign up modal - full screen on mobile */
         .signup-modal .modal-dialog {
             margin: 0;
@@ -451,8 +459,8 @@ if (!$eventId) {
                                 <div class="performer">${escapeHtml(entry.performer_name)}</div>
                                 <div class="song">${entry.title ? escapeHtml(entry.title) + ' - ' + escapeHtml(entry.artist) : 'No song selected'}</div>
                             </div>
-                            ${entry.preview_url ? `
-                                <button class="preview-btn" data-preview="${escapeHtml(entry.preview_url)}" onclick="togglePreview(this)">
+                            ${entry.deezer_id ? `
+                                <button class="preview-btn" data-deezer-id="${entry.deezer_id}" onclick="togglePreview(this)">
                                     <i class="bi bi-play-fill"></i>
                                 </button>
                             ` : ''}
@@ -492,17 +500,35 @@ if (!$eventId) {
             });
         }
 
-        function renderSongList(songsToShow) {
+        const MAX_DISPLAY_SONGS = 50; // Limit initial display for performance
+
+        function renderSongList(songsToShow, isFiltered = false) {
             const container = document.getElementById('songResults');
 
             if (songsToShow.length === 0) {
-                container.innerHTML = '<div class="text-center text-muted py-3">No songs available</div>';
+                container.innerHTML = isFiltered
+                    ? '<div class="text-center text-muted py-3">No matching songs</div>'
+                    : '<div class="text-center text-muted py-3">No songs available</div>';
+                return;
+            }
+
+            // If showing full list and it's large, prompt user to search
+            if (!isFiltered && songsToShow.length > MAX_DISPLAY_SONGS) {
+                container.innerHTML = `
+                    <div class="text-center text-muted py-4">
+                        <i class="bi bi-search d-block mb-2" style="font-size: 2rem; opacity: 0.5;"></i>
+                        <div>${songsToShow.length} songs available</div>
+                        <div class="small">Type to search for your song</div>
+                    </div>
+                `;
                 return;
             }
 
             const selectedId = document.getElementById('selectedSongId').value;
+            const displaySongs = songsToShow.slice(0, MAX_DISPLAY_SONGS);
+            const hasMore = songsToShow.length > MAX_DISPLAY_SONGS;
 
-            container.innerHTML = songsToShow.map(song => `
+            let html = displaySongs.map(song => `
                 <div class="song-item ${song.song_id == selectedId ? 'selected' : ''}"
                      onclick="selectSong(${song.song_id})"
                      data-song-id="${song.song_id}">
@@ -513,26 +539,32 @@ if (!$eventId) {
                         <div class="song-title">${escapeHtml(song.title)}</div>
                         <div class="song-artist">${escapeHtml(song.artist)}</div>
                     </div>
-                    ${song.preview_url ? `
-                        <button class="preview-btn" onclick="event.stopPropagation(); togglePreview(this)" data-preview="${escapeHtml(song.preview_url)}">
+                    ${song.deezer_id ? `
+                        <button class="preview-btn" onclick="event.stopPropagation(); togglePreview(this)" data-deezer-id="${song.deezer_id}">
                             <i class="bi bi-play-fill"></i>
                         </button>
                     ` : ''}
                 </div>
             `).join('');
+
+            if (hasMore) {
+                html += `<div class="text-center text-muted py-2 small">Showing ${MAX_DISPLAY_SONGS} of ${songsToShow.length} matches. Refine your search.</div>`;
+            }
+
+            container.innerHTML = html;
         }
 
         function filterSongs() {
             const query = document.getElementById('songSearch').value.toLowerCase();
             if (!query) {
-                renderSongList(songs);
+                renderSongList(songs, false);
                 return;
             }
             const filtered = songs.filter(s =>
                 s.title.toLowerCase().includes(query) ||
                 s.artist.toLowerCase().includes(query)
             );
-            renderSongList(filtered);
+            renderSongList(filtered, true);
         }
 
         function selectSong(songId) {
@@ -589,35 +621,76 @@ if (!$eventId) {
             }
         }
 
-        function togglePreview(el) {
-            const url = el.dataset.preview;
+        let currentDeezerId = null;
+
+        async function togglePreview(el) {
+            const deezerId = el.dataset.deezerId;
             const icon = el.querySelector('i');
 
             // Stop any playing audio
             if (currentAudio) {
                 currentAudio.pause();
                 document.querySelectorAll('.preview-btn').forEach(btn => {
-                    btn.classList.remove('playing');
+                    btn.classList.remove('playing', 'loading', 'error');
                     btn.querySelector('i').className = 'bi bi-play-fill';
                 });
 
-                if (currentAudio.src === url) {
+                if (currentDeezerId === deezerId) {
                     currentAudio = null;
+                    currentDeezerId = null;
                     return;
                 }
             }
 
-            // Play new audio
-            currentAudio = new Audio(url);
-            currentAudio.play();
-            el.classList.add('playing');
-            icon.className = 'bi bi-stop-fill';
+            // Show loading state
+            el.classList.add('loading');
+            icon.className = 'bi bi-hourglass-split';
 
-            currentAudio.addEventListener('ended', () => {
-                el.classList.remove('playing');
+            try {
+                // Fetch fresh preview URL from Deezer
+                const response = await fetch(`${API_BASE}/deezer.php?track_id=${deezerId}`);
+                const data = await response.json();
+
+                if (data.error || !data.preview) {
+                    throw new Error(data.error || 'No preview available');
+                }
+
+                // Play the fresh URL
+                currentAudio = new Audio(data.preview);
+                currentDeezerId = deezerId;
+                el.classList.remove('loading');
+                el.classList.add('playing');
+                icon.className = 'bi bi-stop-fill';
+
+                await currentAudio.play();
+
+                currentAudio.addEventListener('ended', () => {
+                    el.classList.remove('playing');
+                    icon.className = 'bi bi-play-fill';
+                    currentAudio = null;
+                    currentDeezerId = null;
+                });
+
+                currentAudio.addEventListener('error', () => {
+                    showPreviewError(el, icon);
+                });
+
+            } catch (err) {
+                console.error('Preview failed:', err);
+                showPreviewError(el, icon);
+            }
+        }
+
+        function showPreviewError(el, icon) {
+            el.classList.remove('playing', 'loading');
+            el.classList.add('error');
+            icon.className = 'bi bi-exclamation-triangle-fill';
+            currentAudio = null;
+            currentDeezerId = null;
+            setTimeout(() => {
+                el.classList.remove('error');
                 icon.className = 'bi bi-play-fill';
-                currentAudio = null;
-            });
+            }, 2000);
         }
 
         function escapeHtml(text) {

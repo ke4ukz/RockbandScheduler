@@ -4,6 +4,7 @@
  *
  * GET /api/deezer.php?q=search+query     - Search for tracks on Deezer
  * GET /api/deezer.php?album_id=12345     - Get album details (for release year)
+ * GET /api/deezer.php?track_id=12345     - Get track details (for fresh preview URL)
  *
  * This proxies requests to Deezer's API to avoid CORS issues
  * and to keep the API simple for the frontend.
@@ -21,6 +22,37 @@ $ctx = stream_context_create([
         'user_agent' => 'RockbandScheduler/1.0'
     ]
 ]);
+
+// Track details request (for fresh preview URL)
+$trackId = $_GET['track_id'] ?? null;
+if ($trackId) {
+    $trackId = (int)$trackId;
+    $deezerUrl = "https://api.deezer.com/track/{$trackId}";
+
+    $response = @file_get_contents($deezerUrl, false, $ctx);
+
+    if ($response === false) {
+        http_response_code(502);
+        echo json_encode(['error' => 'Failed to reach Deezer API']);
+        exit;
+    }
+
+    $data = json_decode($response, true);
+
+    if (json_last_error() !== JSON_ERROR_NONE || isset($data['error'])) {
+        http_response_code(404);
+        echo json_encode(['error' => 'Track not found']);
+        exit;
+    }
+
+    // Return just the fields we need
+    echo json_encode([
+        'id' => $data['id'],
+        'title' => $data['title'],
+        'preview' => $data['preview'] ?? null
+    ]);
+    exit;
+}
 
 // Album details request
 $albumId = $_GET['album_id'] ?? null;
@@ -60,7 +92,7 @@ $limit = min((int)($_GET['limit'] ?? 25), 50); // Max 50 results
 
 if (empty($query)) {
     http_response_code(400);
-    echo json_encode(['error' => 'Search query (q) or album_id is required']);
+    echo json_encode(['error' => 'Search query (q), album_id, or track_id is required']);
     exit;
 }
 
