@@ -98,6 +98,10 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
                             <label for="eventName" class="form-label">Event Name *</label>
                             <input type="text" class="form-control" id="eventName" name="name" required>
                         </div>
+                        <div class="mb-3">
+                            <label for="eventLocation" class="form-label">Location</label>
+                            <input type="text" class="form-control" id="eventLocation" name="location" placeholder="e.g. Room 204, Student Center">
+                        </div>
                         <div class="row mb-3">
                             <div class="col-md-6">
                                 <label for="startTime" class="form-label">Start Time *</label>
@@ -137,6 +141,8 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
                             <dl class="row">
                                 <dt class="col-sm-4">Status</dt>
                                 <dd class="col-sm-8"><span id="viewEventStatus" class="badge"></span></dd>
+                                <dt class="col-sm-4">Location</dt>
+                                <dd class="col-sm-8" id="viewEventLocation"><span class="text-muted">Not specified</span></dd>
                                 <dt class="col-sm-4">Start Time</dt>
                                 <dd class="col-sm-8" id="viewEventStart"></dd>
                                 <dt class="col-sm-4">End Time</dt>
@@ -283,6 +289,7 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
                                     <h5 class="card-title mb-0">${escapeHtml(event.name)}</h5>
                                     ${statusBadge}
                                 </div>
+                                ${event.location ? `<p class="card-text text-muted small mb-1"><i class="bi bi-geo-alt"></i> ${escapeHtml(event.location)}</p>` : ''}
                                 <p class="card-text text-muted small mb-2">
                                     <i class="bi bi-calendar"></i> ${formatDateTime(event.start_time)}<br>
                                     <i class="bi bi-clock"></i> to ${formatDateTime(event.end_time)}
@@ -345,6 +352,7 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
             document.getElementById('eventModalTitle').textContent = 'Edit Event';
             document.getElementById('eventId').value = event.event_id;
             document.getElementById('eventName').value = event.name;
+            document.getElementById('eventLocation').value = event.location || '';
             document.getElementById('startTime').value = formatDateTimeLocal(event.start_time);
             document.getElementById('endTime').value = formatDateTimeLocal(event.end_time);
             document.getElementById('numEntries').value = event.num_entries;
@@ -364,6 +372,10 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
             const statusEl = document.getElementById('viewEventStatus');
             statusEl.textContent = status.charAt(0).toUpperCase() + status.slice(1);
             statusEl.className = 'badge bg-' + { active: 'success', upcoming: 'primary', past: 'secondary' }[status];
+
+            document.getElementById('viewEventLocation').innerHTML = event.location
+                ? escapeHtml(event.location)
+                : '<span class="text-muted">Not specified</span>';
 
             document.getElementById('viewEventStart').textContent = formatDateTime(event.start_time);
             document.getElementById('viewEventEnd').textContent = formatDateTime(event.end_time);
@@ -398,6 +410,7 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
             const eventId = document.getElementById('eventId').value;
             const data = {
                 name: document.getElementById('eventName').value,
+                location: document.getElementById('eventLocation').value || null,
                 start_time: document.getElementById('startTime').value,
                 end_time: document.getElementById('endTime').value,
                 num_entries: parseInt(document.getElementById('numEntries').value)

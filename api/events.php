@@ -70,7 +70,7 @@ try {
 
 function listEvents($db) {
     $stmt = $db->query('
-        SELECT BIN_TO_UUID(event_id) as event_id, name, start_time, end_time, num_entries,
+        SELECT BIN_TO_UUID(event_id) as event_id, name, location, start_time, end_time, num_entries,
                TO_BASE64(qr_image) as qr_image, created, modified
         FROM events
         ORDER BY start_time DESC
@@ -91,7 +91,7 @@ function getEvent($db, $eventId) {
     }
 
     $stmt = $db->prepare('
-        SELECT BIN_TO_UUID(event_id) as event_id, name, start_time, end_time, num_entries,
+        SELECT BIN_TO_UUID(event_id) as event_id, name, location, start_time, end_time, num_entries,
                TO_BASE64(qr_image) as qr_image, created, modified
         FROM events
         WHERE event_id = UUID_TO_BIN(?)
@@ -140,12 +140,13 @@ function createEvent($db) {
 
     // Insert with auto-generated UUID
     $stmt = $db->prepare('
-        INSERT INTO events (name, start_time, end_time, num_entries)
-        VALUES (?, ?, ?, ?)
+        INSERT INTO events (name, location, start_time, end_time, num_entries)
+        VALUES (?, ?, ?, ?, ?)
     ');
 
     $stmt->execute([
         $data['name'],
+        $data['location'] ?? null,
         date('Y-m-d H:i:s', $startTime),
         date('Y-m-d H:i:s', $endTime),
         $numEntries
@@ -190,6 +191,11 @@ function updateEvent($db, $eventId) {
     if (array_key_exists('name', $data)) {
         $fields[] = 'name = ?';
         $values[] = $data['name'];
+    }
+
+    if (array_key_exists('location', $data)) {
+        $fields[] = 'location = ?';
+        $values[] = $data['location'];
     }
 
     if (array_key_exists('start_time', $data)) {
