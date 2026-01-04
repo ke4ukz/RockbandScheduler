@@ -1,12 +1,15 @@
 <?php
 /**
- * Songs API - Admin only
+ * Songs API - Admin only (all operations use POST with admin_token in body)
  *
- * GET    /api/songs.php              - List all songs
- * GET    /api/songs.php?song_id=123  - Get single song
- * POST   /api/songs.php              - Create song
- * PUT    /api/songs.php?song_id=123  - Update song
- * DELETE /api/songs.php?song_id=123  - Delete song
+ * All requests are POST with JSON body containing admin_token and action:
+ *
+ * POST /api/songs.php
+ *   { "admin_token": "...", "action": "list" }                    - List all songs
+ *   { "admin_token": "...", "action": "get", "song_id": 123 }     - Get single song
+ *   { "admin_token": "...", "action": "create", "title": "...", ... } - Create song
+ *   { "admin_token": "...", "action": "update", "song_id": 123, ... } - Update song
+ *   { "admin_token": "...", "action": "delete", "song_id": 123 }  - Delete song
  */
 
 require_once __DIR__ . '/../config.php';
@@ -24,30 +27,45 @@ if (!$db) {
 }
 
 $method = $_SERVER['REQUEST_METHOD'];
-$songId = $_GET['song_id'] ?? null;
+
+// Only accept POST
+if ($method !== 'POST') {
+    jsonError('Method not allowed. Use POST with action in body.', 405);
+}
+
+$data = getJsonBody();
+if (!$data) {
+    jsonError('Invalid JSON body');
+}
+
+$action = $data['action'] ?? null;
+$songId = $data['song_id'] ?? null;
 
 try {
-    switch ($method) {
-        case 'GET':
-            if ($songId) {
-                getSong($db, $songId);
-            } else {
-                listSongs($db);
+    switch ($action) {
+        case 'list':
+            listSongs($db);
+            break;
+
+        case 'get':
+            if (!$songId) {
+                jsonError('song_id required');
             }
+            getSong($db, $songId);
             break;
 
-        case 'POST':
-            createSong($db);
+        case 'create':
+            createSong($db, $data);
             break;
 
-        case 'PUT':
+        case 'update':
             if (!$songId) {
                 jsonError('song_id required for update');
             }
-            updateSong($db, $songId);
+            updateSong($db, $songId, $data);
             break;
 
-        case 'DELETE':
+        case 'delete':
             if (!$songId) {
                 jsonError('song_id required for delete');
             }
@@ -55,7 +73,7 @@ try {
             break;
 
         default:
-            jsonError('Method not allowed', 405);
+            jsonError('Invalid action. Use: list, get, create, update, delete');
     }
 } catch (PDOException $e) {
     error_log('Songs API error: ' . $e->getMessage());
@@ -104,12 +122,7 @@ function getSong($db, $songId) {
     jsonResponse(['song' => $song]);
 }
 
-function createSong($db) {
-    $data = getJsonBody();
-    if (!$data) {
-        jsonError('Invalid JSON body');
-    }
-
+function createSong($db, $data) {
     // Validate required fields
     $required = ['title', 'artist', 'album', 'year'];
     foreach ($required as $field) {
@@ -145,12 +158,7 @@ function createSong($db) {
     jsonResponse(['success' => true, 'song_id' => (int)$songId], 201);
 }
 
-function updateSong($db, $songId) {
-    $data = getJsonBody();
-    if (!$data) {
-        jsonError('Invalid JSON body');
-    }
-
+function updateSong($db, $songId, $data) {
     // Check song exists
     $stmt = $db->prepare('SELECT song_id FROM songs WHERE song_id = ?');
     $stmt->execute([$songId]);
@@ -204,14 +212,31 @@ function deleteSong($db, $songId) {
 }
 
 function fetchImageAsBlob($url) {
-    $ctx = stream_context_create([
-        'http' => [
-            'timeout' => 10,
-            'user_agent' => 'RockbandScheduler/1.0'
-        ]
-    ]);
+    // Try cURL first, fallback to file_get_contents
+    if (function_exists('curl_init')) {
+        $ch = curl_init($url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+        $imageData = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+        if ($httpCode !== 200) {
+            $imageData = false;
+        }
+    } elseif (ini_get('allow_url_fopen')) {
+        $ctx = stream_context_create([
+            'http' => [
+                'timeout' => 10,
+                'user_agent' => 'RockbandScheduler/1.0'
+            ]
+        ]);
+        $imageData = @file_get_contents($url, false, $ctx);
+    } else {
+        return null;
+    }
 
-    $imageData = @file_get_contents($url, false, $ctx);
     if ($imageData === false) {
         return null;
     }

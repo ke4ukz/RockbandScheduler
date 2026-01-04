@@ -2,15 +2,18 @@
 /**
  * Entries API - Mixed access
  *
- * PUBLIC (no auth, but event must be active):
- * GET    /api/entries.php?event_id=uuid              - List entries for event
- * POST   /api/entries.php?event_id=uuid              - Create/claim a slot
+ * PUBLIC (no auth, event must be active):
+ *   GET  /api/entries.php?event_id=uuid              - List entries for event
+ *   POST /api/entries.php?event_id=uuid              - Create/claim a slot (user signup)
+ *        Body: { "position": 1, "performer_name": "...", "song_id": 123 }
  *
- * ADMIN ONLY:
- * PUT    /api/entries.php?entry_id=123               - Update entry (any field)
- * DELETE /api/entries.php?entry_id=123               - Clear/delete entry
- * POST   /api/entries.php?event_id=uuid&admin=1      - Admin create (bypasses time check)
- * PUT    /api/entries.php?event_id=uuid&action=reorder - Reorder entries
+ * ADMIN (POST with admin_token in body):
+ *   POST /api/entries.php
+ *        { "admin_token": "...", "action": "list", "event_id": "uuid" }
+ *        { "admin_token": "...", "action": "create", "event_id": "uuid", ... }
+ *        { "admin_token": "...", "action": "update", "entry_id": 123, ... }
+ *        { "admin_token": "...", "action": "delete", "entry_id": 123 }
+ *        { "admin_token": "...", "action": "reorder", "event_id": "uuid", "order": [...] }
  */
 
 require_once __DIR__ . '/../config.php';
@@ -25,56 +28,78 @@ if (!$db) {
 }
 
 $method = $_SERVER['REQUEST_METHOD'];
-$eventId = $_GET['event_id'] ?? null;
-$entryId = $_GET['entry_id'] ?? null;
-$action = $_GET['action'] ?? null;
-$isAdmin = isset($_GET['admin']) || isset($_GET['admin_token']);
 
-// Check admin token for admin operations
-$hasAdminAuth = verifyAdminToken($_GET['admin_token'] ?? $_SERVER['HTTP_X_ADMIN_TOKEN'] ?? null);
+// Check if this is an admin request (has admin_token in body)
+$data = getJsonBody();
+$isAdminRequest = $data && isset($data['admin_token']);
 
 try {
-    switch ($method) {
-        case 'GET':
+    if ($method === 'GET') {
+        // Public: list entries for event
+        $eventId = $_GET['event_id'] ?? null;
+        if (!$eventId) {
+            jsonError('event_id required');
+        }
+        listEntries($db, $eventId, false);
+
+    } elseif ($method === 'POST') {
+        if ($isAdminRequest) {
+            // Admin request - verify token and handle action
+            requireAdminAuth();
+
+            $action = $data['action'] ?? null;
+            $eventId = $data['event_id'] ?? null;
+            $entryId = $data['entry_id'] ?? null;
+
+            switch ($action) {
+                case 'list':
+                    if (!$eventId) {
+                        jsonError('event_id required');
+                    }
+                    listEntries($db, $eventId, true);
+                    break;
+
+                case 'create':
+                    if (!$eventId) {
+                        jsonError('event_id required');
+                    }
+                    adminCreateEntry($db, $eventId, $data);
+                    break;
+
+                case 'update':
+                    if (!$entryId) {
+                        jsonError('entry_id required');
+                    }
+                    updateEntry($db, $entryId, $data);
+                    break;
+
+                case 'delete':
+                    if (!$entryId) {
+                        jsonError('entry_id required');
+                    }
+                    deleteEntry($db, $entryId);
+                    break;
+
+                case 'reorder':
+                    if (!$eventId) {
+                        jsonError('event_id required');
+                    }
+                    reorderEntries($db, $eventId, $data);
+                    break;
+
+                default:
+                    jsonError('Invalid action. Use: list, create, update, delete, reorder');
+            }
+        } else {
+            // Public user signup
+            $eventId = $_GET['event_id'] ?? null;
             if (!$eventId) {
                 jsonError('event_id required');
             }
-            listEntries($db, $eventId, $hasAdminAuth);
-            break;
-
-        case 'POST':
-            if (!$eventId) {
-                jsonError('event_id required');
-            }
-            if ($isAdmin) {
-                requireAdminAuth();
-                adminCreateEntry($db, $eventId);
-            } else {
-                userCreateEntry($db, $eventId);
-            }
-            break;
-
-        case 'PUT':
-            requireAdminAuth();
-            if ($action === 'reorder' && $eventId) {
-                reorderEntries($db, $eventId);
-            } elseif ($entryId) {
-                updateEntry($db, $entryId);
-            } else {
-                jsonError('entry_id or (event_id + action=reorder) required');
-            }
-            break;
-
-        case 'DELETE':
-            requireAdminAuth();
-            if (!$entryId) {
-                jsonError('entry_id required');
-            }
-            deleteEntry($db, $entryId);
-            break;
-
-        default:
-            jsonError('Method not allowed', 405);
+            userCreateEntry($db, $eventId, $data);
+        }
+    } else {
+        jsonError('Method not allowed', 405);
     }
 } catch (PDOException $e) {
     error_log('Entries API error: ' . $e->getMessage());
@@ -162,11 +187,10 @@ function listEntries($db, $eventId, $isAdmin) {
     ]);
 }
 
-function userCreateEntry($db, $eventId) {
+function userCreateEntry($db, $eventId, $data) {
     // Validate event is active
     $event = validateEventAccess($db, $eventId, true);
 
-    $data = getJsonBody();
     if (!$data) {
         jsonError('Invalid JSON body');
     }
@@ -221,14 +245,9 @@ function userCreateEntry($db, $eventId) {
     jsonResponse(['success' => true, 'entry_id' => (int)$entryId], 201);
 }
 
-function adminCreateEntry($db, $eventId) {
+function adminCreateEntry($db, $eventId, $data) {
     // Admin can create entries even if event is not active
     $event = validateEventAccess($db, $eventId, false);
-
-    $data = getJsonBody();
-    if (!$data) {
-        jsonError('Invalid JSON body');
-    }
 
     if (empty($data['position'])) {
         jsonError('position is required');
@@ -277,12 +296,7 @@ function adminCreateEntry($db, $eventId) {
     }
 }
 
-function updateEntry($db, $entryId) {
-    $data = getJsonBody();
-    if (!$data) {
-        jsonError('Invalid JSON body');
-    }
-
+function updateEntry($db, $entryId, $data) {
     // Check entry exists
     $stmt = $db->prepare('SELECT entry_id, event_id FROM entries WHERE entry_id = ?');
     $stmt->execute([$entryId]);
@@ -334,13 +348,12 @@ function deleteEntry($db, $entryId) {
     jsonResponse(['success' => true]);
 }
 
-function reorderEntries($db, $eventId) {
+function reorderEntries($db, $eventId, $data) {
     if (!isValidUuid($eventId)) {
         jsonError('Invalid event ID format');
     }
 
-    $data = getJsonBody();
-    if (!$data || !isset($data['order']) || !is_array($data['order'])) {
+    if (!isset($data['order']) || !is_array($data['order'])) {
         jsonError('order array required');
     }
 

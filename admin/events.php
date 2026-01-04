@@ -222,7 +222,11 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
 
         async function loadEvents() {
             try {
-                const response = await fetch(`${API_BASE}/events.php?admin_token=${encodeURIComponent(ADMIN_TOKEN)}`);
+                const response = await fetch(`${API_BASE}/events.php`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ admin_token: ADMIN_TOKEN, action: 'list' })
+                });
                 const data = await response.json();
                 if (data.error) throw new Error(data.error);
                 events = data.events || [];
@@ -423,14 +427,19 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
             }
 
             try {
-                const url = eventId
-                    ? `${API_BASE}/events.php?admin_token=${encodeURIComponent(ADMIN_TOKEN)}&event_id=${eventId}`
-                    : `${API_BASE}/events.php?admin_token=${encodeURIComponent(ADMIN_TOKEN)}`;
+                const requestBody = {
+                    admin_token: ADMIN_TOKEN,
+                    action: eventId ? 'update' : 'create',
+                    ...data
+                };
+                if (eventId) {
+                    requestBody.event_id = eventId;
+                }
 
-                const response = await fetch(url, {
-                    method: eventId ? 'PUT' : 'POST',
+                const response = await fetch(`${API_BASE}/events.php`, {
+                    method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data)
+                    body: JSON.stringify(requestBody)
                 });
 
                 const result = await response.json();
@@ -453,10 +462,15 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
             if (!deleteEventId) return;
 
             try {
-                const response = await fetch(
-                    `${API_BASE}/events.php?admin_token=${encodeURIComponent(ADMIN_TOKEN)}&event_id=${deleteEventId}`,
-                    { method: 'DELETE' }
-                );
+                const response = await fetch(`${API_BASE}/events.php`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        admin_token: ADMIN_TOKEN,
+                        action: 'delete',
+                        event_id: deleteEventId
+                    })
+                });
                 const result = await response.json();
                 if (result.error) throw new Error(result.error);
 
@@ -472,10 +486,15 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
             if (!currentViewEventId) return;
 
             try {
-                const response = await fetch(
-                    `${API_BASE}/events.php?admin_token=${encodeURIComponent(ADMIN_TOKEN)}&event_id=${currentViewEventId}&action=generate_qr`,
-                    { method: 'POST' }
-                );
+                const response = await fetch(`${API_BASE}/events.php`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        admin_token: ADMIN_TOKEN,
+                        action: 'generate_qr',
+                        event_id: currentViewEventId
+                    })
+                });
                 const result = await response.json();
                 if (result.error) throw new Error(result.error);
 

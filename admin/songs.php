@@ -221,7 +221,11 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
 
         async function loadSongs() {
             try {
-                const response = await fetch(`${API_BASE}/songs.php?admin_token=${encodeURIComponent(ADMIN_TOKEN)}`);
+                const response = await fetch(`${API_BASE}/songs.php`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ admin_token: ADMIN_TOKEN, action: 'list' })
+                });
                 const data = await response.json();
                 if (data.error) throw new Error(data.error);
                 songs = data.songs || [];
@@ -366,14 +370,19 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
             };
 
             try {
-                const url = songId
-                    ? `${API_BASE}/songs.php?admin_token=${encodeURIComponent(ADMIN_TOKEN)}&song_id=${songId}`
-                    : `${API_BASE}/songs.php?admin_token=${encodeURIComponent(ADMIN_TOKEN)}`;
+                const requestBody = {
+                    admin_token: ADMIN_TOKEN,
+                    action: songId ? 'update' : 'create',
+                    ...data
+                };
+                if (songId) {
+                    requestBody.song_id = parseInt(songId);
+                }
 
-                const response = await fetch(url, {
-                    method: songId ? 'PUT' : 'POST',
+                const response = await fetch(`${API_BASE}/songs.php`, {
+                    method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data)
+                    body: JSON.stringify(requestBody)
                 });
 
                 const result = await response.json();
@@ -396,10 +405,15 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
             if (!deleteSongId) return;
 
             try {
-                const response = await fetch(
-                    `${API_BASE}/songs.php?admin_token=${encodeURIComponent(ADMIN_TOKEN)}&song_id=${deleteSongId}`,
-                    { method: 'DELETE' }
-                );
+                const response = await fetch(`${API_BASE}/songs.php`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        admin_token: ADMIN_TOKEN,
+                        action: 'delete',
+                        song_id: deleteSongId
+                    })
+                });
                 const result = await response.json();
                 if (result.error) throw new Error(result.error);
 

@@ -1,13 +1,16 @@
 <?php
 /**
- * Events API - Admin only
+ * Events API - Admin only (all operations use POST with admin_token in body)
  *
- * GET    /api/events.php                                    - List all events
- * GET    /api/events.php?event_id=uuid                      - Get single event
- * POST   /api/events.php                                    - Create event
- * PUT    /api/events.php?event_id=uuid                      - Update event
- * DELETE /api/events.php?event_id=uuid                      - Delete event
- * POST   /api/events.php?event_id=uuid&action=generate_qr   - Generate QR code
+ * All requests are POST with JSON body containing admin_token and action:
+ *
+ * POST /api/events.php
+ *   { "admin_token": "...", "action": "list" }                    - List all events
+ *   { "admin_token": "...", "action": "get", "event_id": "uuid" } - Get single event
+ *   { "admin_token": "...", "action": "create", "name": "...", ... } - Create event
+ *   { "admin_token": "...", "action": "update", "event_id": "uuid", ... } - Update event
+ *   { "admin_token": "...", "action": "delete", "event_id": "uuid" } - Delete event
+ *   { "admin_token": "...", "action": "generate_qr", "event_id": "uuid" } - Generate QR
  */
 
 require_once __DIR__ . '/../config.php';
@@ -25,43 +28,60 @@ if (!$db) {
 }
 
 $method = $_SERVER['REQUEST_METHOD'];
-$eventId = $_GET['event_id'] ?? null;
-$action = $_GET['action'] ?? null;
+
+// Only accept POST
+if ($method !== 'POST') {
+    jsonError('Method not allowed. Use POST with action in body.', 405);
+}
+
+$data = getJsonBody();
+if (!$data) {
+    jsonError('Invalid JSON body');
+}
+
+$action = $data['action'] ?? null;
+$eventId = $data['event_id'] ?? null;
 
 try {
-    switch ($method) {
-        case 'GET':
-            if ($eventId) {
-                getEvent($db, $eventId);
-            } else {
-                listEvents($db);
-            }
+    switch ($action) {
+        case 'list':
+            listEvents($db);
             break;
 
-        case 'POST':
-            if ($eventId && $action === 'generate_qr') {
-                generateQrCode($db, $eventId);
-            } else {
-                createEvent($db);
+        case 'get':
+            if (!$eventId) {
+                jsonError('event_id required');
             }
+            getEvent($db, $eventId);
             break;
 
-        case 'PUT':
+        case 'create':
+            createEvent($db, $data);
+            break;
+
+        case 'update':
             if (!$eventId) {
                 jsonError('event_id required for update');
             }
-            updateEvent($db, $eventId);
+            updateEvent($db, $eventId, $data);
             break;
 
-        case 'DELETE':
+        case 'delete':
             if (!$eventId) {
                 jsonError('event_id required for delete');
             }
             deleteEvent($db, $eventId);
             break;
 
+        case 'generate_qr':
+            if (!$eventId) {
+                jsonError('event_id required');
+            }
+            generateQrCode($db, $eventId);
+            break;
+
         default:
-            jsonError('Method not allowed', 405);
+            jsonError('Invalid action. Use: list, get, create, update, delete, generate_qr');
     }
 } catch (PDOException $e) {
     error_log('Events API error: ' . $e->getMessage());
@@ -108,12 +128,7 @@ function getEvent($db, $eventId) {
     jsonResponse(['event' => $event]);
 }
 
-function createEvent($db) {
-    $data = getJsonBody();
-    if (!$data) {
-        jsonError('Invalid JSON body');
-    }
-
+function createEvent($db, $data) {
     // Validate required fields
     $required = ['name', 'start_time', 'end_time', 'num_entries'];
     foreach ($required as $field) {
@@ -167,14 +182,9 @@ function createEvent($db) {
     jsonResponse(['success' => true, 'event_id' => $result['event_id']], 201);
 }
 
-function updateEvent($db, $eventId) {
+function updateEvent($db, $eventId, $data) {
     if (!isValidUuid($eventId)) {
         jsonError('Invalid event ID format');
-    }
-
-    $data = getJsonBody();
-    if (!$data) {
-        jsonError('Invalid JSON body');
     }
 
     // Check event exists
@@ -279,9 +289,26 @@ function generateQrCode($db, $eventId) {
     // Use QR Server API to generate QR code (Google Charts is deprecated)
     $qrApiUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=' . urlencode($eventUrl);
 
-    $qrImage = @file_get_contents($qrApiUrl);
+    // Try cURL first (more commonly available on shared hosts), fallback to file_get_contents
+    $qrImage = false;
+    if (function_exists('curl_init')) {
+        $ch = curl_init($qrApiUrl);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 15);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+        $qrImage = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+        if ($httpCode !== 200) {
+            $qrImage = false;
+        }
+    } elseif (ini_get('allow_url_fopen')) {
+        $qrImage = @file_get_contents($qrApiUrl);
+    }
+
     if ($qrImage === false) {
-        jsonError('Failed to generate QR code', 500);
+        jsonError('Failed to generate QR code. Check server configuration (cURL or allow_url_fopen required).', 500);
     }
 
     // Store QR code in database

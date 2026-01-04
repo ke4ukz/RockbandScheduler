@@ -211,7 +211,15 @@ if (!$eventId || !isValidUuid($eventId)) {
 
         async function loadEntries() {
             try {
-                const response = await fetch(`${API_BASE}/entries.php?event_id=${EVENT_ID}&admin_token=${encodeURIComponent(ADMIN_TOKEN)}`);
+                const response = await fetch(`${API_BASE}/entries.php`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        admin_token: ADMIN_TOKEN,
+                        action: 'list',
+                        event_id: EVENT_ID
+                    })
+                });
                 const data = await response.json();
                 if (data.error) throw new Error(data.error);
 
@@ -229,7 +237,11 @@ if (!$eventId || !isValidUuid($eventId)) {
 
         async function loadSongs() {
             try {
-                const response = await fetch(`${API_BASE}/songs.php?admin_token=${encodeURIComponent(ADMIN_TOKEN)}`);
+                const response = await fetch(`${API_BASE}/songs.php`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ admin_token: ADMIN_TOKEN, action: 'list' })
+                });
                 const data = await response.json();
                 if (data.error) throw new Error(data.error);
                 songs = data.songs || [];
@@ -394,28 +406,25 @@ if (!$eventId || !isValidUuid($eventId)) {
             const performerName = document.getElementById('editPerformerName').value;
             const songId = document.getElementById('editSongId').value;
 
-            const data = {
+            const requestBody = {
+                admin_token: ADMIN_TOKEN,
+                action: entryId ? 'update' : 'create',
                 position: parseInt(position),
                 performer_name: performerName,
                 song_id: songId ? parseInt(songId) : null
             };
 
-            try {
-                let url, method;
-                if (entryId) {
-                    // Update existing
-                    url = `${API_BASE}/entries.php?entry_id=${entryId}&admin_token=${encodeURIComponent(ADMIN_TOKEN)}`;
-                    method = 'PUT';
-                } else {
-                    // Create new
-                    url = `${API_BASE}/entries.php?event_id=${EVENT_ID}&admin=1&admin_token=${encodeURIComponent(ADMIN_TOKEN)}`;
-                    method = 'POST';
-                }
+            if (entryId) {
+                requestBody.entry_id = parseInt(entryId);
+            } else {
+                requestBody.event_id = EVENT_ID;
+            }
 
-                const response = await fetch(url, {
-                    method: method,
+            try {
+                const response = await fetch(`${API_BASE}/entries.php`, {
+                    method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data)
+                    body: JSON.stringify(requestBody)
                 });
 
                 const result = await response.json();
@@ -438,10 +447,15 @@ if (!$eventId || !isValidUuid($eventId)) {
             if (!confirm('Clear this slot?')) return;
 
             try {
-                const response = await fetch(
-                    `${API_BASE}/entries.php?entry_id=${entryId}&admin_token=${encodeURIComponent(ADMIN_TOKEN)}`,
-                    { method: 'DELETE' }
-                );
+                const response = await fetch(`${API_BASE}/entries.php`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        admin_token: ADMIN_TOKEN,
+                        action: 'delete',
+                        entry_id: parseInt(entryId)
+                    })
+                });
                 const result = await response.json();
                 if (result.error) throw new Error(result.error);
 
@@ -502,14 +516,16 @@ if (!$eventId || !isValidUuid($eventId)) {
             if (orderUpdates.length === 0) return;
 
             try {
-                const response = await fetch(
-                    `${API_BASE}/entries.php?event_id=${EVENT_ID}&action=reorder&admin_token=${encodeURIComponent(ADMIN_TOKEN)}`,
-                    {
-                        method: 'PUT',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ order: orderUpdates })
-                    }
-                );
+                const response = await fetch(`${API_BASE}/entries.php`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        admin_token: ADMIN_TOKEN,
+                        action: 'reorder',
+                        event_id: EVENT_ID,
+                        order: orderUpdates
+                    })
+                });
                 const result = await response.json();
                 if (result.error) throw new Error(result.error);
 

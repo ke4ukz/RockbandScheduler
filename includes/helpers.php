@@ -64,25 +64,54 @@ function jsonError($message, $statusCode = 400) {
 
 /**
  * Require admin authentication for API endpoint
- * Checks X-Admin-Token header or admin_token parameter
+ * Checks token from: JSON body (preferred), X-Admin-Token header, or query param (legacy)
  */
 function requireAdminAuth() {
-    $token = $_SERVER['HTTP_X_ADMIN_TOKEN'] ?? $_REQUEST['admin_token'] ?? null;
+    // First try JSON body (most secure - doesn't appear in logs)
+    $token = null;
+    $jsonBody = getJsonBodyCached();
+    if ($jsonBody && isset($jsonBody['admin_token'])) {
+        $token = $jsonBody['admin_token'];
+    }
+    // Fallback to header
+    if (!$token) {
+        $token = $_SERVER['HTTP_X_ADMIN_TOKEN'] ?? null;
+    }
+    // Legacy fallback to query param (for backwards compatibility)
+    if (!$token) {
+        $token = $_GET['admin_token'] ?? null;
+    }
+
     if (!verifyAdminToken($token)) {
         jsonError('Unauthorized', 401);
     }
 }
 
 /**
- * Get request body as JSON
+ * Cache for JSON body to avoid multiple reads
+ */
+function getJsonBodyCached() {
+    static $cached = null;
+    static $parsed = false;
+
+    if (!$parsed) {
+        $parsed = true;
+        $input = file_get_contents('php://input');
+        if (!empty($input)) {
+            $cached = json_decode($input, true);
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                $cached = null;
+            }
+        }
+    }
+    return $cached;
+}
+
+/**
+ * Get request body as JSON (uses cached version)
  */
 function getJsonBody() {
-    $input = file_get_contents('php://input');
-    $data = json_decode($input, true);
-    if (json_last_error() !== JSON_ERROR_NONE) {
-        return null;
-    }
-    return $data;
+    return getJsonBodyCached();
 }
 
 /**
