@@ -8,6 +8,11 @@ $eventId = $_GET['eventid'] ?? null;
 $error = null;
 $event = null;
 
+// Get signup settings
+$signupSettings = $GLOBALS['config']['signup'] ?? [];
+$requireName = $signupSettings['require_name'] ?? true;
+$requireSong = $signupSettings['require_song'] ?? true;
+
 // Validate event ID and check if event is active
 if (!$eventId) {
     $error = 'No event specified. Please scan a valid QR code.';
@@ -420,6 +425,8 @@ if (!$eventId) {
         const EVENT_ID = <?= json_encode($eventId) ?>;
         const API_BASE = 'api';
         const NUM_SLOTS = <?= (int)$event['num_entries'] ?>;
+        const REQUIRE_NAME = <?= json_encode($requireName) ?>;
+        const REQUIRE_SONG = <?= json_encode($requireSong) ?>;
 
         let entries = [];
         let songs = [];
@@ -647,7 +654,14 @@ if (!$eventId) {
         function validateForm() {
             const name = document.getElementById('performerName').value.trim();
             const songId = document.getElementById('selectedSongId').value;
-            document.getElementById('confirmSignup').disabled = !name || !songId;
+
+            // Check requirements based on settings
+            const nameOk = !REQUIRE_NAME || name;
+            const songOk = !REQUIRE_SONG || songId;
+            // At least one must be provided
+            const hasData = name || songId;
+
+            document.getElementById('confirmSignup').disabled = !nameOk || !songOk || !hasData;
         }
 
         async function submitSignup() {

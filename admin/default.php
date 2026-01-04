@@ -43,6 +43,9 @@ if ($db) {
                     <li class="nav-item">
                         <a class="nav-link" href="events.php">Events</a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="settings.php">Settings</a>
+                    </li>
                 </ul>
             </div>
         </div>

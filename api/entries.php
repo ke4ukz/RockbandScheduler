@@ -196,15 +196,29 @@ function userCreateEntry($db, $eventId, $data) {
         jsonError('Invalid JSON body');
     }
 
+    // Get signup settings
+    $signupSettings = $GLOBALS['config']['signup'] ?? [];
+    $requireName = $signupSettings['require_name'] ?? true;
+    $requireSong = $signupSettings['require_song'] ?? true;
+
     // Validate required fields
     if (empty($data['position'])) {
         jsonError('position is required');
     }
-    if (empty($data['performer_name'])) {
+
+    $performerName = trim($data['performer_name'] ?? '');
+    $songId = $data['song_id'] ?? null;
+
+    // Check requirements based on settings
+    if ($requireName && empty($performerName)) {
         jsonError('performer_name is required');
     }
-    if (empty($data['song_id'])) {
+    if ($requireSong && empty($songId)) {
         jsonError('song_id is required');
+    }
+    // At least one must be provided
+    if (empty($performerName) && empty($songId)) {
+        jsonError('Please provide a name or select a song');
     }
 
     $position = (int)$data['position'];
@@ -222,11 +236,13 @@ function userCreateEntry($db, $eventId, $data) {
         jsonError('This slot is already taken', 409);
     }
 
-    // Verify song exists
-    $stmt = $db->prepare('SELECT song_id FROM songs WHERE song_id = ?');
-    $stmt->execute([$data['song_id']]);
-    if (!$stmt->fetch()) {
-        jsonError('Song not found', 404);
+    // Verify song exists (if provided)
+    if ($songId) {
+        $stmt = $db->prepare('SELECT song_id FROM songs WHERE song_id = ?');
+        $stmt->execute([$songId]);
+        if (!$stmt->fetch()) {
+            jsonError('Song not found', 404);
+        }
     }
 
     // Create entry
@@ -236,9 +252,9 @@ function userCreateEntry($db, $eventId, $data) {
     ');
     $stmt->execute([
         $eventId,
-        $data['song_id'],
+        $songId ?: null,
         $position,
-        trim($data['performer_name'])
+        $performerName
     ]);
 
     $entryId = $db->lastInsertId();

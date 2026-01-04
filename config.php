@@ -10,4 +10,14 @@ if (file_exists($configPath)) {
 }
 unset($configPath);
 
+// Default settings for signup requirements
+if (!isset($GLOBALS['config']['signup'])) {
+    $GLOBALS['config']['signup'] = [];
+}
+// Default: require both name and song for user signups
+$GLOBALS['config']['signup']['require_name'] =
+    ($GLOBALS['config']['signup']['require_name'] ?? '1') === '1';
+$GLOBALS['config']['signup']['require_song'] =
+    ($GLOBALS['config']['signup']['require_song'] ?? '1') === '1';
+
 ?>
