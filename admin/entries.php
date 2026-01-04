@@ -54,6 +54,19 @@ if (!$eventId || !isValidUuid($eventId)) {
         .preview-btn.playing {
             color: #198754;
         }
+        .preview-btn.loading {
+            color: #6c757d;
+        }
+        .preview-btn.error {
+            color: #dc3545;
+        }
+        .preview-btn i {
+            font-size: 1.25rem;
+            line-height: 1;
+        }
+        .preview-btn i.bi-hourglass-split::before {
+            font-size: 1rem;
+        }
     </style>
 </head>
 <body>
@@ -317,9 +330,9 @@ if (!$eventId || !isValidUuid($eventId)) {
                                         ${entry.title ? escapeHtml(entry.title) + ' - ' + escapeHtml(entry.artist) : '<em>No song selected</em>'}
                                     </div>
                                 </div>
-                                ${entry.preview_url ? `
+                                ${entry.deezer_id ? `
                                     <i class="bi bi-play-circle preview-btn fs-4 me-2"
-                                       data-preview="${escapeHtml(entry.preview_url)}"
+                                       data-deezer-id="${entry.deezer_id}"
                                        onclick="event.stopPropagation(); togglePreview(this)"></i>
                                 ` : ''}
                                 <button class="btn btn-sm btn-outline-secondary" onclick="editEntry(${pos})">
@@ -536,32 +549,78 @@ if (!$eventId || !isValidUuid($eventId)) {
             }
         }
 
-        function togglePreview(el) {
-            const url = el.dataset.preview;
+        let currentDeezerId = null;
 
+        async function togglePreview(el) {
+            const deezerId = el.dataset.deezerId;
+
+            // Stop any playing audio
             if (currentAudio) {
                 currentAudio.pause();
-                document.querySelectorAll('.preview-btn.playing').forEach(btn => {
-                    btn.classList.remove('playing');
+                document.querySelectorAll('.preview-btn').forEach(btn => {
+                    btn.classList.remove('playing', 'loading', 'error');
                     btn.classList.replace('bi-stop-circle', 'bi-play-circle');
+                    btn.classList.replace('bi-hourglass-split', 'bi-play-circle');
+                    btn.classList.replace('bi-exclamation-triangle', 'bi-play-circle');
                 });
 
-                if (currentAudio.src === url) {
+                if (currentDeezerId === deezerId) {
                     currentAudio = null;
+                    currentDeezerId = null;
                     return;
                 }
             }
 
-            currentAudio = new Audio(url);
-            currentAudio.play();
-            el.classList.add('playing');
-            el.classList.replace('bi-play-circle', 'bi-stop-circle');
+            // Show loading state
+            el.classList.add('loading');
+            el.classList.replace('bi-play-circle', 'bi-hourglass-split');
 
-            currentAudio.addEventListener('ended', () => {
-                el.classList.remove('playing');
-                el.classList.replace('bi-stop-circle', 'bi-play-circle');
-                currentAudio = null;
-            });
+            try {
+                // Fetch fresh preview URL from Deezer
+                const response = await fetch(`${API_BASE}/deezer.php?track_id=${deezerId}`);
+                const data = await response.json();
+
+                if (data.error || !data.preview) {
+                    throw new Error(data.error || 'No preview available');
+                }
+
+                // Play the fresh URL
+                currentAudio = new Audio(data.preview);
+                currentDeezerId = deezerId;
+                el.classList.remove('loading');
+                el.classList.add('playing');
+                el.classList.replace('bi-hourglass-split', 'bi-stop-circle');
+
+                await currentAudio.play();
+
+                currentAudio.addEventListener('ended', () => {
+                    el.classList.remove('playing');
+                    el.classList.replace('bi-stop-circle', 'bi-play-circle');
+                    currentAudio = null;
+                    currentDeezerId = null;
+                });
+
+                currentAudio.addEventListener('error', () => {
+                    showPreviewError(el);
+                });
+
+            } catch (err) {
+                console.error('Preview failed:', err);
+                showPreviewError(el);
+            }
+        }
+
+        function showPreviewError(el) {
+            el.classList.remove('playing', 'loading');
+            el.classList.add('error');
+            el.classList.replace('bi-hourglass-split', 'bi-exclamation-triangle');
+            el.classList.replace('bi-stop-circle', 'bi-exclamation-triangle');
+            currentAudio = null;
+            currentDeezerId = null;
+            setTimeout(() => {
+                el.classList.remove('error');
+                el.classList.replace('bi-exclamation-triangle', 'bi-play-circle');
+            }, 2000);
         }
 
         function formatDateTime(dateStr) {

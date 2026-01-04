@@ -180,11 +180,12 @@ if (!$eventId) {
 
         .preview-btn i {
             font-size: 1.25rem;
-            width: 1.25rem;
-            height: 1.25rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            line-height: 1;
+        }
+
+        /* Force consistent icon size for hourglass */
+        .preview-btn i.bi-hourglass-split::before {
+            font-size: 1rem;
         }
 
         .preview-btn.playing {
