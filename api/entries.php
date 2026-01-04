@@ -148,8 +148,8 @@ function listEntries($db, $eventId, $isAdmin) {
     $event = validateEventAccess($db, $eventId, !$isAdmin);
 
     $stmt = $db->prepare('
-        SELECT e.entry_id, e.position, e.performer_name, e.modified,
-               s.song_id, s.title, s.artist, s.album, s.preview_url, s.deezer_id,
+        SELECT e.entry_id, e.position, e.performer_name, e.modified, e.finished,
+               s.song_id, s.title, s.artist, s.album, s.deezer_id,
                TO_BASE64(s.album_art) as album_art
         FROM entries e
         LEFT JOIN songs s ON e.song_id = s.song_id
@@ -164,11 +164,12 @@ function listEntries($db, $eventId, $isAdmin) {
         $entry['entry_id'] = (int)$entry['entry_id'];
         $entry['position'] = (int)$entry['position'];
         $entry['song_id'] = $entry['song_id'] ? (int)$entry['song_id'] : null;
+        $entry['finished'] = (bool)$entry['finished'];
     }
 
     // Also fetch available songs for user selection
     $stmt = $db->query('
-        SELECT song_id, artist, title, preview_url, deezer_id,
+        SELECT song_id, artist, title, deezer_id,
                TO_BASE64(album_art) as album_art
         FROM songs
         ORDER BY artist, title
@@ -322,6 +323,11 @@ function updateEntry($db, $entryId, $data) {
     if (array_key_exists('position', $data)) {
         $fields[] = 'position = ?';
         $values[] = (int)$data['position'];
+    }
+
+    if (array_key_exists('finished', $data)) {
+        $fields[] = 'finished = ?';
+        $values[] = $data['finished'] ? 1 : 0;
     }
 
     if (empty($fields)) {

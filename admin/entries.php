@@ -67,6 +67,20 @@ if (!$eventId || !isValidUuid($eventId)) {
         .preview-btn i.bi-hourglass-split::before {
             font-size: 1rem;
         }
+        .slot-card.finished {
+            opacity: 0.5;
+            background-color: #f8f9fa;
+        }
+        .slot-card.finished .fw-bold {
+            text-decoration: line-through;
+        }
+        .finished-check {
+            cursor: pointer;
+            font-size: 1.25rem;
+        }
+        .finished-check.checked {
+            color: #198754;
+        }
     </style>
 </head>
 <body>
@@ -301,11 +315,12 @@ if (!$eventId || !isValidUuid($eventId)) {
                 const entry = entryMap[pos];
                 const isEmpty = !entry || !entry.performer_name;
 
+                const isFinished = entry?.finished || false;
                 html += `
-                    <div class="list-group-item slot-card ${isEmpty ? 'empty' : ''}"
+                    <div class="list-group-item slot-card ${isEmpty ? 'empty' : ''} ${isFinished ? 'finished' : ''}"
                          data-position="${pos}"
                          data-entry-id="${entry?.entry_id || ''}"
-                         draggable="${!isEmpty}"
+                         draggable="${!isEmpty && !isFinished}"
                          ondragstart="handleDragStart(event)"
                          ondragend="handleDragEnd(event)"
                          ondragover="handleDragOver(event)"
@@ -321,6 +336,10 @@ if (!$eventId || !isValidUuid($eventId)) {
                                     <i class="bi bi-plus"></i> Add
                                 </button>
                             ` : `
+                                <i class="bi ${isFinished ? 'bi-check-circle-fill checked' : 'bi-circle'} finished-check me-3"
+                                   data-entry-id="${entry.entry_id}"
+                                   onclick="event.stopPropagation(); toggleFinished(this, ${entry.entry_id}, ${!isFinished})"
+                                   title="${isFinished ? 'Mark as not finished' : 'Mark as finished'}"></i>
                                 ${entry.album_art
                                     ? `<img src="data:image/jpeg;base64,${entry.album_art}" class="album-art-small rounded me-3">`
                                     : '<div class="album-art-small bg-secondary rounded me-3 d-flex align-items-center justify-content-center"><i class="bi bi-music-note text-white"></i></div>'}
@@ -335,9 +354,11 @@ if (!$eventId || !isValidUuid($eventId)) {
                                        data-deezer-id="${entry.deezer_id}"
                                        onclick="event.stopPropagation(); togglePreview(this)"></i>
                                 ` : ''}
-                                <button class="btn btn-sm btn-outline-secondary" onclick="editEntry(${pos})">
-                                    <i class="bi bi-pencil"></i>
-                                </button>
+                                ${!isFinished ? `
+                                    <button class="btn btn-sm btn-outline-secondary" onclick="editEntry(${pos})">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                ` : ''}
                             `}
                         </div>
                     </div>
@@ -546,6 +567,27 @@ if (!$eventId || !isValidUuid($eventId)) {
             } catch (err) {
                 alert('Failed to reorder: ' + err.message);
                 loadEntries();
+            }
+        }
+
+        async function toggleFinished(el, entryId, finished) {
+            try {
+                const response = await fetch(`${API_BASE}/entries.php`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        admin_token: ADMIN_TOKEN,
+                        action: 'update',
+                        entry_id: entryId,
+                        finished: finished
+                    })
+                });
+                const result = await response.json();
+                if (result.error) throw new Error(result.error);
+
+                loadEntries();
+            } catch (err) {
+                alert('Failed to update: ' + err.message);
             }
         }
 

@@ -116,6 +116,14 @@ if (!$eventId) {
             background: rgba(255,255,255,0.05);
         }
 
+        .slot-card.finished {
+            opacity: 0.4;
+        }
+
+        .slot-card.finished .performer {
+            text-decoration: line-through;
+        }
+
         .slot-number {
             width: 44px;
             height: 44px;
@@ -165,39 +173,26 @@ if (!$eventId) {
         }
 
         .preview-btn {
-            width: 44px;
-            height: 44px;
-            border-radius: 50%;
-            background: rgba(255,255,255,0.1);
-            border: none;
-            color: #fff;
-            font-size: 1.25rem;
+            font-size: 1.5rem;
+            cursor: pointer;
             flex-shrink: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            color: rgba(255,255,255,0.7);
         }
 
-        .preview-btn i {
-            font-size: 1.25rem;
-            line-height: 1;
-        }
-
-        /* Force consistent icon size for hourglass */
-        .preview-btn i.bi-hourglass-split::before {
-            font-size: 1rem;
+        .preview-btn:hover {
+            color: #fff;
         }
 
         .preview-btn.playing {
-            background: #198754;
+            color: #198754;
         }
 
         .preview-btn.error {
-            background: #dc3545;
+            color: #dc3545;
         }
 
         .preview-btn.loading {
-            background: rgba(255,255,255,0.2);
+            color: rgba(255,255,255,0.5);
         }
 
         /* Sign up modal - full screen on mobile */
@@ -459,8 +454,9 @@ if (!$eventId) {
                 const isTaken = entry && entry.performer_name;
 
                 if (isTaken) {
+                    const isFinished = entry.finished || false;
                     html += `
-                        <div class="slot-card taken">
+                        <div class="slot-card taken ${isFinished ? 'finished' : ''}">
                             <div class="slot-number">${pos}</div>
                             ${entry.album_art
                                 ? `<img src="data:image/jpeg;base64,${entry.album_art}" class="album-art">`
@@ -470,9 +466,9 @@ if (!$eventId) {
                                 <div class="song">${entry.title ? escapeHtml(entry.title) + ' - ' + escapeHtml(entry.artist) : 'No song selected'}</div>
                             </div>
                             ${entry.deezer_id ? `
-                                <button class="preview-btn" data-deezer-id="${entry.deezer_id}" onclick="togglePreview(this)">
-                                    <i class="bi bi-play-fill"></i>
-                                </button>
+                                <i class="bi bi-play-circle preview-btn"
+                                   data-deezer-id="${entry.deezer_id}"
+                                   onclick="togglePreview(this)"></i>
                             ` : ''}
                         </div>
                     `;
@@ -550,9 +546,9 @@ if (!$eventId) {
                         <div class="song-artist">${escapeHtml(song.artist)}</div>
                     </div>
                     ${song.deezer_id ? `
-                        <button class="preview-btn" onclick="event.stopPropagation(); togglePreview(this)" data-deezer-id="${song.deezer_id}">
-                            <i class="bi bi-play-fill"></i>
-                        </button>
+                        <i class="bi bi-play-circle preview-btn"
+                           onclick="event.stopPropagation(); togglePreview(this)"
+                           data-deezer-id="${song.deezer_id}"></i>
                     ` : ''}
                 </div>
             `).join('');
@@ -635,14 +631,15 @@ if (!$eventId) {
 
         async function togglePreview(el) {
             const deezerId = el.dataset.deezerId;
-            const icon = el.querySelector('i');
 
             // Stop any playing audio
             if (currentAudio) {
                 currentAudio.pause();
                 document.querySelectorAll('.preview-btn').forEach(btn => {
                     btn.classList.remove('playing', 'loading', 'error');
-                    btn.querySelector('i').className = 'bi bi-play-fill';
+                    btn.classList.replace('bi-stop-circle', 'bi-play-circle');
+                    btn.classList.replace('bi-hourglass-split', 'bi-play-circle');
+                    btn.classList.replace('bi-exclamation-triangle', 'bi-play-circle');
                 });
 
                 if (currentDeezerId === deezerId) {
@@ -654,7 +651,7 @@ if (!$eventId) {
 
             // Show loading state
             el.classList.add('loading');
-            icon.className = 'bi bi-hourglass-split';
+            el.classList.replace('bi-play-circle', 'bi-hourglass-split');
 
             try {
                 // Fetch fresh preview URL from Deezer
@@ -670,36 +667,37 @@ if (!$eventId) {
                 currentDeezerId = deezerId;
                 el.classList.remove('loading');
                 el.classList.add('playing');
-                icon.className = 'bi bi-stop-fill';
+                el.classList.replace('bi-hourglass-split', 'bi-stop-circle');
 
                 await currentAudio.play();
 
                 currentAudio.addEventListener('ended', () => {
                     el.classList.remove('playing');
-                    icon.className = 'bi bi-play-fill';
+                    el.classList.replace('bi-stop-circle', 'bi-play-circle');
                     currentAudio = null;
                     currentDeezerId = null;
                 });
 
                 currentAudio.addEventListener('error', () => {
-                    showPreviewError(el, icon);
+                    showPreviewError(el);
                 });
 
             } catch (err) {
                 console.error('Preview failed:', err);
-                showPreviewError(el, icon);
+                showPreviewError(el);
             }
         }
 
-        function showPreviewError(el, icon) {
+        function showPreviewError(el) {
             el.classList.remove('playing', 'loading');
             el.classList.add('error');
-            icon.className = 'bi bi-exclamation-triangle-fill';
+            el.classList.replace('bi-hourglass-split', 'bi-exclamation-triangle');
+            el.classList.replace('bi-stop-circle', 'bi-exclamation-triangle');
             currentAudio = null;
             currentDeezerId = null;
             setTimeout(() => {
                 el.classList.remove('error');
-                icon.className = 'bi bi-play-fill';
+                el.classList.replace('bi-exclamation-triangle', 'bi-play-circle');
             }, 2000);
         }
 
