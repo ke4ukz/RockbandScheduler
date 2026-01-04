@@ -28,8 +28,23 @@ if (!$data) {
 
 $action = $data['action'] ?? null;
 
-// Config file path
-$configPath = realpath(__DIR__ . '/../../config') . '/rockband_scheduler_config.ini';
+// Config file path - match config.php which is at project root
+// From api/ we need to go up one level to project root, then use same path as config.php
+$projectRoot = realpath(__DIR__ . '/..');
+$configFile = 'rockband_scheduler_config.ini';
+
+// First try to find existing config file
+$configPath = realpath($projectRoot . '/../../config/' . $configFile);
+if (!$configPath) {
+    // File doesn't exist yet - check if directory exists
+    $configDir = realpath($projectRoot . '/../../config');
+    if ($configDir) {
+        $configPath = $configDir . '/' . $configFile;
+    } else {
+        // Directory doesn't exist - show the expected path for the error message
+        $configPath = dirname($projectRoot, 2) . '/config/' . $configFile;
+    }
+}
 
 switch ($action) {
     case 'get':
