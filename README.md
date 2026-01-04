@@ -53,9 +53,46 @@ openssl rand -hex 32
 
 ## External Dependencies
 
-This application relies on two external services. Understanding these dependencies is important for production deployment.
+This application relies on external services loaded via CDN. Understanding these dependencies is important for production deployment.
 
-### 1. Deezer API
+### 1. Bootstrap 5 (CSS Framework)
+
+**Used for**: All UI styling and responsive layout
+
+**CDN URLs**:
+- `https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css`
+- `https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js`
+
+**If Bootstrap CDN becomes unavailable**:
+- All pages will lose styling and appear as unstyled HTML
+- Modals, dropdowns, and interactive components will not function
+- Mobile responsiveness will be lost
+
+**If Bootstrap version changes**:
+- Pinned to version 5.3.2; should remain available indefinitely on jsDelivr
+- Major version changes (6.x) may require markup updates
+
+**Mitigation options**:
+- Download Bootstrap files and host locally
+- Use alternative CDNs (cdnjs, unpkg)
+- Self-host via npm/composer package
+
+### 2. Bootstrap Icons
+
+**Used for**: All iconography throughout the UI
+
+**CDN URL**:
+- `https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css`
+
+**If Bootstrap Icons CDN becomes unavailable**:
+- Icons will not display (empty spaces or boxes)
+- Functionality unaffected, only visual
+
+**Mitigation options**:
+- Download and host icon font files locally
+- Replace with alternative icon library (Font Awesome, Heroicons)
+
+### 3. Deezer API
 
 **Used for**: Song search, metadata auto-fill, album art URLs, audio preview URLs
 
@@ -82,7 +119,7 @@ This application relies on two external services. Understanding these dependenci
 - Download and store preview MP3s locally (would require additional storage)
 - Use alternative music APIs (MusicBrainz, Last.fm, Spotify)
 
-### 2. QR Server API
+### 4. QR Server API
 
 **Used for**: Generating QR code images for events
 
@@ -90,12 +127,12 @@ This application relies on two external services. Understanding these dependenci
 - `https://api.qrserver.com/v1/create-qr-code/`
 
 **If QR Server becomes unavailable**:
-- "Generate QR Code" button will fail with a 500 error
+- QR code generation during event creation will silently fail
 - Existing QR codes stored in the database will continue to work
 - Events remain fully functional; only QR generation is affected
 
 **If QR Server API changes**:
-- The `generateQrCode()` function in `/api/events.php` would need updating
+- The `generateQrCodeForEvent()` function in `/api/events.php` would need updating
 - Current parameters: `size=300x300&data={url}`
 
 **Mitigation options**:
