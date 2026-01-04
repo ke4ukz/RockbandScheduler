@@ -178,8 +178,12 @@ function createEvent($db, $data) {
     ');
     $stmt->execute([$data['name']]);
     $result = $stmt->fetch(PDO::FETCH_ASSOC);
+    $eventId = $result['event_id'];
 
-    jsonResponse(['success' => true, 'event_id' => $result['event_id']], 201);
+    // Auto-generate QR code for the new event
+    generateQrCodeForEvent($db, $eventId);
+
+    jsonResponse(['success' => true, 'event_id' => $eventId], 201);
 }
 
 function updateEvent($db, $eventId, $data) {
@@ -263,6 +267,9 @@ function deleteEvent($db, $eventId) {
     jsonResponse(['success' => true]);
 }
 
+/**
+ * API endpoint wrapper for QR generation
+ */
 function generateQrCode($db, $eventId) {
     if (!isValidUuid($eventId)) {
         jsonError('Invalid event ID format');
@@ -275,6 +282,20 @@ function generateQrCode($db, $eventId) {
         jsonError('Event not found', 404);
     }
 
+    $eventUrl = generateQrCodeForEvent($db, $eventId);
+
+    if ($eventUrl === false) {
+        jsonError('Failed to generate QR code. Check server configuration (cURL or allow_url_fopen required).', 500);
+    }
+
+    jsonResponse(['success' => true, 'url' => $eventUrl]);
+}
+
+/**
+ * Generate and store QR code for an event (called from create or regenerate)
+ * Returns event URL on success, false on failure
+ */
+function generateQrCodeForEvent($db, $eventId) {
     // Generate QR code URL
     $baseUrl = $GLOBALS['config']['site']['base_url'] ?? '';
     if (empty($baseUrl)) {
@@ -308,13 +329,13 @@ function generateQrCode($db, $eventId) {
     }
 
     if ($qrImage === false) {
-        jsonError('Failed to generate QR code. Check server configuration (cURL or allow_url_fopen required).', 500);
+        return false;
     }
 
     // Store QR code in database
     $stmt = $db->prepare('UPDATE events SET qr_image = ? WHERE event_id = UUID_TO_BIN(?)');
     $stmt->execute([$qrImage, $eventId]);
 
-    jsonResponse(['success' => true, 'url' => $eventUrl]);
+    return $eventUrl;
 }
 ?>
