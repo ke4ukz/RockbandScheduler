@@ -216,6 +216,15 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
             loadEvents();
 
             document.getElementById('filterStatus').addEventListener('change', renderEvents);
+
+            // Check if we should auto-open the add modal
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('action') === 'add') {
+                openAddModal();
+                eventModal.show();
+                // Clean up URL
+                window.history.replaceState({}, '', window.location.pathname);
+            }
         });
 
         async function loadEvents() {

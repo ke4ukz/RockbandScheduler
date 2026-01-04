@@ -91,10 +91,10 @@ if ($db) {
                     </div>
                     <div class="card-body">
                         <div class="d-flex gap-3 flex-wrap">
-                            <a href="songs.php" class="btn btn-outline-primary">
+                            <a href="songs.php?action=add" class="btn btn-outline-primary">
                                 <i class="bi bi-plus-lg"></i> Add Song
                             </a>
-                            <a href="events.php" class="btn btn-outline-primary">
+                            <a href="events.php?action=add" class="btn btn-outline-primary">
                                 <i class="bi bi-plus-lg"></i> Create Event
                             </a>
                         </div>

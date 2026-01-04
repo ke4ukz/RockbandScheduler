@@ -217,6 +217,15 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
                     searchDeezer();
                 }
             });
+
+            // Check if we should auto-open the add modal
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('action') === 'add') {
+                openAddModal();
+                songModal.show();
+                // Clean up URL
+                window.history.replaceState({}, '', window.location.pathname);
+            }
         });
 
         async function loadSongs() {
