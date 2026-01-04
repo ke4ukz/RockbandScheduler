@@ -176,7 +176,7 @@ if (!$eventId || !isValidUuid($eventId)) {
                             <label class="form-label">Song</label>
                             <div class="input-group">
                                 <input type="text" class="form-control" id="editSongDisplay" readonly>
-                                <button class="btn btn-outline-secondary" type="button" data-bs-toggle="modal" data-bs-target="#songPickerModal">
+                                <button class="btn btn-outline-secondary" type="button" onclick="openSongPicker()">
                                     <i class="bi bi-search"></i> Change
                                 </button>
                             </div>
@@ -201,13 +201,18 @@ if (!$eventId || !isValidUuid($eventId)) {
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">Select Song</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close" onclick="closeSongPicker()"></button>
                 </div>
                 <div class="modal-body">
                     <input type="text" class="form-control mb-3" id="songSearchInput" placeholder="Search songs...">
                     <div id="songPickerList" class="list-group" style="max-height: 400px; overflow-y: auto;">
                         <div class="list-group-item text-center">Loading songs...</div>
                     </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeSongPicker()">
+                        <i class="bi bi-arrow-left"></i> Back
+                    </button>
                 </div>
             </div>
         </div>
@@ -457,13 +462,30 @@ if (!$eventId || !isValidUuid($eventId)) {
             renderSongPicker(filtered);
         }
 
+        function openSongPicker() {
+            // Hide edit modal first, then show song picker
+            editEntryModal.hide();
+            document.getElementById('songSearchInput').value = '';
+            renderSongPicker(songs);
+            setTimeout(() => songPickerModal.show(), 150);
+        }
+
+        function closeSongPicker() {
+            // Go back to edit modal
+            songPickerModal.hide();
+            setTimeout(() => editEntryModal.show(), 150);
+        }
+
         function selectSong(songId) {
             const song = songs.find(s => s.song_id === songId);
             if (!song) return;
 
             document.getElementById('editSongId').value = songId;
             document.getElementById('editSongDisplay').value = `${song.title} - ${song.artist}`;
+
+            // Hide song picker and show edit modal again
             songPickerModal.hide();
+            setTimeout(() => editEntryModal.show(), 150);
         }
 
         function addEntry(position) {
