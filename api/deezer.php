@@ -2,7 +2,8 @@
 /**
  * Deezer Search Proxy API - Public
  *
- * GET /api/deezer.php?q=search+query  - Search for tracks on Deezer
+ * GET /api/deezer.php?q=search+query     - Search for tracks on Deezer
+ * GET /api/deezer.php?album_id=12345     - Get album details (for release year)
  *
  * This proxies requests to Deezer's API to avoid CORS issues
  * and to keep the API simple for the frontend.
@@ -14,12 +15,52 @@ header('Content-Type: application/json');
 
 // No admin auth required - this is a public search proxy
 
+$ctx = stream_context_create([
+    'http' => [
+        'timeout' => 10,
+        'user_agent' => 'RockbandScheduler/1.0'
+    ]
+]);
+
+// Album details request
+$albumId = $_GET['album_id'] ?? null;
+if ($albumId) {
+    $albumId = (int)$albumId;
+    $deezerUrl = "https://api.deezer.com/album/{$albumId}";
+
+    $response = @file_get_contents($deezerUrl, false, $ctx);
+
+    if ($response === false) {
+        http_response_code(502);
+        echo json_encode(['error' => 'Failed to reach Deezer API']);
+        exit;
+    }
+
+    $data = json_decode($response, true);
+
+    if (json_last_error() !== JSON_ERROR_NONE || isset($data['error'])) {
+        http_response_code(502);
+        echo json_encode(['error' => 'Invalid response from Deezer API']);
+        exit;
+    }
+
+    // Return just the fields we need
+    echo json_encode([
+        'id' => $data['id'],
+        'title' => $data['title'],
+        'release_date' => $data['release_date'] ?? null,
+        'year' => isset($data['release_date']) ? (int)substr($data['release_date'], 0, 4) : null
+    ]);
+    exit;
+}
+
+// Track search request
 $query = $_GET['q'] ?? '';
 $limit = min((int)($_GET['limit'] ?? 25), 50); // Max 50 results
 
 if (empty($query)) {
     http_response_code(400);
-    echo json_encode(['error' => 'Search query (q) is required']);
+    echo json_encode(['error' => 'Search query (q) or album_id is required']);
     exit;
 }
 
@@ -27,13 +68,6 @@ if (empty($query)) {
 $deezerUrl = 'https://api.deezer.com/search/track?' . http_build_query([
     'q' => $query,
     'limit' => $limit
-]);
-
-$ctx = stream_context_create([
-    'http' => [
-        'timeout' => 10,
-        'user_agent' => 'RockbandScheduler/1.0'
-    ]
 ]);
 
 $response = @file_get_contents($deezerUrl, false, $ctx);
@@ -53,6 +87,6 @@ if (json_last_error() !== JSON_ERROR_NONE) {
 }
 
 // Pass through the Deezer response
-// Structure: { data: [ { id, title, duration, preview, artist: {name}, album: {title, cover_small, cover_medium} } ] }
+// Structure: { data: [ { id, title, duration, preview, artist: {name}, album: {id, title, cover_small, cover_medium} } ] }
 echo json_encode($data);
 ?>

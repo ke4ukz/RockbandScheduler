@@ -446,7 +446,7 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
             }
         }
 
-        function selectDeezerTrack(trackId) {
+        async function selectDeezerTrack(trackId) {
             const tracks = JSON.parse(document.getElementById('deezerResults').dataset.tracks || '[]');
             const track = tracks.find(t => t.id === trackId);
             if (!track) return;
@@ -459,11 +459,27 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
             document.getElementById('previewUrl').value = track.preview || '';
             document.getElementById('albumArtUrl').value = track.album.cover_medium || '';
 
-            // Try to extract year from release date if available
-            // Deezer track search doesn't include release date, so we leave year empty
-
+            // Fetch album details to get the release year
             document.getElementById('deezerResults').innerHTML =
-                '<div class="list-group-item text-success"><i class="bi bi-check-circle"></i> Track selected! Fill in the year and save.</div>';
+                '<div class="list-group-item text-info"><i class="bi bi-hourglass-split"></i> Fetching album details...</div>';
+
+            try {
+                const albumResponse = await fetch(`${API_BASE}/deezer.php?album_id=${track.album.id}`);
+                const albumData = await albumResponse.json();
+
+                if (albumData.year) {
+                    document.getElementById('songYear').value = albumData.year;
+                    document.getElementById('deezerResults').innerHTML =
+                        '<div class="list-group-item text-success"><i class="bi bi-check-circle"></i> Track selected! All fields filled.</div>';
+                } else {
+                    document.getElementById('deezerResults').innerHTML =
+                        '<div class="list-group-item text-warning"><i class="bi bi-exclamation-triangle"></i> Track selected, but year not available. Please fill it in manually.</div>';
+                }
+            } catch (err) {
+                console.error('Failed to fetch album details:', err);
+                document.getElementById('deezerResults').innerHTML =
+                    '<div class="list-group-item text-warning"><i class="bi bi-exclamation-triangle"></i> Track selected, but couldn\'t fetch year. Please fill it in manually.</div>';
+            }
         }
 
         function escapeHtml(text) {
