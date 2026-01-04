@@ -91,12 +91,20 @@ function updateSettings($configPath, $newSettings) {
         }
     }
 
-    if (!is_writable(dirname($configPath))) {
-        jsonError('Config directory is not writable', 500);
+    // Check if we can write - either file exists and is writable, or directory is writable
+    $configDir = dirname($configPath);
+    if (file_exists($configPath)) {
+        if (!is_writable($configPath)) {
+            jsonError("Config file is not writable: $configPath", 500);
+        }
+    } else {
+        if (!is_writable($configDir)) {
+            jsonError("Config directory is not writable: $configDir", 500);
+        }
     }
 
     if (file_put_contents($configPath, $iniContent) === false) {
-        jsonError('Failed to write config file', 500);
+        jsonError("Failed to write config file: $configPath", 500);
     }
 
     // Re-read to return updated settings
