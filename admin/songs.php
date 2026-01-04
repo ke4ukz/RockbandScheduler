@@ -31,6 +31,13 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
         .preview-btn.loading {
             color: #6c757d;
         }
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        .preview-btn.loading {
+            animation: spin 1s linear infinite;
+        }
         #deezerResults {
             max-height: 400px;
             overflow-y: auto;
@@ -321,7 +328,7 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
                     btn.classList.remove('playing', 'error', 'loading');
                     btn.classList.replace('bi-stop-circle', 'bi-play-circle');
                     btn.classList.replace('bi-exclamation-triangle', 'bi-play-circle');
-                    btn.classList.replace('bi-hourglass-split', 'bi-play-circle');
+                    btn.classList.replace('bi-arrow-repeat', 'bi-play-circle');
                 });
 
                 if (currentDeezerId === deezerId) {
@@ -333,7 +340,7 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
 
             // Show loading state
             el.classList.add('loading');
-            el.classList.replace('bi-play-circle', 'bi-hourglass-split');
+            el.classList.replace('bi-play-circle', 'bi-arrow-repeat');
 
             try {
                 // Fetch fresh preview URL from Deezer
@@ -349,7 +356,7 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
                 currentDeezerId = deezerId;
                 el.classList.remove('loading');
                 el.classList.add('playing');
-                el.classList.replace('bi-hourglass-split', 'bi-stop-circle');
+                el.classList.replace('bi-arrow-repeat', 'bi-stop-circle');
 
                 await currentAudio.play();
 
@@ -374,7 +381,7 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
             el.classList.remove('playing', 'loading');
             el.classList.add('error');
             el.classList.replace('bi-stop-circle', 'bi-exclamation-triangle');
-            el.classList.replace('bi-hourglass-split', 'bi-exclamation-triangle');
+            el.classList.replace('bi-arrow-repeat', 'bi-exclamation-triangle');
             currentAudio = null;
             currentDeezerId = null;
             setTimeout(() => {

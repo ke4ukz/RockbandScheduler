@@ -60,12 +60,12 @@ if (!$eventId || !isValidUuid($eventId)) {
         .preview-btn.error {
             color: #dc3545;
         }
-        .preview-btn i {
-            font-size: 1.25rem;
-            line-height: 1;
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
         }
-        .preview-btn i.bi-hourglass-split::before {
-            font-size: 1rem;
+        .preview-btn.loading {
+            animation: spin 1s linear infinite;
         }
         .slot-card.finished {
             opacity: 0.5;
@@ -602,7 +602,7 @@ if (!$eventId || !isValidUuid($eventId)) {
                 document.querySelectorAll('.preview-btn').forEach(btn => {
                     btn.classList.remove('playing', 'loading', 'error');
                     btn.classList.replace('bi-stop-circle', 'bi-play-circle');
-                    btn.classList.replace('bi-hourglass-split', 'bi-play-circle');
+                    btn.classList.replace('bi-arrow-repeat', 'bi-play-circle');
                     btn.classList.replace('bi-exclamation-triangle', 'bi-play-circle');
                 });
 
@@ -615,7 +615,7 @@ if (!$eventId || !isValidUuid($eventId)) {
 
             // Show loading state
             el.classList.add('loading');
-            el.classList.replace('bi-play-circle', 'bi-hourglass-split');
+            el.classList.replace('bi-play-circle', 'bi-arrow-repeat');
 
             try {
                 // Fetch fresh preview URL from Deezer
@@ -631,7 +631,7 @@ if (!$eventId || !isValidUuid($eventId)) {
                 currentDeezerId = deezerId;
                 el.classList.remove('loading');
                 el.classList.add('playing');
-                el.classList.replace('bi-hourglass-split', 'bi-stop-circle');
+                el.classList.replace('bi-arrow-repeat', 'bi-stop-circle');
 
                 await currentAudio.play();
 
@@ -655,7 +655,7 @@ if (!$eventId || !isValidUuid($eventId)) {
         function showPreviewError(el) {
             el.classList.remove('playing', 'loading');
             el.classList.add('error');
-            el.classList.replace('bi-hourglass-split', 'bi-exclamation-triangle');
+            el.classList.replace('bi-arrow-repeat', 'bi-exclamation-triangle');
             el.classList.replace('bi-stop-circle', 'bi-exclamation-triangle');
             currentAudio = null;
             currentDeezerId = null;
