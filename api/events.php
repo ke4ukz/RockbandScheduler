@@ -7,10 +7,9 @@
  * POST /api/events.php
  *   { "admin_token": "...", "action": "list" }                    - List all events
  *   { "admin_token": "...", "action": "get", "event_id": "uuid" } - Get single event
- *   { "admin_token": "...", "action": "create", "name": "...", ... } - Create event
+ *   { "admin_token": "...", "action": "create", "name": "...", ... } - Create event (auto-generates QR)
  *   { "admin_token": "...", "action": "update", "event_id": "uuid", ... } - Update event
  *   { "admin_token": "...", "action": "delete", "event_id": "uuid" } - Delete event
- *   { "admin_token": "...", "action": "generate_qr", "event_id": "uuid" } - Generate QR
  */
 
 require_once __DIR__ . '/../config.php';
@@ -73,15 +72,8 @@ try {
             deleteEvent($db, $eventId);
             break;
 
-        case 'generate_qr':
-            if (!$eventId) {
-                jsonError('event_id required');
-            }
-            generateQrCode($db, $eventId);
-            break;
-
         default:
-            jsonError('Invalid action. Use: list, get, create, update, delete, generate_qr');
+            jsonError('Invalid action. Use: list, get, create, update, delete');
     }
 } catch (PDOException $e) {
     error_log('Events API error: ' . $e->getMessage());
@@ -268,31 +260,7 @@ function deleteEvent($db, $eventId) {
 }
 
 /**
- * API endpoint wrapper for QR generation
- */
-function generateQrCode($db, $eventId) {
-    if (!isValidUuid($eventId)) {
-        jsonError('Invalid event ID format');
-    }
-
-    // Check event exists
-    $stmt = $db->prepare('SELECT event_id FROM events WHERE event_id = UUID_TO_BIN(?)');
-    $stmt->execute([$eventId]);
-    if (!$stmt->fetch()) {
-        jsonError('Event not found', 404);
-    }
-
-    $eventUrl = generateQrCodeForEvent($db, $eventId);
-
-    if ($eventUrl === false) {
-        jsonError('Failed to generate QR code. Check server configuration (cURL or allow_url_fopen required).', 500);
-    }
-
-    jsonResponse(['success' => true, 'url' => $eventUrl]);
-}
-
-/**
- * Generate and store QR code for an event (called from create or regenerate)
+ * Generate and store QR code for an event (called on create)
  * Returns event URL on success, false on failure
  */
 function generateQrCodeForEvent($db, $eventId) {

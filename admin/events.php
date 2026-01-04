@@ -162,11 +162,8 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
                             <div id="qrCodeContainer">
                                 <p class="text-muted">QR Code</p>
                                 <img id="viewEventQr" class="qr-preview img-fluid border" alt="QR Code" style="display:none;">
-                                <p id="noQrMessage" class="text-muted small">No QR code generated</p>
+                                <p id="noQrMessage" class="text-muted small">QR code unavailable</p>
                             </div>
-                            <button class="btn btn-sm btn-outline-primary mt-2" onclick="generateQr()">
-                                <i class="bi bi-qr-code"></i> Generate QR
-                            </button>
                         </div>
                     </div>
                 </div>
@@ -479,32 +476,6 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
                 loadEvents();
             } catch (err) {
                 alert('Failed to delete event: ' + err.message);
-            }
-        }
-
-        async function generateQr() {
-            if (!currentViewEventId) return;
-
-            try {
-                const response = await fetch(`${API_BASE}/events.php`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        admin_token: ADMIN_TOKEN,
-                        action: 'generate_qr',
-                        event_id: currentViewEventId
-                    })
-                });
-                const result = await response.json();
-                if (result.error) throw new Error(result.error);
-
-                // Reload events to get updated QR
-                await loadEvents();
-
-                // Re-open view modal to show new QR
-                viewEvent(currentViewEventId);
-            } catch (err) {
-                alert('Failed to generate QR code: ' + err.message);
             }
         }
 
