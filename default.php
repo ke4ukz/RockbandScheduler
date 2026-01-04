@@ -424,6 +424,9 @@ if (!$eventId) {
         let songs = [];
         let currentAudio = null;
         let signupModal;
+        let isModalOpen = false;
+        let pollInterval = null;
+        const POLL_INTERVAL_MS = 5000; // Poll every 5 seconds
 
         document.addEventListener('DOMContentLoaded', function() {
             signupModal = new bootstrap.Modal(document.getElementById('signupModal'));
@@ -432,7 +435,49 @@ if (!$eventId) {
             document.getElementById('songSearch').addEventListener('input', filterSongs);
             document.getElementById('performerName').addEventListener('input', validateForm);
             document.getElementById('confirmSignup').addEventListener('click', submitSignup);
+
+            // Track modal open/close state
+            document.getElementById('signupModal').addEventListener('shown.bs.modal', () => isModalOpen = true);
+            document.getElementById('signupModal').addEventListener('hidden.bs.modal', () => isModalOpen = false);
+
+            // Start background polling
+            startPolling();
         });
+
+        function startPolling() {
+            pollInterval = setInterval(pollForUpdates, POLL_INTERVAL_MS);
+        }
+
+        async function pollForUpdates() {
+            // Don't update if modal is open (user is filling form)
+            if (isModalOpen) return;
+
+            try {
+                const response = await fetch(`${API_BASE}/entries.php?event_id=${EVENT_ID}`);
+                const data = await response.json();
+
+                if (data.error) return; // Silently fail on poll errors
+
+                // Check if data actually changed before re-rendering
+                const newEntriesJson = JSON.stringify(data.entries || []);
+                const oldEntriesJson = JSON.stringify(entries);
+
+                if (newEntriesJson !== oldEntriesJson) {
+                    // Save scroll position
+                    const scrollPos = window.scrollY;
+
+                    entries = data.entries || [];
+                    // Don't update songs - they rarely change and we don't want to disrupt anything
+                    renderSlots();
+
+                    // Restore scroll position
+                    window.scrollTo(0, scrollPos);
+                }
+            } catch (err) {
+                // Silently fail on poll errors - don't disrupt user experience
+                console.debug('Poll failed:', err);
+            }
+        }
 
         async function loadData() {
             try {
@@ -634,9 +679,18 @@ if (!$eventId) {
                 signupModal.hide();
                 loadData(); // Refresh the list
             } catch (err) {
-                alert(err.message || 'Failed to sign up. Please try again.');
-                btn.disabled = false;
-                btn.innerHTML = '<i class="bi bi-check-lg"></i> Sign Up';
+                const errorMsg = err.message || 'Failed to sign up. Please try again.';
+
+                // If slot was taken, refresh data and close modal with helpful message
+                if (errorMsg.toLowerCase().includes('already taken')) {
+                    alert('This slot was just taken by someone else. Please choose another slot.');
+                    signupModal.hide();
+                    loadData();
+                } else {
+                    alert(errorMsg);
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="bi bi-check-lg"></i> Sign Up';
+                }
             }
         }
 
