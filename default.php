@@ -669,7 +669,11 @@ if (!$eventId) {
             const name = document.getElementById('performerName').value.trim();
             const songId = document.getElementById('selectedSongId').value;
 
-            if (!name || !songId) return;
+            // Check requirements based on settings
+            const nameOk = !REQUIRE_NAME || name;
+            const songOk = !REQUIRE_SONG || songId;
+            const hasData = name || songId;
+            if (!nameOk || !songOk || !hasData) return;
 
             const btn = document.getElementById('confirmSignup');
             btn.disabled = true;
@@ -682,7 +686,7 @@ if (!$eventId) {
                     body: JSON.stringify({
                         position: parseInt(position),
                         performer_name: name,
-                        song_id: parseInt(songId)
+                        song_id: songId ? parseInt(songId) : null
                     })
                 });
 
