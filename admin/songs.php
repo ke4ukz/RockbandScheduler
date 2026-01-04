@@ -1,0 +1,477 @@
+<?php
+require_once __DIR__ . '/../config.php';
+require_once __DIR__ . '/../db.php';
+require_once __DIR__ . '/../includes/helpers.php';
+
+$adminToken = $GLOBALS['config']['admin']['token'] ?? '';
+?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Song Library - Rockband Admin</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        .album-art-thumb {
+            width: 50px;
+            height: 50px;
+            object-fit: cover;
+        }
+        .preview-btn {
+            cursor: pointer;
+        }
+        .preview-btn.playing {
+            color: #198754;
+        }
+        #deezerResults {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .deezer-result {
+            cursor: pointer;
+        }
+        .deezer-result:hover {
+            background-color: #f8f9fa;
+        }
+        .deezer-thumb {
+            width: 56px;
+            height: 56px;
+            object-fit: cover;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="default.php">Rockband Admin</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="songs.php">Songs</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="events.php">Events</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid mt-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>Song Library</h1>
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#songModal" onclick="openAddModal()">
+                <i class="bi bi-plus-lg"></i> Add Song
+            </button>
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <input type="text" class="form-control" id="searchInput" placeholder="Search songs...">
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover" id="songsTable">
+                        <thead>
+                            <tr>
+                                <th style="width: 60px;"></th>
+                                <th>Title</th>
+                                <th>Artist</th>
+                                <th>Album</th>
+                                <th>Year</th>
+                                <th>Duration</th>
+                                <th style="width: 50px;">Preview</th>
+                                <th style="width: 100px;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="songsTableBody">
+                            <tr>
+                                <td colspan="8" class="text-center">Loading...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add/Edit Song Modal -->
+    <div class="modal fade" id="songModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="songModalTitle">Add Song</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- Deezer Search Section -->
+                    <div class="card mb-3 bg-light">
+                        <div class="card-body">
+                            <h6 class="card-title"><i class="bi bi-search"></i> Search Deezer</h6>
+                            <div class="input-group mb-2">
+                                <input type="text" class="form-control" id="deezerSearch" placeholder="Search for a song on Deezer...">
+                                <button class="btn btn-outline-secondary" type="button" onclick="searchDeezer()">Search</button>
+                            </div>
+                            <div id="deezerResults" class="list-group"></div>
+                        </div>
+                    </div>
+
+                    <!-- Manual Entry Form -->
+                    <form id="songForm">
+                        <input type="hidden" id="songId" name="song_id">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="songTitle" class="form-label">Title *</label>
+                                <input type="text" class="form-control" id="songTitle" name="title" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="songArtist" class="form-label">Artist *</label>
+                                <input type="text" class="form-control" id="songArtist" name="artist" required>
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="songAlbum" class="form-label">Album *</label>
+                                <input type="text" class="form-control" id="songAlbum" name="album" required>
+                            </div>
+                            <div class="col-md-3">
+                                <label for="songYear" class="form-label">Year *</label>
+                                <input type="number" class="form-control" id="songYear" name="year" min="1900" max="2100" required>
+                            </div>
+                            <div class="col-md-3">
+                                <label for="songDuration" class="form-label">Duration (sec)</label>
+                                <input type="number" class="form-control" id="songDuration" name="duration" min="0" value="0">
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="deezerId" class="form-label">Deezer ID</label>
+                                <input type="number" class="form-control" id="deezerId" name="deezer_id">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="previewUrl" class="form-label">Preview URL</label>
+                                <input type="url" class="form-control" id="previewUrl" name="preview_url">
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="albumArtUrl" class="form-label">Album Art URL (will be fetched and stored)</label>
+                            <input type="url" class="form-control" id="albumArtUrl" name="album_art_url" placeholder="https://...">
+                            <div class="form-text">Leave empty to keep existing art when editing</div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="saveSong()">Save Song</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div class="modal fade" id="deleteModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Confirm Delete</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to delete "<span id="deleteSongTitle"></span>"?</p>
+                    <p class="text-muted small">This cannot be undone. Any event entries using this song will have their song reference cleared.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-danger" onclick="confirmDelete()">Delete</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const ADMIN_TOKEN = <?= json_encode($adminToken) ?>;
+        const API_BASE = '../api';
+
+        let songs = [];
+        let currentAudio = null;
+        let deleteSongId = null;
+        let songModal, deleteModal;
+
+        document.addEventListener('DOMContentLoaded', function() {
+            songModal = new bootstrap.Modal(document.getElementById('songModal'));
+            deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
+            loadSongs();
+
+            document.getElementById('searchInput').addEventListener('input', filterSongs);
+            document.getElementById('deezerSearch').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    searchDeezer();
+                }
+            });
+        });
+
+        async function loadSongs() {
+            try {
+                const response = await fetch(`${API_BASE}/songs.php?admin_token=${encodeURIComponent(ADMIN_TOKEN)}`);
+                const data = await response.json();
+                if (data.error) throw new Error(data.error);
+                songs = data.songs || [];
+                renderSongs(songs);
+            } catch (err) {
+                console.error('Failed to load songs:', err);
+                document.getElementById('songsTableBody').innerHTML =
+                    '<tr><td colspan="8" class="text-center text-danger">Failed to load songs</td></tr>';
+            }
+        }
+
+        function renderSongs(songsToRender) {
+            const tbody = document.getElementById('songsTableBody');
+            if (songsToRender.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" class="text-center">No songs found</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = songsToRender.map(song => `
+                <tr>
+                    <td>
+                        ${song.album_art
+                            ? `<img src="data:image/jpeg;base64,${song.album_art}" class="album-art-thumb rounded" alt="">`
+                            : '<div class="album-art-thumb bg-secondary rounded d-flex align-items-center justify-content-center"><i class="bi bi-music-note text-white"></i></div>'}
+                    </td>
+                    <td>${escapeHtml(song.title)}</td>
+                    <td>${escapeHtml(song.artist)}</td>
+                    <td>${escapeHtml(song.album)}</td>
+                    <td>${song.year}</td>
+                    <td>${formatDuration(song.duration)}</td>
+                    <td>
+                        ${song.preview_url
+                            ? `<i class="bi bi-play-circle preview-btn fs-4" data-preview="${escapeHtml(song.preview_url)}" onclick="togglePreview(this)"></i>`
+                            : '-'}
+                    </td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary me-1" onclick="editSong(${song.song_id})" title="Edit">
+                            <i class="bi bi-pencil"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="deleteSong(${song.song_id}, '${escapeHtml(song.title)}')" title="Delete">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function filterSongs() {
+            const query = document.getElementById('searchInput').value.toLowerCase();
+            if (!query) {
+                renderSongs(songs);
+                return;
+            }
+            const filtered = songs.filter(s =>
+                s.title.toLowerCase().includes(query) ||
+                s.artist.toLowerCase().includes(query) ||
+                s.album.toLowerCase().includes(query)
+            );
+            renderSongs(filtered);
+        }
+
+        function formatDuration(seconds) {
+            if (!seconds) return '-';
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            return `${mins}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        function togglePreview(el) {
+            const url = el.dataset.preview;
+
+            // Stop any playing audio
+            if (currentAudio) {
+                currentAudio.pause();
+                document.querySelectorAll('.preview-btn.playing').forEach(btn => {
+                    btn.classList.remove('playing');
+                    btn.classList.replace('bi-stop-circle', 'bi-play-circle');
+                });
+
+                if (currentAudio.src === url) {
+                    currentAudio = null;
+                    return;
+                }
+            }
+
+            // Play new audio
+            currentAudio = new Audio(url);
+            currentAudio.play();
+            el.classList.add('playing');
+            el.classList.replace('bi-play-circle', 'bi-stop-circle');
+
+            currentAudio.addEventListener('ended', () => {
+                el.classList.remove('playing');
+                el.classList.replace('bi-stop-circle', 'bi-play-circle');
+                currentAudio = null;
+            });
+        }
+
+        function openAddModal() {
+            document.getElementById('songModalTitle').textContent = 'Add Song';
+            document.getElementById('songForm').reset();
+            document.getElementById('songId').value = '';
+            document.getElementById('deezerResults').innerHTML = '';
+        }
+
+        function editSong(songId) {
+            const song = songs.find(s => s.song_id === songId);
+            if (!song) return;
+
+            document.getElementById('songModalTitle').textContent = 'Edit Song';
+            document.getElementById('songId').value = song.song_id;
+            document.getElementById('songTitle').value = song.title;
+            document.getElementById('songArtist').value = song.artist;
+            document.getElementById('songAlbum').value = song.album;
+            document.getElementById('songYear').value = song.year;
+            document.getElementById('songDuration').value = song.duration || 0;
+            document.getElementById('deezerId').value = song.deezer_id || '';
+            document.getElementById('previewUrl').value = song.preview_url || '';
+            document.getElementById('albumArtUrl').value = '';
+            document.getElementById('deezerResults').innerHTML = '';
+
+            songModal.show();
+        }
+
+        async function saveSong() {
+            const form = document.getElementById('songForm');
+            if (!form.checkValidity()) {
+                form.reportValidity();
+                return;
+            }
+
+            const songId = document.getElementById('songId').value;
+            const data = {
+                title: document.getElementById('songTitle').value,
+                artist: document.getElementById('songArtist').value,
+                album: document.getElementById('songAlbum').value,
+                year: parseInt(document.getElementById('songYear').value),
+                duration: parseInt(document.getElementById('songDuration').value) || 0,
+                deezer_id: document.getElementById('deezerId').value ? parseInt(document.getElementById('deezerId').value) : null,
+                preview_url: document.getElementById('previewUrl').value || null,
+                album_art_url: document.getElementById('albumArtUrl').value || null
+            };
+
+            try {
+                const url = songId
+                    ? `${API_BASE}/songs.php?admin_token=${encodeURIComponent(ADMIN_TOKEN)}&song_id=${songId}`
+                    : `${API_BASE}/songs.php?admin_token=${encodeURIComponent(ADMIN_TOKEN)}`;
+
+                const response = await fetch(url, {
+                    method: songId ? 'PUT' : 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+                if (result.error) throw new Error(result.error);
+
+                songModal.hide();
+                loadSongs();
+            } catch (err) {
+                alert('Failed to save song: ' + err.message);
+            }
+        }
+
+        function deleteSong(songId, title) {
+            deleteSongId = songId;
+            document.getElementById('deleteSongTitle').textContent = title;
+            deleteModal.show();
+        }
+
+        async function confirmDelete() {
+            if (!deleteSongId) return;
+
+            try {
+                const response = await fetch(
+                    `${API_BASE}/songs.php?admin_token=${encodeURIComponent(ADMIN_TOKEN)}&song_id=${deleteSongId}`,
+                    { method: 'DELETE' }
+                );
+                const result = await response.json();
+                if (result.error) throw new Error(result.error);
+
+                deleteModal.hide();
+                deleteSongId = null;
+                loadSongs();
+            } catch (err) {
+                alert('Failed to delete song: ' + err.message);
+            }
+        }
+
+        async function searchDeezer() {
+            const query = document.getElementById('deezerSearch').value.trim();
+            if (!query) return;
+
+            const resultsDiv = document.getElementById('deezerResults');
+            resultsDiv.innerHTML = '<div class="list-group-item text-center"><div class="spinner-border spinner-border-sm"></div> Searching...</div>';
+
+            try {
+                const response = await fetch(`${API_BASE}/deezer.php?q=${encodeURIComponent(query)}`);
+                const data = await response.json();
+
+                if (data.error) throw new Error(data.error);
+                if (!data.data || data.data.length === 0) {
+                    resultsDiv.innerHTML = '<div class="list-group-item text-muted">No results found</div>';
+                    return;
+                }
+
+                resultsDiv.innerHTML = data.data.map(track => `
+                    <div class="list-group-item list-group-item-action deezer-result d-flex align-items-center" onclick="selectDeezerTrack(${track.id})">
+                        <img src="${track.album.cover_small}" class="deezer-thumb rounded me-3" alt="">
+                        <div class="flex-grow-1">
+                            <div class="fw-bold">${escapeHtml(track.title)}</div>
+                            <div class="text-muted small">${escapeHtml(track.artist.name)} &bull; ${escapeHtml(track.album.title)}</div>
+                        </div>
+                        ${track.preview ? `<i class="bi bi-play-circle fs-4 text-muted me-2" data-preview="${escapeHtml(track.preview)}" onclick="event.stopPropagation(); togglePreview(this)"></i>` : ''}
+                    </div>
+                `).join('');
+
+                // Store track data for selection
+                resultsDiv.dataset.tracks = JSON.stringify(data.data);
+            } catch (err) {
+                resultsDiv.innerHTML = `<div class="list-group-item text-danger">Search failed: ${escapeHtml(err.message)}</div>`;
+            }
+        }
+
+        function selectDeezerTrack(trackId) {
+            const tracks = JSON.parse(document.getElementById('deezerResults').dataset.tracks || '[]');
+            const track = tracks.find(t => t.id === trackId);
+            if (!track) return;
+
+            document.getElementById('songTitle').value = track.title;
+            document.getElementById('songArtist').value = track.artist.name;
+            document.getElementById('songAlbum').value = track.album.title;
+            document.getElementById('songDuration').value = track.duration || 0;
+            document.getElementById('deezerId').value = track.id;
+            document.getElementById('previewUrl').value = track.preview || '';
+            document.getElementById('albumArtUrl').value = track.album.cover_medium || '';
+
+            // Try to extract year from release date if available
+            // Deezer track search doesn't include release date, so we leave year empty
+
+            document.getElementById('deezerResults').innerHTML =
+                '<div class="list-group-item text-success"><i class="bi bi-check-circle"></i> Track selected! Fill in the year and save.</div>';
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,6 @@
+https://developers.deezer.com/api
+
+album endpoint (https://developers.deezer.com/api/album example: https://api.deezer.com/album/302127) results has cover_small parameter (url to image file) that we can store in the database (we used a BLOB so it must be <64KB)
+track endpoint (https://developers.deezer.com/api/track example: https://api.deezer.com/track/3135556) results has preview parameter (url to audio) that can be used in the user's browser to play a sample of the audio
+
+show Deezer logo on pages that use this audio data (https://developers.deezer.com/guidelines/logo https://deezerbrand.com/document/37#/-/logo)
