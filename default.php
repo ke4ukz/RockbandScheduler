@@ -191,17 +191,18 @@ if (!$eventId) {
             color: #dc3545;
         }
 
-        .preview-btn.loading {
-            color: rgba(255,255,255,0.5);
-        }
-
         @keyframes spin {
             from { transform: rotate(0deg); }
             to { transform: rotate(360deg); }
         }
 
         .preview-btn.loading {
+            color: rgba(255,255,255,0.5);
             animation: spin 1s linear infinite;
+            /* Override general .loading class */
+            display: inline;
+            flex-direction: unset;
+            padding: 0;
         }
 
         /* Sign up modal - full screen on mobile */
