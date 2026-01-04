@@ -14,7 +14,11 @@ if ($db) {
     try {
         $songCount = $db->query('SELECT COUNT(*) FROM songs')->fetchColumn();
         $eventCount = $db->query('SELECT COUNT(*) FROM events')->fetchColumn();
-        $activeEventCount = $db->query('SELECT COUNT(*) FROM events WHERE NOW() BETWEEN start_time AND end_time')->fetchColumn();
+        // Use PHP's current time to match JavaScript's Date() behavior in the events page
+        $now = date('Y-m-d H:i:s');
+        $stmt = $db->prepare('SELECT COUNT(*) FROM events WHERE ? BETWEEN start_time AND end_time');
+        $stmt->execute([$now]);
+        $activeEventCount = $stmt->fetchColumn();
     } catch (PDOException $e) {
         error_log('Dashboard stats error: ' . $e->getMessage());
     }
