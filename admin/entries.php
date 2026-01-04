@@ -127,9 +127,24 @@ if (!$eventId || !isValidUuid($eventId)) {
         <div class="row">
             <div class="col-lg-8">
                 <div class="card">
-                    <div class="card-header d-flex justify-content-between align-items-center">
+                    <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
                         <span>Performance Lineup</span>
-                        <small class="text-muted">Drag to reorder</small>
+                        <div class="d-flex gap-2 align-items-center">
+                            <small class="text-muted d-none d-md-inline">Drag to reorder</small>
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-outline-danger dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                    <i class="bi bi-trash"></i> Clear
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end">
+                                    <li><a class="dropdown-item" href="#" onclick="clearUnfinished(); return false;">
+                                        <i class="bi bi-circle"></i> Clear Unfinished
+                                    </a></li>
+                                    <li><a class="dropdown-item text-danger" href="#" onclick="clearAll(); return false;">
+                                        <i class="bi bi-trash"></i> Clear All Entries
+                                    </a></li>
+                                </ul>
+                            </div>
+                        </div>
                     </div>
                     <div class="card-body p-0">
                         <div id="entriesList" class="list-group list-group-flush">
@@ -768,6 +783,67 @@ if (!$eventId || !isValidUuid($eventId)) {
                 weekday: 'short', month: 'short', day: 'numeric',
                 hour: 'numeric', minute: '2-digit'
             });
+        }
+
+        async function clearUnfinished() {
+            const unfinishedEntries = entries.filter(e => !e.finished);
+            if (unfinishedEntries.length === 0) {
+                alert('No unfinished entries to clear.');
+                return;
+            }
+
+            if (!confirm(`Are you sure you want to clear ${unfinishedEntries.length} unfinished entries?`)) {
+                return;
+            }
+
+            try {
+                for (const entry of unfinishedEntries) {
+                    await fetch(`${API_BASE}/entries.php`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            admin_token: ADMIN_TOKEN,
+                            action: 'delete',
+                            entry_id: entry.entry_id
+                        })
+                    });
+                }
+                loadEntries();
+            } catch (err) {
+                console.error('Failed to clear entries:', err);
+                alert('Failed to clear some entries. Please try again.');
+                loadEntries();
+            }
+        }
+
+        async function clearAll() {
+            if (entries.length === 0) {
+                alert('No entries to clear.');
+                return;
+            }
+
+            if (!confirm(`Are you sure you want to clear ALL ${entries.length} entries? This cannot be undone.`)) {
+                return;
+            }
+
+            try {
+                for (const entry of entries) {
+                    await fetch(`${API_BASE}/entries.php`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            admin_token: ADMIN_TOKEN,
+                            action: 'delete',
+                            entry_id: entry.entry_id
+                        })
+                    });
+                }
+                loadEntries();
+            } catch (err) {
+                console.error('Failed to clear entries:', err);
+                alert('Failed to clear some entries. Please try again.');
+                loadEntries();
+            }
         }
 
         function escapeHtml(text) {
