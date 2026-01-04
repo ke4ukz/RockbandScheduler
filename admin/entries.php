@@ -525,8 +525,14 @@ if (!$eventId || !isValidUuid($eventId)) {
         async function saveEntry() {
             const entryId = document.getElementById('editEntryId').value;
             const position = document.getElementById('editPosition').value;
-            const performerName = document.getElementById('editPerformerName').value;
+            const performerName = document.getElementById('editPerformerName').value.trim();
             const songId = document.getElementById('editSongId').value;
+
+            // Validate required fields
+            if (!performerName) {
+                alert('Performer name is required');
+                return;
+            }
 
             const requestBody = {
                 admin_token: ADMIN_TOKEN,
