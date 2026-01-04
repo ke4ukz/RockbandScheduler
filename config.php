@@ -2,16 +2,16 @@
 
 error_log("loading config");
 
-$GLOBALS['config'] = FALSE;
+$GLOBALS['config'] = [];
 $configPath = realpath(__DIR__ . '/../../config/rockband_scheduler_config.ini');
-if (file_exists($configPath)) {
-    $GLOBALS['config'] = parse_ini_file($configPath, true);
+if ($configPath && file_exists($configPath)) {
+    $GLOBALS['config'] = parse_ini_file($configPath, true) ?: [];
     error_log('config loaded');
 }
 unset($configPath);
 
 // Default settings for signup requirements
-if (!isset($GLOBALS['config']['signup'])) {
+if (!isset($GLOBALS['config']['signup']) || !is_array($GLOBALS['config']['signup'])) {
     $GLOBALS['config']['signup'] = [];
 }
 // Default: require both name and song for user signups
