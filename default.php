@@ -506,7 +506,8 @@ if (!$eventId) {
             let html = '';
             for (let pos = 1; pos <= NUM_SLOTS; pos++) {
                 const entry = entryMap[pos];
-                const isTaken = entry && entry.performer_name;
+                // Slot is taken if it has a performer name OR a song
+                const isTaken = entry && (entry.performer_name || entry.song_id);
 
                 if (isTaken) {
                     const isFinished = entry.finished || false;
@@ -517,7 +518,7 @@ if (!$eventId) {
                                 ? `<img src="data:image/jpeg;base64,${entry.album_art}" class="album-art">`
                                 : ''}
                             <div class="slot-info">
-                                <div class="performer">${escapeHtml(entry.performer_name)}</div>
+                                <div class="performer">${entry.performer_name ? escapeHtml(entry.performer_name) : '<em style="opacity:0.6">No name</em>'}</div>
                                 <div class="song">${entry.title ? escapeHtml(entry.title) + ' - ' + escapeHtml(entry.artist) : 'No song selected'}</div>
                             </div>
                             ${entry.deezer_id ? `

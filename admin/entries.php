@@ -376,7 +376,8 @@ if (!$eventId || !isValidUuid($eventId)) {
             let html = '';
             for (let pos = 1; pos <= totalSlots; pos++) {
                 const entry = entryMap[pos];
-                const isEmpty = !entry || !entry.performer_name;
+                // Entry is filled if it has a performer name OR a song
+                const isEmpty = !entry || (!entry.performer_name && !entry.song_id);
 
                 const isFinished = entry?.finished || false;
                 html += `
@@ -407,7 +408,7 @@ if (!$eventId || !isValidUuid($eventId)) {
                                     ? `<img src="data:image/jpeg;base64,${entry.album_art}" class="album-art-small rounded me-3">`
                                     : '<div class="album-art-small bg-secondary rounded me-3 d-flex align-items-center justify-content-center"><i class="bi bi-music-note text-white"></i></div>'}
                                 <div class="flex-grow-1">
-                                    <div class="fw-bold">${escapeHtml(entry.performer_name)}</div>
+                                    <div class="fw-bold">${entry.performer_name ? escapeHtml(entry.performer_name) : '<em class="text-muted">No name</em>'}</div>
                                     <div class="text-muted small">
                                         ${entry.title ? escapeHtml(entry.title) + ' - ' + escapeHtml(entry.artist) : '<em>No song selected</em>'}
                                     </div>
@@ -528,9 +529,9 @@ if (!$eventId || !isValidUuid($eventId)) {
             const performerName = document.getElementById('editPerformerName').value.trim();
             const songId = document.getElementById('editSongId').value;
 
-            // Validate required fields
-            if (!performerName) {
-                alert('Performer name is required');
+            // Require at least a name or a song to create an entry
+            if (!performerName && !songId) {
+                alert('Please enter a performer name or select a song');
                 return;
             }
 
