@@ -225,6 +225,9 @@ if (!$eventId || !isValidUuid($eventId)) {
         let currentAudio = null;
         let editEntryModal, songPickerModal;
         let draggedItem = null;
+        let isModalOpen = false;
+        let pollInterval = null;
+        const POLL_INTERVAL_MS = 5000; // Poll every 5 seconds
 
         document.addEventListener('DOMContentLoaded', function() {
             editEntryModal = new bootstrap.Modal(document.getElementById('editEntryModal'));
@@ -234,7 +237,60 @@ if (!$eventId || !isValidUuid($eventId)) {
             loadSongs();
 
             document.getElementById('songSearchInput').addEventListener('input', filterSongs);
+
+            // Track modal open/close state
+            document.getElementById('editEntryModal').addEventListener('shown.bs.modal', () => isModalOpen = true);
+            document.getElementById('editEntryModal').addEventListener('hidden.bs.modal', () => isModalOpen = false);
+            document.getElementById('songPickerModal').addEventListener('shown.bs.modal', () => isModalOpen = true);
+            document.getElementById('songPickerModal').addEventListener('hidden.bs.modal', () => isModalOpen = false);
+
+            // Start background polling
+            startPolling();
         });
+
+        function startPolling() {
+            pollInterval = setInterval(pollForUpdates, POLL_INTERVAL_MS);
+        }
+
+        async function pollForUpdates() {
+            // Don't update if modal is open or dragging
+            if (isModalOpen || draggedItem) return;
+
+            try {
+                const response = await fetch(`${API_BASE}/entries.php`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        admin_token: ADMIN_TOKEN,
+                        action: 'list',
+                        event_id: EVENT_ID
+                    })
+                });
+                const data = await response.json();
+
+                if (data.error) return; // Silently fail on poll errors
+
+                // Check if data actually changed before re-rendering
+                const newEntriesJson = JSON.stringify(data.entries || []);
+                const oldEntriesJson = JSON.stringify(entries);
+
+                if (newEntriesJson !== oldEntriesJson) {
+                    // Save scroll position
+                    const scrollPos = window.scrollY;
+
+                    event = data.event;
+                    entries = data.entries;
+                    updateEventInfo();
+                    renderEntries();
+
+                    // Restore scroll position
+                    window.scrollTo(0, scrollPos);
+                }
+            } catch (err) {
+                // Silently fail on poll errors
+                console.debug('Poll failed:', err);
+            }
+        }
 
         async function loadEntries() {
             try {
