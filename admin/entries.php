@@ -333,9 +333,11 @@ if (!$eventId || !isValidUuid($eventId)) {
                 const data = await response.json();
                 if (data.error) throw new Error(data.error);
                 songs = data.songs || [];
-                renderSongPicker(songs);
+                console.log('Loaded songs:', songs.length);
             } catch (err) {
                 console.error('Failed to load songs:', err);
+                document.getElementById('songPickerList').innerHTML =
+                    '<div class="list-group-item text-danger">Failed to load songs: ' + escapeHtml(err.message) + '</div>';
             }
         }
 
@@ -462,10 +464,18 @@ if (!$eventId || !isValidUuid($eventId)) {
             renderSongPicker(filtered);
         }
 
-        function openSongPicker() {
+        async function openSongPicker() {
             // Hide edit modal first, then show song picker
             editEntryModal.hide();
             document.getElementById('songSearchInput').value = '';
+
+            // If songs weren't loaded, try again
+            if (songs.length === 0) {
+                document.getElementById('songPickerList').innerHTML =
+                    '<div class="list-group-item text-center"><div class="spinner-border spinner-border-sm"></div> Loading songs...</div>';
+                await loadSongs();
+            }
+
             renderSongPicker(songs);
             setTimeout(() => songPickerModal.show(), 150);
         }

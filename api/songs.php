@@ -82,7 +82,7 @@ try {
 
 function listSongs($db) {
     $stmt = $db->query('
-        SELECT song_id, artist, album, title, year, duration, deezer_id, preview_url,
+        SELECT song_id, artist, album, title, year, duration, deezer_id,
                TO_BASE64(album_art) as album_art
         FROM songs
         ORDER BY artist, title
@@ -102,7 +102,7 @@ function listSongs($db) {
 
 function getSong($db, $songId) {
     $stmt = $db->prepare('
-        SELECT song_id, artist, album, title, year, duration, deezer_id, preview_url,
+        SELECT song_id, artist, album, title, year, duration, deezer_id,
                TO_BASE64(album_art) as album_art
         FROM songs
         WHERE song_id = ?
@@ -138,8 +138,8 @@ function createSong($db, $data) {
     }
 
     $stmt = $db->prepare('
-        INSERT INTO songs (artist, album, title, year, duration, deezer_id, preview_url, album_art)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO songs (artist, album, title, year, duration, deezer_id, album_art)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
     ');
 
     $stmt->execute([
@@ -149,7 +149,6 @@ function createSong($db, $data) {
         (int)$data['year'],
         (int)($data['duration'] ?? 0),
         $data['deezer_id'] ?? null,
-        $data['preview_url'] ?? null,
         $albumArt
     ]);
 
@@ -170,7 +169,7 @@ function updateSong($db, $songId, $data) {
     $fields = [];
     $values = [];
 
-    $allowedFields = ['artist', 'album', 'title', 'year', 'duration', 'deezer_id', 'preview_url'];
+    $allowedFields = ['artist', 'album', 'title', 'year', 'duration', 'deezer_id'];
     foreach ($allowedFields as $field) {
         if (array_key_exists($field, $data)) {
             $fields[] = "$field = ?";
