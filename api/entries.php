@@ -141,9 +141,23 @@ function listEntries($db, $eventId, $isAdmin) {
         $entry['song_id'] = $entry['song_id'] ? (int)$entry['song_id'] : null;
     }
 
+    // Also fetch available songs for user selection
+    $stmt = $db->query('
+        SELECT song_id, artist, title, preview_url,
+               TO_BASE64(album_art) as album_art
+        FROM songs
+        ORDER BY artist, title
+    ');
+    $songs = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    foreach ($songs as &$song) {
+        $song['song_id'] = (int)$song['song_id'];
+    }
+
     jsonResponse([
         'event' => $event,
         'entries' => $entries,
+        'songs' => $songs,
         'total_slots' => (int)$event['num_entries']
     ]);
 }
