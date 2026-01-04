@@ -111,6 +111,7 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
                                 <label for="endTime" class="form-label">End Time *</label>
                                 <input type="datetime-local" class="form-control" id="endTime" name="end_time" required>
                             </div>
+                            <div class="form-text">Enter times as they appear at the event venue (no timezone conversion)</div>
                         </div>
                         <div class="mb-3">
                             <label for="numEntries" class="form-label">Number of Performance Slots *</label>

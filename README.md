@@ -173,6 +173,17 @@ Admin API endpoints require authentication via one of:
 
 The token must match the value in your config file.
 
+## Timezone Handling
+
+Event times are stored and displayed as **venue local time** (no timezone conversion). When creating an event, enter the start and end times as they would appear on a clock at the event location.
+
+For example, if creating an event in New York that starts at 7:00 PM Eastern:
+- Enter `7:00 PM` in the form
+- Users viewing the event see `7:00 PM`
+- This means 7:00 PM at the venue, regardless of the viewer's timezone
+
+This approach works well for in-person events where attendees know the physical location.
+
 ## Database Schema
 
 The application uses three main tables:
