@@ -4,21 +4,16 @@ require_once __DIR__ . '/../db.php';
 require_once __DIR__ . '/../includes/helpers.php';
 
 $db = $GLOBALS['db'];
+$adminToken = $GLOBALS['config']['admin']['token'] ?? '';
 
 // Get quick stats
 $songCount = 0;
 $eventCount = 0;
-$activeEventCount = 0;
 
 if ($db) {
     try {
         $songCount = $db->query('SELECT COUNT(*) FROM songs')->fetchColumn();
         $eventCount = $db->query('SELECT COUNT(*) FROM events')->fetchColumn();
-        // Use PHP's current time to match JavaScript's Date() behavior in the events page
-        $now = date('Y-m-d H:i:s');
-        $stmt = $db->prepare('SELECT COUNT(*) FROM events WHERE ? BETWEEN start_time AND end_time');
-        $stmt->execute([$now]);
-        $activeEventCount = $stmt->fetchColumn();
     } catch (PDOException $e) {
         error_log('Dashboard stats error: ' . $e->getMessage());
     }
@@ -81,7 +76,7 @@ if ($db) {
                 <div class="card text-bg-success">
                     <div class="card-body">
                         <h5 class="card-title"><i class="bi bi-broadcast"></i> Active Now</h5>
-                        <p class="card-text display-4"><?= $activeEventCount ?></p>
+                        <p class="card-text display-4" id="activeCount">-</p>
                         <a href="events.php" class="btn btn-light">View Events</a>
                     </div>
                 </div>
@@ -110,5 +105,35 @@ if ($db) {
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const ADMIN_TOKEN = <?= json_encode($adminToken) ?>;
+        const API_BASE = '../api';
+
+        document.addEventListener('DOMContentLoaded', loadActiveCount);
+
+        async function loadActiveCount() {
+            try {
+                const response = await fetch(`${API_BASE}/events.php`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ admin_token: ADMIN_TOKEN, action: 'list' })
+                });
+                const data = await response.json();
+                if (data.error) throw new Error(data.error);
+
+                const now = new Date();
+                const activeCount = (data.events || []).filter(event => {
+                    const start = new Date(event.start_time);
+                    const end = new Date(event.end_time);
+                    return now >= start && now <= end;
+                }).length;
+
+                document.getElementById('activeCount').textContent = activeCount;
+            } catch (err) {
+                console.error('Failed to load active count:', err);
+                document.getElementById('activeCount').textContent = '?';
+            }
+        }
+    </script>
 </body>
 </html>
