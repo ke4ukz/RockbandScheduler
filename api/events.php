@@ -276,8 +276,8 @@ function generateQrCode($db, $eventId) {
     }
     $eventUrl = rtrim($baseUrl, '/') . '/?eventid=' . $eventId;
 
-    // Use Google Charts API to generate QR code
-    $qrApiUrl = 'https://chart.googleapis.com/chart?cht=qr&chs=300x300&chl=' . urlencode($eventUrl);
+    // Use QR Server API to generate QR code (Google Charts is deprecated)
+    $qrApiUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=' . urlencode($eventUrl);
 
     $qrImage = @file_get_contents($qrApiUrl);
     if ($qrImage === false) {
