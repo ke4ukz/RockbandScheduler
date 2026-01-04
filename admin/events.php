@@ -311,7 +311,10 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
                                 <p class="card-text">
                                     <i class="bi bi-people"></i> ${event.num_entries} slots
                                 </p>
-                                <div class="d-flex gap-2">
+                                <div class="d-flex gap-2 flex-wrap">
+                                    <a href="entries.php?eventid=${event.event_id}" class="btn btn-sm btn-info">
+                                        <i class="bi bi-list-ol"></i> Manage
+                                    </a>
                                     <button class="btn btn-sm btn-outline-info" onclick="viewEvent('${event.event_id}')">
                                         <i class="bi bi-eye"></i> View
                                     </button>

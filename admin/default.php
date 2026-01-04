@@ -80,7 +80,8 @@ if ($db) {
                     <div class="card-body">
                         <h5 class="card-title"><i class="bi bi-broadcast"></i> Active Now</h5>
                         <p class="card-text display-4" id="activeCount">-</p>
-                        <a href="events.php" class="btn btn-light">View Events</a>
+                        <div id="activeEventsList"></div>
+                        <a href="events.php" class="btn btn-light" id="viewEventsBtn">View Events</a>
                     </div>
                 </div>
             </div>
@@ -125,17 +126,34 @@ if ($db) {
                 if (data.error) throw new Error(data.error);
 
                 const now = new Date();
-                const activeCount = (data.events || []).filter(event => {
+                const activeEvents = (data.events || []).filter(event => {
                     const start = new Date(event.start_time);
                     const end = new Date(event.end_time);
                     return now >= start && now <= end;
-                }).length;
+                });
 
-                document.getElementById('activeCount').textContent = activeCount;
+                document.getElementById('activeCount').textContent = activeEvents.length;
+
+                // Show links to active events
+                const listEl = document.getElementById('activeEventsList');
+                if (activeEvents.length > 0) {
+                    listEl.innerHTML = activeEvents.map(event =>
+                        `<a href="entries.php?eventid=${event.event_id}" class="btn btn-light btn-sm mb-2 me-2">
+                            <i class="bi bi-list-ol"></i> ${escapeHtml(event.name)}
+                        </a>`
+                    ).join('');
+                }
             } catch (err) {
                 console.error('Failed to load active count:', err);
                 document.getElementById('activeCount').textContent = '?';
             }
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
         }
     </script>
 </body>
