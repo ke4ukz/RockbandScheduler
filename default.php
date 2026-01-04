@@ -195,6 +195,15 @@ if (!$eventId) {
             color: rgba(255,255,255,0.5);
         }
 
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .preview-btn.loading {
+            animation: spin 1s linear infinite;
+        }
+
         /* Sign up modal - full screen on mobile */
         .signup-modal .modal-dialog {
             margin: 0;
@@ -494,7 +503,11 @@ if (!$eventId) {
             document.getElementById('performerName').value = '';
             document.getElementById('songSearch').value = '';
             document.getElementById('selectedSongId').value = '';
-            document.getElementById('confirmSignup').disabled = true;
+
+            // Reset signup button state
+            const btn = document.getElementById('confirmSignup');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="bi bi-check-lg"></i> Sign Up';
 
             renderSongList(songs);
             signupModal.show();
@@ -638,7 +651,7 @@ if (!$eventId) {
                 document.querySelectorAll('.preview-btn').forEach(btn => {
                     btn.classList.remove('playing', 'loading', 'error');
                     btn.classList.replace('bi-stop-circle', 'bi-play-circle');
-                    btn.classList.replace('bi-hourglass-split', 'bi-play-circle');
+                    btn.classList.replace('bi-arrow-repeat', 'bi-play-circle');
                     btn.classList.replace('bi-exclamation-triangle', 'bi-play-circle');
                 });
 
@@ -651,7 +664,7 @@ if (!$eventId) {
 
             // Show loading state
             el.classList.add('loading');
-            el.classList.replace('bi-play-circle', 'bi-hourglass-split');
+            el.classList.replace('bi-play-circle', 'bi-arrow-repeat');
 
             try {
                 // Fetch fresh preview URL from Deezer
@@ -667,7 +680,7 @@ if (!$eventId) {
                 currentDeezerId = deezerId;
                 el.classList.remove('loading');
                 el.classList.add('playing');
-                el.classList.replace('bi-hourglass-split', 'bi-stop-circle');
+                el.classList.replace('bi-arrow-repeat', 'bi-stop-circle');
 
                 await currentAudio.play();
 
@@ -691,7 +704,7 @@ if (!$eventId) {
         function showPreviewError(el) {
             el.classList.remove('playing', 'loading');
             el.classList.add('error');
-            el.classList.replace('bi-hourglass-split', 'bi-exclamation-triangle');
+            el.classList.replace('bi-arrow-repeat', 'bi-exclamation-triangle');
             el.classList.replace('bi-stop-circle', 'bi-exclamation-triangle');
             currentAudio = null;
             currentDeezerId = null;
