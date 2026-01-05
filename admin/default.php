@@ -28,13 +28,11 @@ $db = $GLOBALS['db'];
 
 // Get quick stats
 $songCount = 0;
-$eventCount = 0;
 $songStats = [];
 
 if ($db) {
     try {
         $songCount = $db->query('SELECT COUNT(*) FROM songs')->fetchColumn();
-        $eventCount = $db->query('SELECT COUNT(*) FROM events')->fetchColumn();
 
         // Get song statistics
         // Shortest song (with duration > 0)
@@ -144,8 +142,8 @@ function timeAgo($datetime) {
             <div class="col">
                 <div class="card text-bg-info">
                     <div class="card-body">
-                        <h5 class="card-title"><i class="bi bi-calendar-event"></i> Total Events</h5>
-                        <p class="card-text display-4"><?= $eventCount ?></p>
+                        <h5 class="card-title"><i class="bi bi-calendar-event"></i> Upcoming Events</h5>
+                        <p class="card-text display-4" id="upcomingCount">-</p>
                         <a href="events.php" class="btn btn-light">Manage Events</a>
                     </div>
                 </div>
@@ -314,12 +312,22 @@ function timeAgo($datetime) {
                 if (data.error) throw new Error(data.error);
 
                 const now = new Date();
-                const activeEvents = (data.events || []).filter(event => {
+                const allEvents = data.events || [];
+
+                // Upcoming: events that haven't ended yet (includes active)
+                const upcomingEvents = allEvents.filter(event => {
+                    const end = new Date(event.end_time);
+                    return end > now;
+                });
+
+                // Active: currently running events
+                const activeEvents = allEvents.filter(event => {
                     const start = new Date(event.start_time);
                     const end = new Date(event.end_time);
                     return now >= start && now <= end;
                 });
 
+                document.getElementById('upcomingCount').textContent = upcomingEvents.length;
                 document.getElementById('activeCount').textContent = activeEvents.length;
 
                 // Show links to active events below the View Events button
