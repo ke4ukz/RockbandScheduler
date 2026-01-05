@@ -95,6 +95,13 @@ if (!$eventId) {
         .container {
             text-align: center;
             padding: 2vw;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .content {
+            order: -1;
         }
 
         .title {
@@ -140,6 +147,49 @@ if (!$eventId) {
             color: #666;
             font-size: 1.5vw;
         }
+
+        /* Landscape orientation adjustments */
+        @media (orientation: landscape) {
+            .container {
+                display: flex;
+                flex-direction: row;
+                align-items: center;
+                justify-content: center;
+                gap: 5vw;
+                height: 100vh;
+                padding: 2vh;
+            }
+
+            .content {
+                order: 0;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                text-align: left;
+            }
+
+            .title {
+                font-size: 6vh;
+                margin-bottom: 2vh;
+            }
+
+            .qr-container {
+                padding: 2vh;
+                border-radius: 1.5vh;
+                margin-bottom: 0;
+            }
+
+            .qr-container img {
+                width: 70vh;
+                height: 70vh;
+                max-width: 50vw;
+                max-height: 80vh;
+            }
+
+            .instruction {
+                font-size: 4vh;
+            }
+        }
     </style>
 </head>
 <body>
@@ -149,7 +199,6 @@ if (!$eventId) {
     </div>
 <?php else: ?>
     <div class="container">
-        <div class="title">Scan to Sign Up</div>
         <div class="qr-container">
             <?php if ($event['qr_image']): ?>
                 <img src="data:image/png;base64,<?= $event['qr_image'] ?>" alt="QR Code to sign up">
@@ -157,7 +206,10 @@ if (!$eventId) {
                 <div class="qr-error">QR code not available</div>
             <?php endif; ?>
         </div>
-        <div class="instruction">Point your phone camera at the code</div>
+        <div class="content">
+            <div class="title">Scan to Sign Up</div>
+            <div class="instruction">Point your phone camera at the code</div>
+        </div>
     </div>
 <?php endif; ?>
 </body>
