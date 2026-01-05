@@ -185,9 +185,31 @@ if (!$eventId) {
         }
 
         .song-list {
-            max-height: 50vh;
             overflow-y: auto;
+            padding-bottom: 1rem;
+        }
+
+        .song-list-loading {
+            text-align: center;
+            padding: 1rem;
+            opacity: 0.6;
+        }
+
+        .action-bar {
+            display: flex;
+            gap: 1rem;
             margin-bottom: 1rem;
+            align-items: center;
+        }
+
+        .action-bar .form-control {
+            flex: 1;
+        }
+
+        .action-bar .btn-primary-action {
+            flex-shrink: 0;
+            width: auto;
+            padding: 0.75rem 1.5rem;
         }
 
         .song-item {
@@ -469,7 +491,7 @@ if (!$eventId) {
         <h1>Oops!</h1>
         <p><?= h($error) ?></p>
     </div>
-    <a href="copyright.php" class="copyright-link">&copy; 2026 Jonathan Dean</a>
+    <a href="copyright.php" class="copyright-link">&copy; 2026</a>
 <?php else: ?>
 <?php
 // Determine if text color is light or dark to choose appropriate Deezer logo
@@ -513,13 +535,14 @@ $deezerLogo = $isLightText ? 'images/Vertical-mw-rgb.svg' : 'images/Vertical-mb-
             <div class="step-indicator">Step 1 of 2</div>
             <div class="step-title">Choose Your Song</div>
 
-            <input type="text" class="form-control mb-3" id="songSearch" placeholder="Search songs...">
+            <div class="action-bar">
+                <input type="text" class="form-control" id="songSearch" placeholder="Search songs...">
+                <button class="btn-primary-action" id="nextBtn" disabled>
+                    Next <i class="bi bi-arrow-right"></i>
+                </button>
+            </div>
 
             <div class="song-list" id="songResults"></div>
-
-            <button class="btn-primary-action" id="nextBtn" disabled>
-                Next <i class="bi bi-arrow-right"></i>
-            </button>
         </div>
 
         <!-- Step 2: Name Entry -->
@@ -576,7 +599,7 @@ $deezerLogo = $isLightText ? 'images/Vertical-mw-rgb.svg' : 'images/Vertical-mb-
         Open signup display
     </a>
 
-    <a href="copyright.php" class="copyright-link">&copy; 2026 Jonathan Dean</a>
+    <a href="copyright.php" class="copyright-link">&copy; 2026</a>
 
     <input type="hidden" id="selectedSongId">
 
@@ -592,7 +615,10 @@ $deezerLogo = $isLightText ? 'images/Vertical-mw-rgb.svg' : 'images/Vertical-mb-
         let currentDeezerId = null;
         let pollInterval = null;
         const POLL_INTERVAL_MS = 5000;
-        const MAX_DISPLAY_SONGS = 50;
+        const SONGS_PER_BATCH = 20;
+        let displayedSongCount = 0;
+        let currentFilteredSongs = [];
+        let isLoadingMore = false;
 
         document.addEventListener('DOMContentLoaded', function() {
             loadData();
@@ -604,8 +630,53 @@ $deezerLogo = $isLightText ? 'images/Vertical-mw-rgb.svg' : 'images/Vertical-mb-
             document.getElementById('signupBtn').addEventListener('click', submitSignup);
             document.getElementById('signupAgainBtn').addEventListener('click', resetForm);
 
+            // Infinite scroll for song list
+            window.addEventListener('scroll', handleScroll);
+
             startPolling();
         });
+
+        function handleScroll() {
+            // Check if we're near the bottom of the page
+            const scrolledToBottom = (window.innerHeight + window.scrollY) >= (document.body.offsetHeight - 200);
+
+            if (scrolledToBottom && !isLoadingMore && displayedSongCount < currentFilteredSongs.length) {
+                loadMoreSongs();
+            }
+        }
+
+        function loadMoreSongs() {
+            if (isLoadingMore) return;
+            if (displayedSongCount >= currentFilteredSongs.length) return;
+
+            isLoadingMore = true;
+            const container = document.getElementById('songResults');
+
+            // Remove loading indicator if it exists
+            const loadingEl = container.querySelector('.song-list-loading');
+
+            // Render next batch
+            const nextBatch = currentFilteredSongs.slice(displayedSongCount, displayedSongCount + SONGS_PER_BATCH);
+            const selectedId = document.getElementById('selectedSongId').value;
+
+            const html = nextBatch.map(song => renderSongItem(song, selectedId)).join('');
+
+            if (loadingEl) {
+                loadingEl.remove();
+            }
+
+            container.insertAdjacentHTML('beforeend', html);
+            displayedSongCount += nextBatch.length;
+
+            // Add loading indicator if more songs available
+            if (displayedSongCount < currentFilteredSongs.length) {
+                container.insertAdjacentHTML('beforeend',
+                    '<div class="song-list-loading"><div class="spinner-border spinner-border-sm"></div> Loading more songs...</div>'
+                );
+            }
+
+            isLoadingMore = false;
+        }
 
         function startPolling() {
             pollInterval = setInterval(pollForUpdates, POLL_INTERVAL_MS);
@@ -720,32 +791,8 @@ $deezerLogo = $isLightText ? 'images/Vertical-mw-rgb.svg' : 'images/Vertical-mb-
             loadData();
         }
 
-        function renderSongList(songsToShow, isFiltered = false) {
-            const container = document.getElementById('songResults');
-
-            if (songsToShow.length === 0) {
-                container.innerHTML = isFiltered
-                    ? '<div class="text-center py-3" style="opacity:0.6">No matching songs</div>'
-                    : '<div class="text-center py-3" style="opacity:0.6">No songs available</div>';
-                return;
-            }
-
-            if (!isFiltered && songsToShow.length > MAX_DISPLAY_SONGS) {
-                container.innerHTML = `
-                    <div class="text-center py-4" style="opacity:0.6">
-                        <i class="bi bi-search d-block mb-2" style="font-size: 2rem; opacity: 0.5;"></i>
-                        <div>${songsToShow.length} songs available</div>
-                        <div class="small">Type to search for your song</div>
-                    </div>
-                `;
-                return;
-            }
-
-            const selectedId = document.getElementById('selectedSongId').value;
-            const displaySongs = songsToShow.slice(0, MAX_DISPLAY_SONGS);
-            const hasMore = songsToShow.length > MAX_DISPLAY_SONGS;
-
-            let html = displaySongs.map(song => `
+        function renderSongItem(song, selectedId) {
+            return `
                 <div class="song-item ${song.song_id == selectedId ? 'selected' : ''}"
                      onclick="selectSong(${song.song_id})"
                      data-song-id="${song.song_id}">
@@ -762,10 +809,33 @@ $deezerLogo = $isLightText ? 'images/Vertical-mw-rgb.svg' : 'images/Vertical-mb-
                            data-deezer-id="${song.deezer_id}"></i>
                     ` : ''}
                 </div>
-            `).join('');
+            `;
+        }
 
-            if (hasMore) {
-                html += `<div class="text-center py-2 small" style="opacity:0.6">Showing ${MAX_DISPLAY_SONGS} of ${songsToShow.length} matches. Refine your search.</div>`;
+        function renderSongList(songsToShow) {
+            const container = document.getElementById('songResults');
+
+            // Reset state
+            displayedSongCount = 0;
+            currentFilteredSongs = songsToShow;
+
+            if (songsToShow.length === 0) {
+                const query = document.getElementById('songSearch').value;
+                container.innerHTML = query
+                    ? '<div class="text-center py-3" style="opacity:0.6">No matching songs</div>'
+                    : '<div class="text-center py-3" style="opacity:0.6">No songs available</div>';
+                return;
+            }
+
+            const selectedId = document.getElementById('selectedSongId').value;
+            const initialBatch = songsToShow.slice(0, SONGS_PER_BATCH);
+
+            let html = initialBatch.map(song => renderSongItem(song, selectedId)).join('');
+            displayedSongCount = initialBatch.length;
+
+            // Add loading indicator if more songs available
+            if (displayedSongCount < songsToShow.length) {
+                html += '<div class="song-list-loading"><div class="spinner-border spinner-border-sm"></div> Scroll for more songs...</div>';
             }
 
             container.innerHTML = html;
@@ -774,14 +844,14 @@ $deezerLogo = $isLightText ? 'images/Vertical-mw-rgb.svg' : 'images/Vertical-mb-
         function filterSongs() {
             const query = document.getElementById('songSearch').value.toLowerCase();
             if (!query) {
-                renderSongList(songs, false);
+                renderSongList(songs);
                 return;
             }
             const filtered = songs.filter(s =>
                 s.title.toLowerCase().includes(query) ||
                 s.artist.toLowerCase().includes(query)
             );
-            renderSongList(filtered, true);
+            renderSongList(filtered);
         }
 
         function selectSong(songId) {
