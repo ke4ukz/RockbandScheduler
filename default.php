@@ -195,21 +195,72 @@ if (!$eventId) {
             opacity: 0.6;
         }
 
-        .action-bar {
+        .fixed-buttons {
+            position: fixed;
+            bottom: 1rem;
+            left: 0;
+            right: 0;
             display: flex;
-            gap: 1rem;
-            margin-bottom: 1rem;
+            justify-content: space-between;
+            padding: 0 1rem;
+            pointer-events: none;
+            z-index: 100;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.3s, transform 0.3s;
+        }
+
+        .fixed-buttons.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .fixed-buttons button {
+            pointer-events: auto;
+        }
+
+        .btn-back-to-top {
+            background: rgba(0,0,0,0.6);
+            border: none;
+            color: var(--text-color);
+            font-size: 1rem;
+            padding: 0.75rem 1.25rem;
+            border-radius: 50px;
+            backdrop-filter: blur(10px);
+            display: flex;
             align-items: center;
+            gap: 0.5rem;
         }
 
-        .action-bar .form-control {
-            flex: 1;
+        .btn-back-to-top:hover {
+            background: rgba(0,0,0,0.8);
+            color: var(--text-color);
         }
 
-        .action-bar .btn-primary-action {
-            flex-shrink: 0;
-            width: auto;
+        .btn-fixed-next {
+            background: var(--primary-color);
+            border: none;
+            color: #fff;
+            font-size: 1rem;
             padding: 0.75rem 1.5rem;
+            border-radius: 50px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+
+        .btn-fixed-next:hover {
+            background: var(--primary-color);
+            filter: brightness(0.85);
+            color: #fff;
+        }
+
+        .btn-fixed-next:disabled {
+            background: color-mix(in srgb, var(--text-color) 30%, transparent);
+            color: color-mix(in srgb, var(--text-color) 50%, transparent);
+            box-shadow: none;
         }
 
         .song-item {
@@ -601,6 +652,16 @@ $deezerLogo = $isLightText ? 'images/Vertical-mw-rgb.svg' : 'images/Vertical-mb-
 
     <a href="copyright.php" class="copyright-link">&copy; 2026</a>
 
+    <!-- Fixed scroll buttons (only visible on step 1 when scrolled) -->
+    <div class="fixed-buttons" id="fixedButtons">
+        <button class="btn-back-to-top" onclick="scrollToTop()">
+            <i class="bi bi-arrow-up"></i> Top
+        </button>
+        <button class="btn-fixed-next" id="fixedNextBtn" disabled onclick="goToStep2()">
+            Next <i class="bi bi-arrow-right"></i>
+        </button>
+    </div>
+
     <input type="hidden" id="selectedSongId">
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
@@ -637,12 +698,32 @@ $deezerLogo = $isLightText ? 'images/Vertical-mw-rgb.svg' : 'images/Vertical-mb-
         });
 
         function handleScroll() {
-            // Check if we're near the bottom of the page
+            // Check if we're near the bottom of the page for lazy loading
             const scrolledToBottom = (window.innerHeight + window.scrollY) >= (document.body.offsetHeight - 200);
 
             if (scrolledToBottom && !isLoadingMore && displayedSongCount < currentFilteredSongs.length) {
                 loadMoreSongs();
             }
+
+            // Show/hide fixed buttons based on scroll position
+            updateFixedButtons();
+        }
+
+        function updateFixedButtons() {
+            const fixedButtons = document.getElementById('fixedButtons');
+            const currentStep = document.querySelector('.signup-step.active');
+            const isStep1 = currentStep && currentStep.id === 'step1';
+            const scrolledDown = window.scrollY > 150;
+
+            if (isStep1 && scrolledDown) {
+                fixedButtons.classList.add('visible');
+            } else {
+                fixedButtons.classList.remove('visible');
+            }
+        }
+
+        function scrollToTop() {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
         function loadMoreSongs() {
@@ -733,16 +814,25 @@ $deezerLogo = $isLightText ? 'images/Vertical-mw-rgb.svg' : 'images/Vertical-mb-
             document.getElementById('filledCount').textContent = entries.length;
             document.getElementById('totalCount').textContent = NUM_SLOTS;
 
-            // Check if slots are now full and user is on step 1
             const currentStep = document.querySelector('.signup-step.active');
+
+            // Check if slots are now full and user is on step 1
             if (currentStep && currentStep.id === 'step1' && entries.length >= NUM_SLOTS) {
                 showStep('fullState');
+            }
+
+            // Check if slots have opened up and user is on full state
+            if (currentStep && currentStep.id === 'fullState' && entries.length < NUM_SLOTS) {
+                showStep('step1');
+                renderSongList(songs);
             }
         }
 
         function showStep(stepId) {
             document.querySelectorAll('.signup-step').forEach(el => el.classList.remove('active'));
             document.getElementById(stepId).classList.add('active');
+            // Update fixed buttons visibility when step changes
+            updateFixedButtons();
         }
 
         function goToStep1() {
@@ -764,6 +854,9 @@ $deezerLogo = $isLightText ? 'images/Vertical-mw-rgb.svg' : 'images/Vertical-mb-
                 document.getElementById('selectedArtist').textContent = song.artist;
             }
 
+            // Scroll to top before showing step 2
+            window.scrollTo({ top: 0, behavior: 'instant' });
+
             showStep('step2');
             document.getElementById('performerName').focus();
         }
@@ -784,8 +877,13 @@ $deezerLogo = $isLightText ? 'images/Vertical-mw-rgb.svg' : 'images/Vertical-mb-
                 artEl.outerHTML = '<div class="song-art bg-secondary" id="selectedArt"></div>';
             }
 
+            // Disable all next/signup buttons
             document.getElementById('nextBtn').disabled = true;
+            document.getElementById('fixedNextBtn').disabled = true;
             document.getElementById('signupBtn').disabled = true;
+
+            // Scroll to top and hide fixed buttons
+            window.scrollTo({ top: 0, behavior: 'instant' });
 
             // Reload data to get fresh state
             loadData();
@@ -861,7 +959,9 @@ $deezerLogo = $isLightText ? 'images/Vertical-mw-rgb.svg' : 'images/Vertical-mb-
                 el.classList.toggle('selected', el.dataset.songId == songId);
             });
 
+            // Enable both next buttons (inline and fixed)
             document.getElementById('nextBtn').disabled = false;
+            document.getElementById('fixedNextBtn').disabled = false;
         }
 
         async function submitSignup() {
