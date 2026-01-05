@@ -154,9 +154,7 @@ The site is deployed via GitHub and cPanel's Git Version Control. To push update
 
 **Deferred (Won't Fix):**
 - [ ] **Rate limiting** - Public signup and Deezer proxy have no rate limits. Risk is low: human interaction won't hit Deezer's 50/5sec limit, and any issues are temporary/recoverable (slots can be cleared, Deezer bans are brief). Complexity cost outweighs benefit for this use case.
-
-**Low Priority:**
-- [ ] **Add security headers** - Missing X-Frame-Options, X-Content-Type-Options, CSP, etc. Add to `.htaccess` or PHP.
+- [ ] **Security headers** - Headers like X-Frame-Options, X-Content-Type-Options, CSP provide minimal value here: admin is already protected by HTTP Basic Auth, CSRF protection is in place, no sensitive data exposed to clickjacking. CSP would be complex to configure with Bootstrap CDN and inline scripts.
 
 ### Code Quality
 
