@@ -518,22 +518,6 @@ if (!$eventId) {
             opacity: 0.8;
         }
 
-        .signage-link {
-            display: block;
-            text-align: center;
-            padding: 1rem;
-            color: var(--text-color);
-            opacity: 0.5;
-            font-size: 0.85rem;
-            text-decoration: none;
-            cursor: pointer;
-        }
-
-        .signage-link:hover {
-            opacity: 0.7;
-            color: var(--text-color);
-        }
-
         .copyright-link {
             display: block;
             text-align: center;
@@ -684,11 +668,7 @@ $deezerLogo = $isLightText ? 'images/Vertical-mw-rgb.svg' : 'images/Vertical-mb-
         </div>
     </div>
 
-    <a href="#" class="signage-link" onclick="openSignageDisplay(); return false;">
-        Open signup display
-    </a>
-
-    <a href="copyright.php" class="copyright-link">&copy; 2026</a>
+    <a href="copyright.php" class="copyright-link" id="copyrightLink">&copy; 2026</a>
 
     <!-- Fixed scroll buttons (only visible on step 1 when scrolled) -->
     <div class="fixed-buttons" id="fixedButtons">
@@ -731,6 +711,9 @@ $deezerLogo = $isLightText ? 'images/Vertical-mw-rgb.svg' : 'images/Vertical-mb-
 
             // Infinite scroll for song list
             window.addEventListener('scroll', handleScroll);
+
+            // Press-and-hold on copyright link opens signup display
+            setupCopyrightLongPress();
 
             startPolling();
         });
@@ -1148,10 +1131,55 @@ $deezerLogo = $isLightText ? 'images/Vertical-mw-rgb.svg' : 'images/Vertical-mb-
             return div.innerHTML;
         }
 
-        function openSignageDisplay() {
-            if (confirm('Open the signup display? This shows a QR code for TVs and large screens.')) {
-                window.location.href = `signup-display.php?eventid=${EVENT_ID}`;
+        function setupCopyrightLongPress() {
+            const link = document.getElementById('copyrightLink');
+            if (!link) return;
+
+            const LONG_PRESS_DURATION = 3000; // 3 seconds
+            let pressTimer = null;
+            let longPressTriggered = false;
+
+            function startPress(e) {
+                longPressTriggered = false;
+                pressTimer = setTimeout(() => {
+                    longPressTriggered = true;
+                    openSignageDisplay();
+                }, LONG_PRESS_DURATION);
             }
+
+            function endPress(e) {
+                clearTimeout(pressTimer);
+                // If long press was triggered, prevent the normal click/navigation
+                if (longPressTriggered) {
+                    e.preventDefault();
+                }
+            }
+
+            function cancelPress() {
+                clearTimeout(pressTimer);
+            }
+
+            // Mouse events
+            link.addEventListener('mousedown', startPress);
+            link.addEventListener('mouseup', endPress);
+            link.addEventListener('mouseleave', cancelPress);
+
+            // Touch events
+            link.addEventListener('touchstart', startPress, { passive: true });
+            link.addEventListener('touchend', endPress);
+            link.addEventListener('touchcancel', cancelPress);
+
+            // Prevent default on click if long press was triggered
+            link.addEventListener('click', (e) => {
+                if (longPressTriggered) {
+                    e.preventDefault();
+                    longPressTriggered = false;
+                }
+            });
+        }
+
+        function openSignageDisplay() {
+            window.location.href = `signup-display.php?eventid=${EVENT_ID}`;
         }
     </script>
 <?php endif; ?>
