@@ -367,6 +367,14 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
                 const data = await response.json();
                 if (data.error) throw new Error(data.error);
                 events = data.events || [];
+
+                // Remove any active/upcoming events from pastEvents (in case they were edited)
+                const activeUpcomingIds = new Set(events.map(e => e.event_id));
+                pastEvents = pastEvents.filter(e => !activeUpcomingIds.has(e.event_id));
+                if (pastEventsLoaded) {
+                    renderPastEvents();
+                }
+
                 renderEvents();
             } catch (err) {
                 console.error('Failed to load events:', err);
