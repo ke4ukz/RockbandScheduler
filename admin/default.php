@@ -157,7 +157,7 @@ function timeAgo($datetime) {
                         <h5 class="card-title"><i class="bi bi-broadcast"></i> Active Now</h5>
                         <p class="card-text display-4" id="activeCount">-</p>
                         <a href="events.php" class="btn btn-light">View Events</a>
-                        <div id="activeEventsList" class="mt-3"></div>
+                        <div id="activeEventsList" class="mt-3" style="display: none;"></div>
                     </div>
                 </div>
             </div>
@@ -325,11 +325,14 @@ function timeAgo($datetime) {
                 // Show links to active events below the View Events button
                 const listEl = document.getElementById('activeEventsList');
                 if (activeEvents.length > 0) {
+                    listEl.style.display = 'block';
                     listEl.innerHTML = activeEvents.map(event =>
                         `<a href="entries.php?eventid=${event.event_id}" class="btn btn-outline-light btn-sm me-2 mb-2">
                             <i class="bi bi-list-ol"></i> ${escapeHtml(event.name)}
                         </a>`
                     ).join('');
+                } else {
+                    listEl.style.display = 'none';
                 }
             } catch (err) {
                 console.error('Failed to load active count:', err);
