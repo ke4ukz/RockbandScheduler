@@ -56,38 +56,32 @@ if ($db) {
 
         <div class="row row-cols-1 row-cols-md-3 g-4">
             <div class="col">
-                <div class="card text-bg-primary h-100">
-                    <div class="card-body d-flex flex-column">
+                <div class="card text-bg-primary">
+                    <div class="card-body">
                         <h5 class="card-title"><i class="bi bi-music-note-list"></i> Song Library</h5>
                         <p class="card-text display-4"><?= $songCount ?></p>
-                        <div class="mt-auto">
-                            <a href="songs.php" class="btn btn-light">Manage Songs</a>
-                        </div>
+                        <a href="songs.php" class="btn btn-light">Manage Songs</a>
                     </div>
                 </div>
             </div>
 
             <div class="col">
-                <div class="card text-bg-info h-100">
-                    <div class="card-body d-flex flex-column">
+                <div class="card text-bg-info">
+                    <div class="card-body">
                         <h5 class="card-title"><i class="bi bi-calendar-event"></i> Total Events</h5>
                         <p class="card-text display-4"><?= $eventCount ?></p>
-                        <div class="mt-auto">
-                            <a href="events.php" class="btn btn-light">Manage Events</a>
-                        </div>
+                        <a href="events.php" class="btn btn-light">Manage Events</a>
                     </div>
                 </div>
             </div>
 
             <div class="col">
-                <div class="card text-bg-success h-100">
-                    <div class="card-body d-flex flex-column">
+                <div class="card text-bg-success">
+                    <div class="card-body">
                         <h5 class="card-title"><i class="bi bi-broadcast"></i> Active Now</h5>
                         <p class="card-text display-4" id="activeCount">-</p>
-                        <div id="activeEventsList" class="mb-2"></div>
-                        <div class="mt-auto">
-                            <a href="events.php" class="btn btn-light" id="viewEventsBtn">View Events</a>
-                        </div>
+                        <a href="events.php" class="btn btn-light">View Events</a>
+                        <div id="activeEventsList" class="mt-3"></div>
                     </div>
                 </div>
             </div>
@@ -140,11 +134,11 @@ if ($db) {
 
                 document.getElementById('activeCount').textContent = activeEvents.length;
 
-                // Show links to active events
+                // Show links to active events below the View Events button
                 const listEl = document.getElementById('activeEventsList');
                 if (activeEvents.length > 0) {
                     listEl.innerHTML = activeEvents.map(event =>
-                        `<a href="entries.php?eventid=${event.event_id}" class="btn btn-light btn-sm mb-2 me-2">
+                        `<a href="entries.php?eventid=${event.event_id}" class="btn btn-outline-light btn-sm me-2 mb-2">
                             <i class="bi bi-list-ol"></i> ${escapeHtml(event.name)}
                         </a>`
                     ).join('');
