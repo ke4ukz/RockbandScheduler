@@ -263,6 +263,11 @@ All admin endpoints use POST with `admin_token` in the request body.
 - **Used for**: QR code generation
 - **Fallback**: Use local PHP QR library (chillerlan/php-qrcode or endroid/qr-code)
 
+### [Sightengine API](https://sightengine.com/) (Optional)
+- **Used for**: Content filtering of performer names during public signup
+- **Rate limits**: Free tier allows 2,000 requests/month (max 500/day); paid plans available for higher volume
+- **Fallback**: Fail-open design - if Sightengine is unavailable or returns an error, signups proceed without filtering. Content moderation is a convenience feature, not a hard requirement. If the service goes offline or credentials expire, the only impact is that inappropriate names won't be blocked.
+
 ## Timezone Handling
 
 Event times are stored and displayed as **venue local time** (no timezone conversion). Enter times as they would appear on a clock at the event location. This approach works well for in-person events where attendees are at the physical location.

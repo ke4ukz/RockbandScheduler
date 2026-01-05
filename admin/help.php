@@ -437,6 +437,39 @@ $siteBaseUrl = $GLOBALS['config']['site']['base_url'] ?? '';
                                 <li><strong>Default on mobile</strong> (screen width &lt; 992px): Dark mode</li>
                             </ul>
                             <p>Once you manually toggle the theme, your preference overrides the default.</p>
+
+                            <h5 class="mt-4"><i class="bi bi-shield-check"></i> Name Content Filter</h5>
+                            <p>Optional content filtering for performer names during public signup. This feature requires Sightengine API credentials to be configured in the server config file.</p>
+
+                            <p><strong>Profanity Filters</strong> - Each profanity category has four sensitivity levels:</p>
+                            <ul>
+                                <li><strong>Off</strong> - No filtering for this category</li>
+                                <li><strong>Low</strong> - Block only high-intensity/severe content</li>
+                                <li><strong>Medium</strong> - Block medium and high intensity content</li>
+                                <li><strong>High</strong> - Block all detected content, including mild instances</li>
+                            </ul>
+                            <p>The profanity categories are:</p>
+                            <ul>
+                                <li><strong>Sexual Language</strong> - Sexual or suggestive content</li>
+                                <li><strong>Discriminatory Language</strong> - Slurs, hate speech, and discriminatory terms</li>
+                                <li><strong>Insults</strong> - Personal attacks and insults</li>
+                                <li><strong>Other Inappropriate</strong> - General inappropriate language</li>
+                                <li><strong>Symbol Substitution</strong> - Grawlix characters used to mask profanity (@#$%!)</li>
+                            </ul>
+
+                            <p><strong>Other Content Blocks</strong> - These are simple on/off toggles:</p>
+                            <ul>
+                                <li><strong>Extremism</strong> - Extremist or radical content</li>
+                                <li><strong>Violence/Self-harm</strong> - Violent or self-harm related content</li>
+                                <li><strong>Drugs/Medicines</strong> - Drug or medicine references</li>
+                            </ul>
+
+                            <div class="card tip-card mt-3">
+                                <div class="card-body">
+                                    <h6><i class="bi bi-info-circle"></i> Fail-Open Design</h6>
+                                    <p class="mb-0">If the Sightengine API is unavailable or returns an error, signups will proceed without filtering. This prevents API outages from blocking legitimate users.</p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </section>
@@ -523,6 +556,19 @@ $siteBaseUrl = $GLOBALS['config']['site']['base_url'] ?? '';
 
                             <h5 class="mt-4"><i class="bi bi-qr-code"></i> QR Code Generation</h5>
                             <p>QR codes are generated using the <a href="https://goqr.me/api/" target="_blank" rel="noopener noreferrer">QR Server API</a>, a free QR code generation service provided by <a href="https://goqr.me/" target="_blank" rel="noopener noreferrer">goQR.me</a>.</p>
+
+                            <h5 class="mt-4"><i class="bi bi-shield-check"></i> Sightengine API (Optional)</h5>
+                            <p>The <a href="https://sightengine.com/" target="_blank" rel="noopener noreferrer">Sightengine API</a> provides content filtering for performer names during public signup. This is an optional feature that requires API credentials to be configured.</p>
+                            <ul>
+                                <li><strong>Used for:</strong> Rule-based text moderation to filter inappropriate performer names</li>
+                                <li><strong>Rate limits:</strong> Free tier allows 2,000 requests/month (max 500/day); paid plans available for higher volume</li>
+                            </ul>
+                            <div class="card tip-card mt-3">
+                                <div class="card-body">
+                                    <h6><i class="bi bi-info-circle"></i> Fallback Behavior</h6>
+                                    <p class="mb-0">This feature uses a fail-open design. If Sightengine is unavailable or returns an error, signups proceed without filtering. Content moderation is a convenience feature, not a hard requirement. If the service goes offline or credentials expire, the only impact is that inappropriate names won't be blocked.</p>
+                                </div>
+                            </div>
 
                             <h5 class="mt-4"><i class="bi bi-bootstrap"></i> Frontend Libraries</h5>
                             <ul>
