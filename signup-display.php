@@ -98,32 +98,32 @@ if (!$eventId) {
         }
 
         .title {
-            font-size: 5vw;
+            font-size: 8vw;
             font-weight: 700;
-            margin-bottom: 3vw;
+            margin-bottom: 4vw;
             text-transform: uppercase;
             letter-spacing: 0.1em;
         }
 
         .qr-container {
             background: white;
-            padding: 2vw;
+            padding: 3vw;
             border-radius: 2vw;
             display: inline-block;
-            margin-bottom: 3vw;
+            margin-bottom: 4vw;
             box-shadow: 0 0 60px rgba(0, 0, 0, 0.3);
         }
 
         .qr-container img {
             display: block;
-            width: 35vw;
-            height: 35vw;
-            max-width: 400px;
-            max-height: 400px;
+            width: 55vw;
+            height: 55vw;
+            max-width: 70vh;
+            max-height: 70vh;
         }
 
         .instruction {
-            font-size: 3vw;
+            font-size: 5vw;
             opacity: 0.9;
         }
 

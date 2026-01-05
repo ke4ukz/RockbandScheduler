@@ -68,6 +68,9 @@ function getSettings() {
                 'require_name' => $config['signup']['require_name'] ?? true,
                 'require_song' => $config['signup']['require_song'] ?? true
             ],
+            'event' => [
+                'default_duration_hours' => (int)($config['event']['default_duration_hours'] ?? 4)
+            ],
             'theme' => [
                 'default_theme_id' => $config['theme']['default_theme_id'] ?? null
             ]
@@ -89,6 +92,18 @@ function updateSettings($configPath, $newSettings) {
         }
         if (isset($newSettings['signup']['require_song'])) {
             $config['signup']['require_song'] = $newSettings['signup']['require_song'] ? '1' : '0';
+        }
+    }
+
+    // Update event settings
+    if (isset($newSettings['event'])) {
+        if (!isset($config['event'])) {
+            $config['event'] = [];
+        }
+        if (isset($newSettings['event']['default_duration_hours'])) {
+            $duration = (int)$newSettings['event']['default_duration_hours'];
+            // Validate range (1-24 hours)
+            $config['event']['default_duration_hours'] = max(1, min(24, $duration));
         }
     }
 

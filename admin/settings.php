@@ -74,6 +74,24 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
 
                 <div class="card mt-4">
                     <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-calendar-event"></i> Event Defaults</h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted">Default settings for new events.</p>
+
+                        <div class="mb-3">
+                            <label for="defaultDuration" class="form-label">Default Event Duration</label>
+                            <div class="input-group" style="max-width: 200px;">
+                                <input type="number" class="form-control" id="defaultDuration" min="1" max="24" value="4">
+                                <span class="input-group-text">hours</span>
+                            </div>
+                            <div class="form-text">When creating a new event, the end time will default to this many hours after the start time.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mt-4">
+                    <div class="card-header">
                         <h5 class="mb-0"><i class="bi bi-palette"></i> Default Theme</h5>
                     </div>
                     <div class="card-body">
@@ -184,6 +202,9 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
                 document.getElementById('requireName').checked = settings.signup?.require_name ?? true;
                 document.getElementById('requireSong').checked = settings.signup?.require_song ?? true;
 
+                // Set default duration
+                document.getElementById('defaultDuration').value = settings.event?.default_duration_hours ?? 4;
+
                 // Set default theme
                 const defaultThemeId = settings.theme?.default_theme_id;
                 if (defaultThemeId) {
@@ -202,11 +223,18 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
         async function saveSettings() {
             const requireName = document.getElementById('requireName').checked;
             const requireSong = document.getElementById('requireSong').checked;
+            const defaultDuration = parseInt(document.getElementById('defaultDuration').value) || 4;
             const defaultThemeId = document.getElementById('defaultTheme').value;
 
             // At least one must be required
             if (!requireName && !requireSong) {
                 showStatus('At least one requirement must be enabled', 'warning');
+                return;
+            }
+
+            // Validate duration
+            if (defaultDuration < 1 || defaultDuration > 24) {
+                showStatus('Duration must be between 1 and 24 hours', 'warning');
                 return;
             }
 
@@ -224,6 +252,9 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
                             signup: {
                                 require_name: requireName,
                                 require_song: requireSong
+                            },
+                            event: {
+                                default_duration_hours: defaultDuration
                             },
                             theme: {
                                 default_theme_id: defaultThemeId

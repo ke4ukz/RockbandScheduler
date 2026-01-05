@@ -213,8 +213,8 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
                     <a href="#" id="manageEntriesLink" class="btn btn-info">
                         <i class="bi bi-list-ol"></i> Manage Entries
                     </a>
-                    <a href="#" id="displayLink" target="_blank" class="btn btn-outline-secondary">
-                        <i class="bi bi-qr-code"></i> Signup Display
+                    <a href="#" id="signupPageLink" target="_blank" class="btn btn-outline-secondary">
+                        <i class="bi bi-box-arrow-up-right"></i> Signup Page
                     </a>
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                 </div>
@@ -253,6 +253,7 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
         let pastEventsLoaded = false;
         let themes = [];
         let defaultThemeId = null;
+        let defaultDurationHours = 4;
         let deleteEventId = null;
         let currentViewEventId = null;
         let eventModal, viewEventModal, deleteModal;
@@ -305,6 +306,7 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
                 const data = await response.json();
                 if (data.error) throw new Error(data.error);
                 defaultThemeId = data.settings?.theme?.default_theme_id || (themes.length > 0 ? themes[0].theme_id : null);
+                defaultDurationHours = data.settings?.event?.default_duration_hours || 4;
             } catch (err) {
                 console.error('Failed to load default theme:', err);
                 defaultThemeId = themes.length > 0 ? themes[0].theme_id : null;
@@ -565,8 +567,8 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
                                 <button class="btn btn-sm btn-outline-info" onclick="viewEvent('${event.event_id}')">
                                     <i class="bi bi-eye"></i> View
                                 </button>
-                                <a href="../signup-display.php?eventid=${event.event_id}" target="_blank" class="btn btn-sm btn-outline-secondary" title="Open signup display">
-                                    <i class="bi bi-qr-code"></i> Display
+                                <a href="../?eventid=${event.event_id}" target="_blank" class="btn btn-sm btn-outline-secondary" title="Open signup page">
+                                    <i class="bi bi-box-arrow-up-right"></i> Signup
                                 </a>
                                 <button class="btn btn-sm btn-outline-primary" onclick="editEvent('${event.event_id}')">
                                     <i class="bi bi-pencil"></i> Edit
@@ -611,9 +613,9 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
             document.getElementById('eventId').value = '';
             document.getElementById('eventTheme').value = defaultThemeId || '';
 
-            // Set default times (start now, end in 4 hours)
+            // Set default times (start now, end based on configured duration)
             const now = new Date();
-            const later = new Date(now.getTime() + 4 * 60 * 60 * 1000);
+            const later = new Date(now.getTime() + defaultDurationHours * 60 * 60 * 1000);
             document.getElementById('startTime').value = formatDateTimeLocal(now.toISOString());
             document.getElementById('endTime').value = formatDateTimeLocal(later.toISOString());
 
@@ -665,7 +667,7 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
             const eventUrl = `${SITE_BASE}/?eventid=${eventId}`;
             document.getElementById('viewEventUrl').textContent = eventUrl;
             document.getElementById('manageEntriesLink').href = `entries.php?eventid=${eventId}`;
-            document.getElementById('displayLink').href = `../signup-display.php?eventid=${eventId}`;
+            document.getElementById('signupPageLink').href = `../?eventid=${eventId}`;
 
             // Show QR if exists
             const qrImg = document.getElementById('viewEventQr');
