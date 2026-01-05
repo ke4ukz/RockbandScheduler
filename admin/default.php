@@ -107,18 +107,21 @@ function timeAgo($datetime) {
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav">
                     <li class="nav-item">
-                        <a class="nav-link" href="songs.php">Songs</a>
+                        <a class="nav-link" href="default.php" title="Dashboard"><i class="bi bi-house-door"></i><span class="d-lg-none ms-2">Dashboard</span></a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="events.php">Events</a>
+                        <a class="nav-link" href="songs.php" title="Songs"><i class="bi bi-music-note-list"></i><span class="d-lg-none ms-2">Songs</span></a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="settings.php">Settings</a>
+                        <a class="nav-link" href="events.php" title="Events"><i class="bi bi-calendar-event"></i><span class="d-lg-none ms-2">Events</span></a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="settings.php" title="Settings"><i class="bi bi-gear"></i><span class="d-lg-none ms-2">Settings</span></a>
                     </li>
                 </ul>
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item">
-                        <a class="nav-link" href="help.php"><i class="bi bi-question-circle"></i> Help</a>
+                        <a class="nav-link" href="help.php" title="Help"><i class="bi bi-question-circle"></i><span class="d-lg-none ms-2">Help</span></a>
                     </li>
                 </ul>
             </div>
