@@ -118,6 +118,9 @@ if (!$eventId || !isValidUuid($eventId)) {
             <h1 id="eventName">Loading...</h1>
             <div>
                 <span id="eventStatus" class="badge me-2"></span>
+                <a href="events.php?action=edit&eventid=<?= h($eventId) ?>" class="btn btn-outline-primary me-1">
+                    <i class="bi bi-pencil"></i> Edit Event
+                </a>
                 <a href="../?eventid=<?= h($eventId) ?>" target="_blank" class="btn btn-outline-secondary me-1">
                     <i class="bi bi-box-arrow-up-right"></i> Signup Page
                 </a>

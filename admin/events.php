@@ -270,15 +270,42 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
             // Start periodic status check (every 60 seconds)
             startStatusCheck();
 
-            // Check if we should auto-open the add modal
+            // Check if we should auto-open a modal based on URL params
             const urlParams = new URLSearchParams(window.location.search);
-            if (urlParams.get('action') === 'add') {
+            const action = urlParams.get('action');
+            const eventIdParam = urlParams.get('eventid');
+
+            if (action === 'add') {
                 openAddModal();
                 eventModal.show();
                 // Clean up URL
                 window.history.replaceState({}, '', window.location.pathname);
+            } else if (action === 'edit' && eventIdParam) {
+                // Wait for events to load, then open edit modal
+                waitForEventAndEdit(eventIdParam);
             }
         });
+
+        async function waitForEventAndEdit(eventId) {
+            // Wait for events to be loaded (poll until available or timeout)
+            let attempts = 0;
+            const maxAttempts = 20;
+            const interval = setInterval(() => {
+                attempts++;
+                const event = findEvent(eventId);
+                if (event) {
+                    clearInterval(interval);
+                    editEvent(eventId);
+                    // Clean up URL
+                    window.history.replaceState({}, '', window.location.pathname);
+                } else if (attempts >= maxAttempts) {
+                    clearInterval(interval);
+                    console.error('Event not found:', eventId);
+                    // Clean up URL anyway
+                    window.history.replaceState({}, '', window.location.pathname);
+                }
+            }, 100);
+        }
 
         async function loadThemes() {
             try {
