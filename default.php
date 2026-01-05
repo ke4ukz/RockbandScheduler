@@ -1006,6 +1006,10 @@ $deezerLogo = $isLightText ? 'images/Vertical-mw-rgb.svg' : 'images/Vertical-mb-
                 document.getElementById('successSongInfo').textContent =
                     song ? `"${song.title}" by ${song.artist}` : '';
 
+                // Reset button state before transitioning
+                btn.disabled = true;
+                btn.innerHTML = '<i class="bi bi-check-lg"></i> Sign Up';
+
                 // Reload data to get accurate entry count (don't manually push - polling handles it)
                 await loadData();
 
