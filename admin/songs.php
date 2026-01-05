@@ -21,7 +21,8 @@ require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/../db.php';
 require_once __DIR__ . '/../includes/helpers.php';
 
-$adminToken = $GLOBALS['config']['admin']['token'] ?? '';
+startAdminSession();
+$csrfToken = getCsrfToken();
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -249,7 +250,7 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        const ADMIN_TOKEN = <?= json_encode($adminToken) ?>;
+        const CSRF_TOKEN = <?= json_encode($csrfToken) ?>;
         const API_BASE = '../api';
         const PAGE_SIZE = 50;
 
@@ -326,7 +327,7 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        admin_token: ADMIN_TOKEN,
+                        csrf_token: CSRF_TOKEN,
                         action: 'list',
                         limit: PAGE_SIZE,
                         offset: currentOffset,
@@ -551,7 +552,7 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
 
             try {
                 const requestBody = {
-                    admin_token: ADMIN_TOKEN,
+                    csrf_token: CSRF_TOKEN,
                     action: songId ? 'update' : 'create',
                     ...data
                 };
@@ -592,7 +593,7 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        admin_token: ADMIN_TOKEN,
+                        csrf_token: CSRF_TOKEN,
                         action: 'delete',
                         song_id: deleteSongId
                     })
