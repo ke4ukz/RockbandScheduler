@@ -393,7 +393,18 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
                 });
                 const data = await response.json();
                 if (data.error) throw new Error(data.error);
-                pastEvents = data.events || [];
+
+                // Merge server past events with any that transitioned locally
+                const serverPastEvents = data.events || [];
+                const localPastIds = new Set(pastEvents.map(e => e.event_id));
+
+                // Add server events that aren't already in local pastEvents
+                serverPastEvents.forEach(e => {
+                    if (!localPastIds.has(e.event_id)) {
+                        pastEvents.push(e);
+                    }
+                });
+
                 pastEventsLoaded = true;
                 renderPastEvents();
                 document.getElementById('pastSection').style.display = 'block';
@@ -442,12 +453,14 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
             });
 
             if (hasChanges) {
-                // Move newly past events to pastEvents array if past events are loaded
-                if (pastEventsLoaded && newlyPast.length > 0) {
+                // Always add newly past events to pastEvents array so they appear when loaded
+                if (newlyPast.length > 0) {
                     newlyPast.forEach(e => {
                         pastEvents.unshift(e); // Add to beginning (most recent)
                     });
-                    renderPastEvents();
+                    if (pastEventsLoaded) {
+                        renderPastEvents();
+                    }
                 }
 
                 // Remove newly past events from main events array
