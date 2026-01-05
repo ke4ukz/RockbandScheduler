@@ -93,8 +93,17 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
             </div>
             <div class="card-body">
                 <p class="text-muted">Upload a CSV file with columns: <code>Song,Artist</code> (or <code>Title,Artist</code>)</p>
-                <div class="mb-3">
-                    <input type="file" class="form-control" id="csvFile" accept=".csv">
+                <div class="row mb-3">
+                    <div class="col-md-8">
+                        <input type="file" class="form-control" id="csvFile" accept=".csv">
+                    </div>
+                    <div class="col-md-4">
+                        <div class="input-group">
+                            <span class="input-group-text">Limit rows</span>
+                            <input type="number" class="form-control" id="rowLimit" min="0" value="0" placeholder="0 = all">
+                            <span class="input-group-text text-muted" style="font-size: 0.85rem;">0 = all</span>
+                        </div>
+                    </div>
                 </div>
                 <button class="btn btn-primary" onclick="parseCSV()">
                     <i class="bi bi-file-earmark-spreadsheet"></i> Parse CSV
@@ -216,9 +225,13 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
                     return;
                 }
 
+                // Get row limit (0 = no limit)
+                const rowLimit = parseInt(document.getElementById('rowLimit').value) || 0;
+                const maxRows = rowLimit > 0 ? rowLimit + 1 : lines.length; // +1 for header
+
                 // Parse data rows
                 importData = [];
-                for (let i = 1; i < lines.length; i++) {
+                for (let i = 1; i < Math.min(lines.length, maxRows); i++) {
                     const cols = parseCSVLine(lines[i]);
                     const title = cols[titleIdx]?.trim();
                     const artist = cols[artistIdx]?.trim();
