@@ -95,6 +95,10 @@ if (!$eventId) {
             backdrop-filter: blur(10px);
         }
 
+        .header-inner {
+            position: relative;
+        }
+
         .header h1 {
             font-size: 1.25rem;
             margin: 0;
@@ -104,6 +108,20 @@ if (!$eventId) {
         .header .location {
             font-size: 0.85rem;
             opacity: 0.8;
+        }
+
+        .header .deezer-credit {
+            position: absolute;
+            right: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            height: 70%;
+            max-height: 48px;
+            opacity: 0.7;
+        }
+
+        .header .deezer-credit:hover {
+            opacity: 1;
         }
 
         .signage-link {
@@ -422,11 +440,30 @@ if (!$eventId) {
         <p><?= h($error) ?></p>
     </div>
 <?php else: ?>
+<?php
+// Determine if text color is light or dark to choose appropriate Deezer logo
+$textColor = $event['text_color'] ?? '#ffffff';
+$isLightText = true; // default to white logo
+if (preg_match('/^#([0-9a-fA-F]{6})$/', $textColor, $matches)) {
+    $r = hexdec(substr($matches[1], 0, 2));
+    $g = hexdec(substr($matches[1], 2, 2));
+    $b = hexdec(substr($matches[1], 4, 2));
+    // Calculate relative luminance (perceived brightness)
+    $luminance = (0.299 * $r + 0.587 * $g + 0.114 * $b) / 255;
+    $isLightText = $luminance > 0.5;
+}
+$deezerLogo = $isLightText ? 'images/Vertical-mw-rgb.svg' : 'images/Vertical-mb-rgb.svg';
+?>
     <div class="header">
-        <h1><?= h($event['name']) ?></h1>
-        <?php if ($event['location']): ?>
-            <div class="location"><i class="bi bi-geo-alt"></i> <?= h($event['location']) ?></div>
-        <?php endif; ?>
+        <div class="header-inner">
+            <h1><?= h($event['name']) ?></h1>
+            <?php if ($event['location']): ?>
+                <div class="location"><i class="bi bi-geo-alt"></i> <?= h($event['location']) ?></div>
+            <?php endif; ?>
+            <a href="https://www.deezer.com" target="_blank" rel="noopener" title="Powered by Deezer">
+                <img src="<?= h($deezerLogo) ?>" alt="Deezer" class="deezer-credit">
+            </a>
+        </div>
     </div>
 
     <div class="slot-list" id="slotList">
