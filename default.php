@@ -582,7 +582,7 @@ $deezerLogo = $isLightText ? 'images/Vertical-mw-rgb.svg' : 'images/Vertical-mb-
 
     <div class="header">
         <div class="header-inner">
-            <h1><?= h($event['name']) ?></h1>
+            <h1 id="eventTitle"><?= h($event['name']) ?></h1>
             <?php if ($event['location']): ?>
                 <div class="location"><i class="bi bi-geo-alt"></i> <?= h($event['location']) ?></div>
             <?php endif; ?>
@@ -668,7 +668,7 @@ $deezerLogo = $isLightText ? 'images/Vertical-mw-rgb.svg' : 'images/Vertical-mb-
         </div>
     </div>
 
-    <a href="copyright.php" class="copyright-link" id="copyrightLink">&copy; 2026</a>
+    <a href="copyright.php" class="copyright-link">&copy; 2026</a>
 
     <!-- Fixed scroll buttons (only visible on step 1 when scrolled) -->
     <div class="fixed-buttons" id="fixedButtons">
@@ -712,8 +712,8 @@ $deezerLogo = $isLightText ? 'images/Vertical-mw-rgb.svg' : 'images/Vertical-mb-
             // Infinite scroll for song list
             window.addEventListener('scroll', handleScroll);
 
-            // Press-and-hold on copyright link opens signup display
-            setupCopyrightLongPress();
+            // Press-and-hold on event title opens signup display
+            setupTitleLongPress();
 
             startPolling();
         });
@@ -1131,28 +1131,17 @@ $deezerLogo = $isLightText ? 'images/Vertical-mw-rgb.svg' : 'images/Vertical-mb-
             return div.innerHTML;
         }
 
-        function setupCopyrightLongPress() {
-            const link = document.getElementById('copyrightLink');
-            if (!link) return;
+        function setupTitleLongPress() {
+            const title = document.getElementById('eventTitle');
+            if (!title) return;
 
             const LONG_PRESS_DURATION = 3000; // 3 seconds
             let pressTimer = null;
-            let longPressTriggered = false;
 
             function startPress(e) {
-                longPressTriggered = false;
                 pressTimer = setTimeout(() => {
-                    longPressTriggered = true;
                     openSignageDisplay();
                 }, LONG_PRESS_DURATION);
-            }
-
-            function endPress(e) {
-                clearTimeout(pressTimer);
-                // If long press was triggered, prevent the normal click/navigation
-                if (longPressTriggered) {
-                    e.preventDefault();
-                }
             }
 
             function cancelPress() {
@@ -1160,22 +1149,14 @@ $deezerLogo = $isLightText ? 'images/Vertical-mw-rgb.svg' : 'images/Vertical-mb-
             }
 
             // Mouse events
-            link.addEventListener('mousedown', startPress);
-            link.addEventListener('mouseup', endPress);
-            link.addEventListener('mouseleave', cancelPress);
+            title.addEventListener('mousedown', startPress);
+            title.addEventListener('mouseup', cancelPress);
+            title.addEventListener('mouseleave', cancelPress);
 
             // Touch events
-            link.addEventListener('touchstart', startPress, { passive: true });
-            link.addEventListener('touchend', endPress);
-            link.addEventListener('touchcancel', cancelPress);
-
-            // Prevent default on click if long press was triggered
-            link.addEventListener('click', (e) => {
-                if (longPressTriggered) {
-                    e.preventDefault();
-                    longPressTriggered = false;
-                }
-            });
+            title.addEventListener('touchstart', startPress, { passive: true });
+            title.addEventListener('touchend', cancelPress);
+            title.addEventListener('touchcancel', cancelPress);
         }
 
         function openSignageDisplay() {
