@@ -21,7 +21,9 @@ require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/../db.php';
 require_once __DIR__ . '/../includes/helpers.php';
 
-$adminToken = $GLOBALS['config']['admin']['token'] ?? '';
+startAdminSession();
+$csrfToken = getCsrfToken();
+
 $eventId = $_GET['eventid'] ?? null;
 
 if (!$eventId || !isValidUuid($eventId)) {
@@ -294,7 +296,7 @@ if (!$eventId || !isValidUuid($eventId)) {
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        const ADMIN_TOKEN = <?= json_encode($adminToken) ?>;
+        const CSRF_TOKEN = <?= json_encode($csrfToken) ?>;
         const EVENT_ID = <?= json_encode($eventId) ?>;
         const API_BASE = '../api';
 
@@ -339,7 +341,7 @@ if (!$eventId || !isValidUuid($eventId)) {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        admin_token: ADMIN_TOKEN,
+                        csrf_token: CSRF_TOKEN,
                         action: 'list',
                         event_id: EVENT_ID
                     })
@@ -376,7 +378,7 @@ if (!$eventId || !isValidUuid($eventId)) {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        admin_token: ADMIN_TOKEN,
+                        csrf_token: CSRF_TOKEN,
                         action: 'list',
                         event_id: EVENT_ID
                     })
@@ -401,7 +403,7 @@ if (!$eventId || !isValidUuid($eventId)) {
                 const response = await fetch(`${API_BASE}/songs.php`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ admin_token: ADMIN_TOKEN, action: 'list' })
+                    body: JSON.stringify({ csrf_token: CSRF_TOKEN, action: 'list' })
                 });
                 const data = await response.json();
                 if (data.error) throw new Error(data.error);
@@ -616,7 +618,7 @@ if (!$eventId || !isValidUuid($eventId)) {
             }
 
             const requestBody = {
-                admin_token: ADMIN_TOKEN,
+                csrf_token: CSRF_TOKEN,
                 action: entryId ? 'update' : 'create',
                 position: parseInt(position),
                 performer_name: performerName,
@@ -660,7 +662,7 @@ if (!$eventId || !isValidUuid($eventId)) {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        admin_token: ADMIN_TOKEN,
+                        csrf_token: CSRF_TOKEN,
                         action: 'delete',
                         entry_id: parseInt(entryId)
                     })
@@ -702,7 +704,7 @@ if (!$eventId || !isValidUuid($eventId)) {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        admin_token: ADMIN_TOKEN,
+                        csrf_token: CSRF_TOKEN,
                         action: 'reorder',
                         event_id: EVENT_ID,
                         order: orderUpdates
@@ -729,7 +731,7 @@ if (!$eventId || !isValidUuid($eventId)) {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        admin_token: ADMIN_TOKEN,
+                        csrf_token: CSRF_TOKEN,
                         action: 'update',
                         entry_id: entryId,
                         finished: finished
@@ -844,7 +846,7 @@ if (!$eventId || !isValidUuid($eventId)) {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
-                            admin_token: ADMIN_TOKEN,
+                            csrf_token: CSRF_TOKEN,
                             action: 'delete',
                             entry_id: entry.entry_id
                         })
@@ -874,7 +876,7 @@ if (!$eventId || !isValidUuid($eventId)) {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
-                            admin_token: ADMIN_TOKEN,
+                            csrf_token: CSRF_TOKEN,
                             action: 'delete',
                             entry_id: entry.entry_id
                         })

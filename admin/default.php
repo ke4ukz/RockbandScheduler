@@ -21,8 +21,10 @@ require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/../db.php';
 require_once __DIR__ . '/../includes/helpers.php';
 
+startAdminSession();
+$csrfToken = getCsrfToken();
+
 $db = $GLOBALS['db'];
-$adminToken = $GLOBALS['config']['admin']['token'] ?? '';
 
 // Get quick stats
 $songCount = 0;
@@ -296,7 +298,7 @@ function timeAgo($datetime) {
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        const ADMIN_TOKEN = <?= json_encode($adminToken) ?>;
+        const CSRF_TOKEN = <?= json_encode($csrfToken) ?>;
         const API_BASE = '../api';
 
         document.addEventListener('DOMContentLoaded', loadActiveCount);
@@ -306,7 +308,7 @@ function timeAgo($datetime) {
                 const response = await fetch(`${API_BASE}/events.php`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ admin_token: ADMIN_TOKEN, action: 'list' })
+                    body: JSON.stringify({ csrf_token: CSRF_TOKEN, action: 'list' })
                 });
                 const data = await response.json();
                 if (data.error) throw new Error(data.error);

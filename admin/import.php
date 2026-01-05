@@ -21,7 +21,8 @@ require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/../db.php';
 require_once __DIR__ . '/../includes/helpers.php';
 
-$adminToken = $GLOBALS['config']['admin']['token'] ?? '';
+startAdminSession();
+$csrfToken = getCsrfToken();
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -265,7 +266,7 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        const ADMIN_TOKEN = <?= json_encode($adminToken) ?>;
+        const CSRF_TOKEN = <?= json_encode($csrfToken) ?>;
         const API_BASE = '../api';
 
         let importData = []; // Array of { original: {title, artist}, status, deezerResults, selectedTrack, manualData }
@@ -882,7 +883,7 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
                     if (isManual) {
                         // Manual entry - no Deezer data
                         songData = {
-                            admin_token: ADMIN_TOKEN,
+                            csrf_token: CSRF_TOKEN,
                             action: 'create',
                             title: item.manualData.title,
                             artist: item.manualData.artist,
@@ -906,7 +907,7 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
                         const albumArtUrl = track.album.cover_medium || track.album.cover_small;
 
                         songData = {
-                            admin_token: ADMIN_TOKEN,
+                            csrf_token: CSRF_TOKEN,
                             action: 'create',
                             title: track.title,
                             artist: track.artist.name,

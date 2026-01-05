@@ -21,7 +21,8 @@ require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/../db.php';
 require_once __DIR__ . '/../includes/helpers.php';
 
-$adminToken = $GLOBALS['config']['admin']['token'] ?? '';
+startAdminSession();
+$csrfToken = getCsrfToken();
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -267,7 +268,7 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        const ADMIN_TOKEN = <?= json_encode($adminToken) ?>;
+        const CSRF_TOKEN = <?= json_encode($csrfToken) ?>;
         const API_BASE = '../api';
         const SITE_BASE = window.location.origin + window.location.pathname.replace(/\/admin\/.*$/, '');
 
@@ -335,7 +336,7 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
                 const response = await fetch(`${API_BASE}/themes.php`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ admin_token: ADMIN_TOKEN, action: 'list' })
+                    body: JSON.stringify({ csrf_token: CSRF_TOKEN, action: 'list' })
                 });
                 const data = await response.json();
                 if (data.error) throw new Error(data.error);
@@ -351,7 +352,7 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
                 const response = await fetch(`${API_BASE}/settings.php`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ admin_token: ADMIN_TOKEN, action: 'get' })
+                    body: JSON.stringify({ csrf_token: CSRF_TOKEN, action: 'get' })
                 });
                 const data = await response.json();
                 if (data.error) throw new Error(data.error);
@@ -417,7 +418,7 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
                 const response = await fetch(`${API_BASE}/events.php`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ admin_token: ADMIN_TOKEN, action: 'list', exclude_past: true, client_time: clientNow })
+                    body: JSON.stringify({ csrf_token: CSRF_TOKEN, action: 'list', exclude_past: true, client_time: clientNow })
                 });
                 const data = await response.json();
                 if (data.error) throw new Error(data.error);
@@ -456,7 +457,7 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
                 const response = await fetch(`${API_BASE}/events.php`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ admin_token: ADMIN_TOKEN, action: 'list', only_past: true, client_time: clientNow })
+                    body: JSON.stringify({ csrf_token: CSRF_TOKEN, action: 'list', only_past: true, client_time: clientNow })
                 });
                 const data = await response.json();
                 if (data.error) throw new Error(data.error);
@@ -760,7 +761,7 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
 
             try {
                 const requestBody = {
-                    admin_token: ADMIN_TOKEN,
+                    csrf_token: CSRF_TOKEN,
                     action: eventId ? 'update' : 'create',
                     ...data
                 };
@@ -813,7 +814,7 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        admin_token: ADMIN_TOKEN,
+                        csrf_token: CSRF_TOKEN,
                         action: 'delete',
                         event_id: deleteEventId
                     })
