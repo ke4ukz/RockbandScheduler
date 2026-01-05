@@ -20,21 +20,24 @@ A web application for managing Rock Band performance sign-ups at events. Users s
 - Album art stored locally (up to 64KB per image)
 
 ### Public Signup
-- Mobile-first responsive design
+- Mobile-first responsive design with two-step signup flow
 - QR code scan to access event signup page
-- Slot claiming with optional performer name and song selection
-- Configurable signup requirements (name required, song required, or both)
-- Real-time slot availability updates
+- Step 1: Search and select a song from the library
+- Step 2: Enter performer name and confirm signup
+- Automatic slot assignment (next available slot)
+- Real-time slot availability with automatic updates
+- Slots counter shows "X of Y spots filled"
+- Automatic recovery when slots become available
 
 ### Admin Panel
 - Dashboard with quick stats and song analytics
 - Event management (create, edit, delete, view details)
 - Song library management with Deezer search
 - Entry management with reorder, mark finished, and bulk clear
-- Settings configuration for signup requirements, default duration, and default theme
+- Settings configuration for default duration and default theme
 
 ### Display Modes
-- **Signup Display**: Full-screen QR code for TV/projector display
+- **Signup Display**: Full-screen QR code for TV/projector display (hidden access via 3-second press on event title)
 - **Signage**: Performance queue display showing current and upcoming performers
 
 ## Requirements
@@ -93,10 +96,6 @@ The config file should be placed outside the web root for security:
 
 **[site]** - Site settings
 - `base_url` - Full URL to the application (used for QR code generation)
-
-**[signup]** - Signup requirements (configurable via admin settings page)
-- `require_name` - Require performer name (1 or 0)
-- `require_song` - Require song selection (1 or 0)
 
 **[event]** - Event defaults (configurable via admin settings page)
 - `default_duration_hours` - Default event duration in hours (1-24)
@@ -161,8 +160,9 @@ Admin endpoints require authentication via:
 - List entries for an event
 
 **POST /api/entries.php?event_id={uuid}**
-- Create entry (user signup)
-- Body: `{ "position": 1, "performer_name": "...", "song_id": 123 }`
+- Create entry (user signup, auto-assigns next available slot)
+- Body: `{ "performer_name": "...", "song_id": 123 }`
+- Returns: `{ "success": true, "entry_id": 456, "position": 1 }`
 
 **GET /api/deezer.php?q={query}**
 - Search Deezer for songs
@@ -234,4 +234,4 @@ Event times are stored and displayed as **venue local time** (no timezone conver
 
 ## License
 
-MIT
+GNU General Public License v3.0 - See [LICENSE](LICENSE) or <https://www.gnu.org/licenses/gpl-3.0.html>

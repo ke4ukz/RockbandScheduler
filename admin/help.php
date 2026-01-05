@@ -144,7 +144,7 @@ $siteBaseUrl = $GLOBALS['config']['site']['base_url'] ?? '';
                                     <div class="card h-100 border-primary">
                                         <div class="card-body">
                                             <h5><i class="bi bi-phone"></i> Public Signup Page</h5>
-                                            <p class="text-muted mb-0">Users scan a QR code or visit a link to access the event signup page. They can claim available performance slots and optionally select a song from your library.</p>
+                                            <p class="text-muted mb-0">Users scan a QR code or visit a link to access the event signup page. They choose a song, enter their name, and are automatically assigned to the next available slot.</p>
                                         </div>
                                     </div>
                                 </div>
@@ -165,6 +165,14 @@ $siteBaseUrl = $GLOBALS['config']['site']['base_url'] ?? '';
                                 <li><strong>Share the QR code</strong> - Display the event's QR code so attendees can sign up</li>
                                 <li><strong>Manage the lineup</strong> - View, reorder, and mark performances as finished</li>
                             </ol>
+
+                            <h5 class="mt-4">User Signup Flow</h5>
+                            <p>When users access the signup page, they follow a simple two-step process:</p>
+                            <ol>
+                                <li><strong>Step 1: Choose a song</strong> - Search or scroll through the song list and select one</li>
+                                <li><strong>Step 2: Enter name</strong> - Provide their name and confirm the signup</li>
+                            </ol>
+                            <p>The system automatically assigns them to the next available slot. Users can see how many spots are filled (e.g., "3 of 10 spots filled") and the page automatically updates when slots fill up or become available.</p>
                         </div>
                     </div>
                 </section>
@@ -360,7 +368,7 @@ $siteBaseUrl = $GLOBALS['config']['site']['base_url'] ?? '';
                                         <div class="card-body">
                                             <h5><i class="bi bi-qr-code"></i> Signup Display</h5>
                                             <p class="text-muted">A full-screen page showing just the QR code with instructions. Perfect for displaying on a TV so attendees can easily scan and sign up.</p>
-                                            <p class="small">Access: Click "Signup Display" from the public signup page or append <code>signup-display.php?eventid=...</code> to your URL.</p>
+                                            <p class="small">Access: Use <code>signup-display.php?eventid=...</code> or press and hold the event title on the public signup page for 3 seconds.</p>
                                         </div>
                                     </div>
                                 </div>
@@ -377,7 +385,14 @@ $siteBaseUrl = $GLOBALS['config']['site']['base_url'] ?? '';
 
                             <div class="card tip-card mt-4">
                                 <div class="card-body">
-                                    <h6><i class="bi bi-lightbulb"></i> Tip</h6>
+                                    <h6><i class="bi bi-lightbulb"></i> Hidden Access to Signup Display</h6>
+                                    <p class="mb-0">On the public signup page, press and hold the event title (the large text at the top) for 3 seconds to open the signup display. This provides quick access without a visible link that might confuse attendees.</p>
+                                </div>
+                            </div>
+
+                            <div class="card tip-card mt-4">
+                                <div class="card-body">
+                                    <h6><i class="bi bi-fullscreen"></i> Full-Screen Tip</h6>
                                     <p class="mb-0">For the best display experience, use a browser in full-screen mode (press <kbd>F11</kbd> on most browsers).</p>
                                 </div>
                             </div>
@@ -393,14 +408,6 @@ $siteBaseUrl = $GLOBALS['config']['site']['base_url'] ?? '';
                         </div>
                         <div class="card-body">
                             <p>The <a href="settings.php">Settings</a> page lets you configure system-wide options:</p>
-
-                            <h5 class="mt-4"><i class="bi bi-person-plus"></i> Signup Requirements</h5>
-                            <p>Control what information users must provide when signing up:</p>
-                            <ul>
-                                <li><strong>Require performer name</strong> - Users must enter their name</li>
-                                <li><strong>Require song selection</strong> - Users must choose a song</li>
-                            </ul>
-                            <p>At least one must be required. You can allow users to sign up with just a name (they'll pick their song later), just a song (anonymous signup), or require both.</p>
 
                             <h5 class="mt-4"><i class="bi bi-calendar-event"></i> Event Defaults</h5>
                             <p>Set the default duration for new events. When creating an event, the end time will automatically be set this many hours after the start time.</p>
@@ -574,9 +581,10 @@ $siteBaseUrl = $GLOBALS['config']['site']['base_url'] ?? '';
                                     <div id="trouble4" class="accordion-collapse collapse" data-bs-parent="#troubleshootingAccordion">
                                         <div class="accordion-body">
                                             <ul>
-                                                <li>Check that the slot they're trying to claim isn't already taken</li>
-                                                <li>Verify your signup requirements in Settings - they may need to provide both name AND song</li>
+                                                <li>Check that there are available slots remaining (page shows "X of Y spots filled")</li>
                                                 <li>Make sure your song library has songs for them to choose from</li>
+                                                <li>Both a song selection and performer name are required</li>
+                                                <li>If they see "All spots are filled!", the event is full - delete entries or increase the slot count</li>
                                                 <li>Check the browser console for any error messages</li>
                                             </ul>
                                         </div>
@@ -615,6 +623,24 @@ $siteBaseUrl = $GLOBALS['config']['site']['base_url'] ?? '';
                                                 <li>Try clicking the Refresh button manually</li>
                                                 <li>Check your internet connection</li>
                                                 <li>Hard refresh the page (<kbd>Ctrl</kbd>+<kbd>F5</kbd> or <kbd>Cmd</kbd>+<kbd>Shift</kbd>+<kbd>R</kbd>)</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header">
+                                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#trouble7">
+                                            How do users know when slots open up?
+                                        </button>
+                                    </h2>
+                                    <div id="trouble7" class="accordion-collapse collapse" data-bs-parent="#troubleshootingAccordion">
+                                        <div class="accordion-body">
+                                            <ul>
+                                                <li>The public signup page polls for updates every 5 seconds</li>
+                                                <li>If slots were full and one becomes available, the signup form automatically reappears</li>
+                                                <li>If you edit the event and increase the slot count, users will see the updated total</li>
+                                                <li>The "X of Y spots filled" counter updates automatically</li>
                                             </ul>
                                         </div>
                                     </div>
