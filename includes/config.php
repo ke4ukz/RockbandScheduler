@@ -20,7 +20,7 @@
 //error_log("loading config");
 
 $GLOBALS['config'] = [];
-$configPath = realpath(__DIR__ . '/../../config/rockband_scheduler_config.ini');
+$configPath = realpath(__DIR__ . '/../../../config/rockband_scheduler_config.ini');
 if ($configPath && file_exists($configPath)) {
     $GLOBALS['config'] = parse_ini_file($configPath, true) ?: [];
     //error_log('config loaded');
