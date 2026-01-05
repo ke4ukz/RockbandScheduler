@@ -253,6 +253,7 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
         let deleteEventId = null;
         let currentViewEventId = null;
         let eventModal, viewEventModal, deleteModal;
+        let statusCheckInterval = null;
 
         document.addEventListener('DOMContentLoaded', async function() {
             eventModal = new bootstrap.Modal(document.getElementById('eventModal'));
@@ -261,6 +262,9 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
             await loadThemes();
             await loadDefaultTheme();
             loadEvents();
+
+            // Start periodic status check (every 60 seconds)
+            startStatusCheck();
 
             // Check if we should auto-open the add modal
             const urlParams = new URLSearchParams(window.location.search);
@@ -408,6 +412,50 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
         function hidePastEvents() {
             document.getElementById('pastSection').style.display = 'none';
             document.getElementById('loadPastSection').style.display = 'block';
+        }
+
+        function startStatusCheck() {
+            // Check every 60 seconds for status changes
+            statusCheckInterval = setInterval(checkEventStatusChanges, 60000);
+        }
+
+        function checkEventStatusChanges() {
+            // Track current statuses
+            const statusesBefore = {};
+            events.forEach(e => {
+                statusesBefore[e.event_id] = getEventStatus(e);
+            });
+
+            // Find events that have changed status
+            let hasChanges = false;
+            const newlyPast = [];
+
+            events.forEach(e => {
+                const newStatus = getEventStatus(e);
+                if (statusesBefore[e.event_id] !== newStatus) {
+                    hasChanges = true;
+                    // If event became past, we need to move it
+                    if (newStatus === 'past') {
+                        newlyPast.push(e);
+                    }
+                }
+            });
+
+            if (hasChanges) {
+                // Move newly past events to pastEvents array if past events are loaded
+                if (pastEventsLoaded && newlyPast.length > 0) {
+                    newlyPast.forEach(e => {
+                        pastEvents.unshift(e); // Add to beginning (most recent)
+                    });
+                    renderPastEvents();
+                }
+
+                // Remove newly past events from main events array
+                events = events.filter(e => getEventStatus(e) !== 'past');
+
+                // Re-render to reflect status changes
+                renderEvents();
+            }
         }
 
         function getEventStatus(event) {
