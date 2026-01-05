@@ -77,6 +77,21 @@ try {
     }
 } catch (PDOException $e) {
     error_log('Songs API error: ' . $e->getMessage());
+
+    // Provide more helpful error messages for common issues
+    $msg = $e->getMessage();
+    if (strpos($msg, 'Data too long') !== false) {
+        // Extract which column is too long
+        if (preg_match("/column '(\w+)'/", $msg, $matches)) {
+            jsonError("Data too long for {$matches[1]} field", 400);
+        }
+        jsonError('Data too long for database field', 400);
+    } elseif (strpos($msg, 'Duplicate entry') !== false) {
+        jsonError('Song already exists', 409);
+    } elseif (strpos($msg, 'Incorrect string value') !== false) {
+        jsonError('Invalid characters in song data (encoding issue)', 400);
+    }
+
     jsonError('Database error', 500);
 }
 
