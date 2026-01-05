@@ -245,6 +245,11 @@ function userCreateEntry($db, $eventId, $data) {
 
     $entryId = $db->lastInsertId();
 
+    // Update song selection stats if a song was selected
+    if ($songId) {
+        updateSongSelectionStats($db, $songId);
+    }
+
     jsonResponse(['success' => true, 'entry_id' => (int)$entryId], 201);
 }
 
@@ -268,7 +273,15 @@ function adminCreateEntry($db, $eventId, $data) {
     $stmt->execute([$eventId, $position]);
     $existing = $stmt->fetch();
 
+    $songId = $data['song_id'] ?? null;
+
     if ($existing) {
+        // Get the current song_id to check if it changed
+        $stmt = $db->prepare('SELECT song_id FROM entries WHERE entry_id = ?');
+        $stmt->execute([$existing['entry_id']]);
+        $currentEntry = $stmt->fetch(PDO::FETCH_ASSOC);
+        $oldSongId = $currentEntry['song_id'];
+
         // Update existing entry
         $stmt = $db->prepare('
             UPDATE entries SET
@@ -278,9 +291,15 @@ function adminCreateEntry($db, $eventId, $data) {
         ');
         $stmt->execute([
             $data['performer_name'] ?? '',
-            $data['song_id'] ?? null,
+            $songId,
             $existing['entry_id']
         ]);
+
+        // Update song selection stats if the song changed
+        if ($songId && $songId != $oldSongId) {
+            updateSongSelectionStats($db, $songId);
+        }
+
         jsonResponse(['success' => true, 'entry_id' => (int)$existing['entry_id']]);
     } else {
         // Create new entry
@@ -290,22 +309,30 @@ function adminCreateEntry($db, $eventId, $data) {
         ');
         $stmt->execute([
             $eventId,
-            $data['song_id'] ?? null,
+            $songId,
             $position,
             $data['performer_name'] ?? ''
         ]);
+
+        // Update song selection stats if a song was selected
+        if ($songId) {
+            updateSongSelectionStats($db, $songId);
+        }
+
         jsonResponse(['success' => true, 'entry_id' => (int)$db->lastInsertId()], 201);
     }
 }
 
 function updateEntry($db, $entryId, $data) {
-    // Check entry exists
-    $stmt = $db->prepare('SELECT entry_id, event_id FROM entries WHERE entry_id = ?');
+    // Check entry exists and get current song_id
+    $stmt = $db->prepare('SELECT entry_id, event_id, song_id FROM entries WHERE entry_id = ?');
     $stmt->execute([$entryId]);
-    $entry = $stmt->fetch();
+    $entry = $stmt->fetch(PDO::FETCH_ASSOC);
     if (!$entry) {
         jsonError('Entry not found', 404);
     }
+
+    $oldSongId = $entry['song_id'];
 
     // Build update
     $fields = [];
@@ -316,9 +343,11 @@ function updateEntry($db, $entryId, $data) {
         $values[] = $data['performer_name'];
     }
 
+    $newSongId = null;
     if (array_key_exists('song_id', $data)) {
         $fields[] = 'song_id = ?';
         $values[] = $data['song_id'];
+        $newSongId = $data['song_id'];
     }
 
     if (array_key_exists('position', $data)) {
@@ -340,6 +369,11 @@ function updateEntry($db, $entryId, $data) {
 
     $stmt = $db->prepare($sql);
     $stmt->execute($values);
+
+    // Update song selection stats if the song changed
+    if ($newSongId !== null && $newSongId != $oldSongId && $newSongId) {
+        updateSongSelectionStats($db, $newSongId);
+    }
 
     jsonResponse(['success' => true]);
 }
@@ -382,5 +416,19 @@ function reorderEntries($db, $eventId, $data) {
         $db->rollBack();
         jsonError($e->getMessage());
     }
+}
+
+/**
+ * Update song selection statistics
+ * Increments selection_count and sets last_selected to current timestamp
+ */
+function updateSongSelectionStats($db, $songId) {
+    $stmt = $db->prepare('
+        UPDATE songs
+        SET selection_count = selection_count + 1,
+            last_selected = NOW()
+        WHERE song_id = ?
+    ');
+    $stmt->execute([$songId]);
 }
 ?>
