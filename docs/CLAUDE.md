@@ -201,8 +201,8 @@ The site is deployed via GitHub and cPanel's Git Version Control. To push update
 
 **Low Priority:**
 - [x] **Missing performer_name length validation** - Added `mb_strlen()` check (max 150 chars) in `userCreateEntry()`, `adminCreateEntry()`, and `updateEntry()`. Returns clear error message before database insert.
-- [ ] **Songs list not paginated in entries API** - `listEntries()` fetches all songs for the selection dropdown. With thousands of songs, this could cause performance issues.
-- [ ] **Admin entry creation response inconsistent** - Public signup returns `position` in response; admin creation does not.
+- [x] **Songs list not paginated in entries API** - Added pagination with 500-song limit per request. Response now includes `songs_total`, `songs_limit`, `songs_offset`. Supports `songs_offset` and `songs_search` query params for pagination and server-side filtering.
+- [x] **Admin entry creation response inconsistent** - Admin entry creation now returns `position` in the response, matching public signup behavior.
 
 ## UI Conventions
 

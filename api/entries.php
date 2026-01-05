@@ -170,12 +170,42 @@ function listEntries($db, $eventId, $isAdmin) {
     }
 
     // Also fetch available songs for user selection
-    $stmt = $db->query('
-        SELECT song_id, artist, title, deezer_id,
-               TO_BASE64(album_art) as album_art
-        FROM songs
-        ORDER BY artist, title
-    ');
+    // Paginated to prevent performance issues with large libraries
+    $songsLimit = 500; // Max songs to return per request
+    $songsOffset = isset($_GET['songs_offset']) ? max(0, (int)$_GET['songs_offset']) : 0;
+    $songsSearch = isset($_GET['songs_search']) ? trim($_GET['songs_search']) : '';
+
+    // Get total count for pagination info
+    if ($songsSearch) {
+        $countStmt = $db->prepare('SELECT COUNT(*) FROM songs WHERE artist LIKE ? OR title LIKE ?');
+        $searchPattern = '%' . $songsSearch . '%';
+        $countStmt->execute([$searchPattern, $searchPattern]);
+    } else {
+        $countStmt = $db->query('SELECT COUNT(*) FROM songs');
+    }
+    $totalSongs = (int)$countStmt->fetchColumn();
+
+    // Fetch songs with pagination
+    if ($songsSearch) {
+        $stmt = $db->prepare('
+            SELECT song_id, artist, title, deezer_id,
+                   TO_BASE64(album_art) as album_art
+            FROM songs
+            WHERE artist LIKE ? OR title LIKE ?
+            ORDER BY artist, title
+            LIMIT ? OFFSET ?
+        ');
+        $stmt->execute([$searchPattern, $searchPattern, $songsLimit, $songsOffset]);
+    } else {
+        $stmt = $db->prepare('
+            SELECT song_id, artist, title, deezer_id,
+                   TO_BASE64(album_art) as album_art
+            FROM songs
+            ORDER BY artist, title
+            LIMIT ? OFFSET ?
+        ');
+        $stmt->execute([$songsLimit, $songsOffset]);
+    }
     $songs = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     foreach ($songs as &$song) {
@@ -186,6 +216,9 @@ function listEntries($db, $eventId, $isAdmin) {
         'event' => $event,
         'entries' => $entries,
         'songs' => $songs,
+        'songs_total' => $totalSongs,
+        'songs_limit' => $songsLimit,
+        'songs_offset' => $songsOffset,
         'total_slots' => (int)$event['num_entries']
     ]);
 }
@@ -350,7 +383,7 @@ function adminCreateEntry($db, $eventId, $data) {
             updateSongSelectionStats($db, $songId);
         }
 
-        jsonResponse(['success' => true, 'entry_id' => (int)$existing['entry_id']]);
+        jsonResponse(['success' => true, 'entry_id' => (int)$existing['entry_id'], 'position' => $position]);
     } else {
         // Create new entry
         $stmt = $db->prepare('
@@ -369,7 +402,7 @@ function adminCreateEntry($db, $eventId, $data) {
             updateSongSelectionStats($db, $songId);
         }
 
-        jsonResponse(['success' => true, 'entry_id' => (int)$db->lastInsertId()], 201);
+        jsonResponse(['success' => true, 'entry_id' => (int)$db->lastInsertId(), 'position' => $position], 201);
     }
 }
 
