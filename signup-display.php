@@ -26,6 +26,7 @@ if (!$eventId) {
     try {
         $stmt = $db->prepare('
             SELECT BIN_TO_UUID(e.event_id) as event_id, e.name,
+                   TO_BASE64(e.qr_image) as qr_image,
                    e.theme_id,
                    t.primary_color, t.bg_gradient_start, t.bg_gradient_end, t.text_color
             FROM events e
@@ -60,11 +61,6 @@ if (!$eventId) {
     }
 }
 
-// Build the signup URL
-$protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
-$host = $_SERVER['HTTP_HOST'];
-$basePath = dirname($_SERVER['SCRIPT_NAME']);
-$signupUrl = $protocol . '://' . $host . $basePath . '/default.php?eventid=' . urlencode($eventId);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -118,10 +114,10 @@ $signupUrl = $protocol . '://' . $host . $basePath . '/default.php?eventid=' . u
             box-shadow: 0 0 60px rgba(0, 0, 0, 0.3);
         }
 
-        .qr-container canvas {
+        .qr-container img {
             display: block;
-            width: 35vw !important;
-            height: 35vw !important;
+            width: 35vw;
+            height: 35vw;
             max-width: 400px;
             max-height: 400px;
         }
@@ -138,6 +134,12 @@ $signupUrl = $protocol . '://' . $host . $basePath . '/default.php?eventid=' . u
         .error-page h1 {
             font-size: 3vw;
         }
+
+        .qr-error {
+            padding: 4vw;
+            color: #666;
+            font-size: 1.5vw;
+        }
     </style>
 </head>
 <body>
@@ -149,26 +151,14 @@ $signupUrl = $protocol . '://' . $host . $basePath . '/default.php?eventid=' . u
     <div class="container">
         <div class="title">Scan to Sign Up</div>
         <div class="qr-container">
-            <canvas id="qrcode"></canvas>
+            <?php if ($event['qr_image']): ?>
+                <img src="data:image/png;base64,<?= $event['qr_image'] ?>" alt="QR Code to sign up">
+            <?php else: ?>
+                <div class="qr-error">QR code not available</div>
+            <?php endif; ?>
         </div>
         <div class="instruction">Point your phone camera at the code</div>
     </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
-    <script>
-        const signupUrl = <?= json_encode($signupUrl) ?>;
-
-        QRCode.toCanvas(document.getElementById('qrcode'), signupUrl, {
-            width: 400,
-            margin: 0,
-            color: {
-                dark: '#000000',
-                light: '#ffffff'
-            }
-        }, function(error) {
-            if (error) console.error(error);
-        });
-    </script>
 <?php endif; ?>
 </body>
 </html>
