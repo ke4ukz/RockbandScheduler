@@ -168,7 +168,7 @@ The site is deployed via GitHub and cPanel's Git Version Control. To push update
 
 **High Priority:**
 - [x] **Race condition in slot assignment** - Fixed by adding unique constraint `(event_id, position)` to entries table and implementing retry logic in `userCreateEntry()`. On duplicate key error (another user claimed the slot), retries up to 3 times with next available slot.
-- [ ] **Event UUID retrieval uses name lookup** (`api/events.php:209-219`) - After creating an event, the code retrieves its UUID by matching on name. If two events with identical names are created simultaneously, the wrong UUID could be returned. **Fix**: Generate UUID in PHP before insert, or use `LAST_INSERT_ID()` approach.
+- [x] **Event UUID retrieval uses name lookup** - Fixed by generating UUID via `SELECT UUID()` before insert, then using that UUID in the INSERT statement. Eliminates race condition where two events with identical names could return wrong UUID.
 
 **Medium Priority:**
 - [ ] **SSRF in album art fetching** (`api/songs.php:297-346`) - `fetchImageAsBlob()` accepts user-provided URLs without blocking internal/private IP ranges. An attacker could probe internal network services. **Fix**: Validate URL scheme is http/https and block private IPs (10.x, 172.16-31.x, 192.168.x, 169.254.x, localhost).

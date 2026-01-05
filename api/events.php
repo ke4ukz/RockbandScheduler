@@ -190,13 +190,18 @@ function createEvent($db, $data) {
     // Validate theme_id if provided
     $themeId = isset($data['theme_id']) && $data['theme_id'] !== '' ? (int)$data['theme_id'] : null;
 
-    // Insert with auto-generated UUID
+    // Generate UUID in PHP to avoid race condition with name lookup
+    $stmt = $db->query('SELECT UUID()');
+    $eventId = $stmt->fetchColumn();
+
+    // Insert with the pre-generated UUID
     $stmt = $db->prepare('
-        INSERT INTO events (name, location, start_time, end_time, num_entries, theme_id)
-        VALUES (?, ?, ?, ?, ?, ?)
+        INSERT INTO events (event_id, name, location, start_time, end_time, num_entries, theme_id)
+        VALUES (UUID_TO_BIN(?), ?, ?, ?, ?, ?, ?)
     ');
 
     $stmt->execute([
+        $eventId,
         $data['name'],
         $data['location'] ?? null,
         date('Y-m-d H:i:s', $startTime),
@@ -204,19 +209,6 @@ function createEvent($db, $data) {
         $numEntries,
         $themeId
     ]);
-
-    // Get the generated UUID
-    $stmt = $db->query('SELECT BIN_TO_UUID(event_id) as event_id FROM events WHERE event_id = LAST_INSERT_ID()');
-    $result = $stmt->fetch(PDO::FETCH_ASSOC);
-
-    // MySQL's LAST_INSERT_ID() doesn't work with UUID, so get the most recent
-    $stmt = $db->prepare('
-        SELECT BIN_TO_UUID(event_id) as event_id FROM events
-        WHERE name = ? ORDER BY created DESC LIMIT 1
-    ');
-    $stmt->execute([$data['name']]);
-    $result = $stmt->fetch(PDO::FETCH_ASSOC);
-    $eventId = $result['event_id'];
 
     // Auto-generate QR code for the new event
     generateQrCodeForEvent($db, $eventId);
