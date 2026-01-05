@@ -49,7 +49,7 @@ function listThemes($db) {
     $stmt = $db->query('
         SELECT theme_id, name, primary_color, bg_gradient_start, bg_gradient_end
         FROM themes
-        ORDER BY theme_id
+        ORDER BY name
     ');
     $themes = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
