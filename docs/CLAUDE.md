@@ -63,10 +63,19 @@ A PHP/MySQL web application for managing Rock Band performance sign-ups at event
 ## Key Patterns
 
 ### API Authentication
-Admin endpoints accept token via:
-1. JSON body: `{ "admin_token": "..." }` (preferred)
+Admin endpoints support two authentication methods:
+
+**Session-based (preferred for browser requests):**
+- Admin pages call `startAdminSession()` which starts a PHP session with secure cookie settings
+- Session is automatically authenticated because admin directory is protected by HTTP Basic Auth
+- CSRF token is generated and stored in session (`$_SESSION['csrf_token']`)
+- API requests include `csrf_token` in JSON body: `{ "csrf_token": "...", "action": "..." }`
+- Server validates both session authentication and CSRF token match
+
+**Token-based (for curl/scripts):**
+1. JSON body: `{ "admin_token": "..." }`
 2. Header: `X-Admin-Token: ...`
-3. Query param: `?admin_token=...`
+3. Query param: `?admin_token=...` (legacy)
 
 ### Public Signup Flow
 1. User lands on `default.php?eventid=UUID`
@@ -137,11 +146,11 @@ The site is deployed via GitHub and cPanel's Git Version Control. To push update
 
 ### Security Improvements (from Jan 2026 audit)
 
-**High Priority:**
-- [ ] **Add CSRF protection** - State-changing API endpoints (create/update/delete for entries, events, songs, settings) have no CSRF tokens. Consider adding tokens to forms or validating Origin/Referer headers.
+**Completed:**
+- [x] **Add CSRF protection** - Implemented session-based authentication with CSRF tokens. Admin pages call `startAdminSession()` to create a secure session, and all API requests include `csrf_token` in the JSON body. Server validates both session auth and CSRF token.
+- [x] **Hide admin token from JavaScript** - Admin pages no longer embed `ADMIN_TOKEN` in page source. Instead, they use `CSRF_TOKEN` which is tied to the PHP session. The actual admin token is only used for programmatic access (curl/scripts) and is never exposed to browsers.
 
 **Medium Priority:**
-- [ ] **Hide admin token from JavaScript** - The admin token is embedded in page source on admin pages (`const ADMIN_TOKEN = ...`). Consider using session-based auth or server-side token handling instead.
 - [ ] **Add rate limiting** - Public signup (`/api/entries.php`) and Deezer proxy (`/api/deezer.php`) have no rate limits. Could be abused to fill event slots or get server IP banned by Deezer.
 - [ ] **Sanitize error messages** - PDO exceptions expose database structure in API responses. Log details server-side but return generic messages to clients.
 

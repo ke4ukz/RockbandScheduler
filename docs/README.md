@@ -130,6 +130,7 @@ UUIDs are stored as binary(16) and converted using MySQL's `UUID_TO_BIN()` and `
 │   ├── events.php              # Event management
 │   ├── songs.php               # Song library management
 │   ├── entries.php             # Per-event entry management
+│   ├── import.php              # CSV bulk song import
 │   ├── settings.php            # Settings configuration
 │   └── help.php                # Help documentation
 ├── api/                        # JSON REST API endpoints
@@ -156,7 +157,14 @@ UUIDs are stored as binary(16) and converted using MySQL's `UUID_TO_BIN()` and `
 
 ### Authentication
 
-Admin endpoints require authentication via:
+Admin endpoints support two authentication methods:
+
+**Session-based (for browser requests from admin pages):**
+- Admin pages establish a PHP session with CSRF token
+- Requests include `csrf_token` in JSON body: `{ "csrf_token": "...", "action": "..." }`
+- Server validates session authentication and CSRF token
+
+**Token-based (for curl/scripts):**
 - JSON body: `{ "admin_token": "..." }` (recommended)
 - Header: `X-Admin-Token: ...`
 - Query parameter: `?admin_token=...`
@@ -233,11 +241,14 @@ Event times are stored and displayed as **venue local time** (no timezone conver
 
 ## Security Features
 
-- Token-based admin authentication with timing attack protection
-- HTTP Basic Auth on admin directory
-- PDO prepared statements prevent SQL injection
-- HTML output escaping prevents XSS
-- Config file stored outside web root
+- **Dual authentication**: Session-based with CSRF protection (browser) + token-based (scripts)
+- **CSRF protection**: All admin API requests from browser require valid CSRF token tied to PHP session
+- **Secure sessions**: PHP sessions with secure cookie settings (httponly, samesite=strict, secure when HTTPS)
+- **HTTP Basic Auth**: Admin directory protected at web server level
+- **Timing-safe comparison**: Admin tokens verified using `hash_equals()` to prevent timing attacks
+- **SQL injection prevention**: All database queries use PDO prepared statements
+- **XSS prevention**: HTML output escaped via `htmlspecialchars()` helper
+- **Config isolation**: Sensitive configuration stored outside web root
 
 ## Deployment
 
