@@ -44,7 +44,9 @@ $eventId = $data['event_id'] ?? null;
 try {
     switch ($action) {
         case 'list':
-            listEvents($db);
+            $excludePast = $data['exclude_past'] ?? false;
+            $onlyPast = $data['only_past'] ?? false;
+            listEvents($db, $excludePast, $onlyPast);
             break;
 
         case 'get':
@@ -80,15 +82,26 @@ try {
     jsonError('Database error', 500);
 }
 
-function listEvents($db) {
-    $stmt = $db->query('
+function listEvents($db, $excludePast = false, $onlyPast = false) {
+    $sql = '
         SELECT BIN_TO_UUID(e.event_id) as event_id, e.name, e.location, e.start_time, e.end_time, e.num_entries,
                TO_BASE64(e.qr_image) as qr_image, e.created, e.modified, e.theme_id,
                t.name as theme_name, t.primary_color, t.bg_gradient_start, t.bg_gradient_end, t.text_color
         FROM events e
         LEFT JOIN themes t ON e.theme_id = t.theme_id
-        ORDER BY e.start_time DESC
-    ');
+    ';
+
+    if ($excludePast) {
+        // Include active (end_time >= now) and upcoming (start_time > now)
+        $sql .= ' WHERE e.end_time >= NOW()';
+    } elseif ($onlyPast) {
+        // Only past events (end_time < now)
+        $sql .= ' WHERE e.end_time < NOW()';
+    }
+
+    $sql .= ' ORDER BY e.start_time DESC';
+
+    $stmt = $db->query($sql);
     $events = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     // Convert numeric fields

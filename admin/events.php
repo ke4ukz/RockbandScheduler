@@ -67,22 +67,46 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
             </button>
         </div>
 
-        <div class="row mb-3">
-            <div class="col-md-4">
-                <select class="form-select" id="filterStatus">
-                    <option value="all">All Events</option>
-                    <option value="active">Active Now</option>
-                    <option value="upcoming">Upcoming</option>
-                    <option value="past">Past</option>
-                </select>
-            </div>
+        <!-- Active Events Section -->
+        <div id="activeSection" style="display: none;">
+            <h4 class="text-success mb-3"><i class="bi bi-broadcast"></i> Active Now</h4>
+            <div class="row" id="activeEventsGrid"></div>
         </div>
 
-        <div class="row" id="eventsGrid">
-            <div class="col-12 text-center py-5">
-                <div class="spinner-border"></div>
-                <p class="mt-2">Loading events...</p>
+        <!-- Upcoming Events Section -->
+        <div id="upcomingSection" style="display: none;">
+            <h4 class="text-primary mb-3"><i class="bi bi-calendar-event"></i> Upcoming</h4>
+            <div class="row" id="upcomingEventsGrid"></div>
+        </div>
+
+        <!-- Loading indicator -->
+        <div id="loadingIndicator" class="text-center py-5">
+            <div class="spinner-border"></div>
+            <p class="mt-2">Loading events...</p>
+        </div>
+
+        <!-- No events message -->
+        <div id="noEventsMessage" class="text-center text-muted py-5" style="display: none;">
+            No active or upcoming events. <a href="#" onclick="openAddModal(); eventModal.show(); return false;">Create one?</a>
+        </div>
+
+        <!-- Past Events Section -->
+        <div id="pastSection" class="mt-4" style="display: none;">
+            <hr class="my-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h4 class="text-secondary mb-0"><i class="bi bi-clock-history"></i> Past Events</h4>
+                <button class="btn btn-sm btn-outline-secondary" id="hidePastBtn" onclick="hidePastEvents()">
+                    <i class="bi bi-chevron-up"></i> Hide
+                </button>
             </div>
+            <div class="row" id="pastEventsGrid"></div>
+        </div>
+
+        <!-- Load Past Events Button -->
+        <div id="loadPastSection" class="text-center mt-4" style="display: none;">
+            <button class="btn btn-outline-secondary" onclick="loadPastEvents()">
+                <i class="bi bi-clock-history"></i> Load Past Events
+            </button>
         </div>
     </div>
 
@@ -222,6 +246,8 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
         const SITE_BASE = window.location.origin + window.location.pathname.replace(/\/admin\/.*$/, '');
 
         let events = [];
+        let pastEvents = [];
+        let pastEventsLoaded = false;
         let themes = [];
         let defaultThemeId = null;
         let deleteEventId = null;
@@ -235,8 +261,6 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
             await loadThemes();
             await loadDefaultTheme();
             loadEvents();
-
-            document.getElementById('filterStatus').addEventListener('change', renderEvents);
 
             // Check if we should auto-open the add modal
             const urlParams = new URLSearchParams(window.location.search);
@@ -327,7 +351,7 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
                 const response = await fetch(`${API_BASE}/events.php`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ admin_token: ADMIN_TOKEN, action: 'list' })
+                    body: JSON.stringify({ admin_token: ADMIN_TOKEN, action: 'list', exclude_past: true })
                 });
                 const data = await response.json();
                 if (data.error) throw new Error(data.error);
@@ -335,9 +359,46 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
                 renderEvents();
             } catch (err) {
                 console.error('Failed to load events:', err);
-                document.getElementById('eventsGrid').innerHTML =
-                    '<div class="col-12 text-center text-danger">Failed to load events</div>';
+                document.getElementById('loadingIndicator').innerHTML =
+                    '<div class="text-danger">Failed to load events</div>';
             }
+        }
+
+        async function loadPastEvents() {
+            if (pastEventsLoaded) {
+                document.getElementById('pastSection').style.display = 'block';
+                document.getElementById('loadPastSection').style.display = 'none';
+                return;
+            }
+
+            const btn = document.querySelector('#loadPastSection button');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Loading...';
+
+            try {
+                const response = await fetch(`${API_BASE}/events.php`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ admin_token: ADMIN_TOKEN, action: 'list', only_past: true })
+                });
+                const data = await response.json();
+                if (data.error) throw new Error(data.error);
+                pastEvents = data.events || [];
+                pastEventsLoaded = true;
+                renderPastEvents();
+                document.getElementById('pastSection').style.display = 'block';
+                document.getElementById('loadPastSection').style.display = 'none';
+            } catch (err) {
+                console.error('Failed to load past events:', err);
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-clock-history"></i> Load Past Events';
+                alert('Failed to load past events');
+            }
+        }
+
+        function hidePastEvents() {
+            document.getElementById('pastSection').style.display = 'none';
+            document.getElementById('loadPastSection').style.display = 'block';
         }
 
         function getEventStatus(event) {
@@ -351,77 +412,96 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
         }
 
         function renderEvents() {
-            const filter = document.getElementById('filterStatus').value;
-            const grid = document.getElementById('eventsGrid');
+            document.getElementById('loadingIndicator').style.display = 'none';
 
-            let filtered = events;
-            if (filter !== 'all') {
-                filtered = events.filter(e => getEventStatus(e) === filter);
+            const activeEvents = events.filter(e => getEventStatus(e) === 'active');
+            const upcomingEvents = events.filter(e => getEventStatus(e) === 'upcoming');
+
+            // Sort active by start time, upcoming by start time
+            activeEvents.sort((a, b) => new Date(a.start_time) - new Date(b.start_time));
+            upcomingEvents.sort((a, b) => new Date(a.start_time) - new Date(b.start_time));
+
+            const activeSection = document.getElementById('activeSection');
+            const upcomingSection = document.getElementById('upcomingSection');
+            const noEventsMessage = document.getElementById('noEventsMessage');
+            const loadPastSection = document.getElementById('loadPastSection');
+
+            // Render active events
+            if (activeEvents.length > 0) {
+                activeSection.style.display = 'block';
+                document.getElementById('activeEventsGrid').innerHTML = activeEvents.map(e => renderEventCard(e)).join('');
+            } else {
+                activeSection.style.display = 'none';
             }
 
-            // Sort: active first, then upcoming by start time, then past by end time desc
-            filtered.sort((a, b) => {
-                const statusOrder = { active: 0, upcoming: 1, past: 2 };
-                const statusA = getEventStatus(a);
-                const statusB = getEventStatus(b);
-                if (statusOrder[statusA] !== statusOrder[statusB]) {
-                    return statusOrder[statusA] - statusOrder[statusB];
-                }
-                if (statusA === 'past') {
-                    return new Date(b.end_time) - new Date(a.end_time);
-                }
-                return new Date(a.start_time) - new Date(b.start_time);
-            });
-
-            if (filtered.length === 0) {
-                grid.innerHTML = '<div class="col-12 text-center text-muted py-5">No events found</div>';
-                return;
+            // Render upcoming events
+            if (upcomingEvents.length > 0) {
+                upcomingSection.style.display = 'block';
+                document.getElementById('upcomingEventsGrid').innerHTML = upcomingEvents.map(e => renderEventCard(e)).join('');
+            } else {
+                upcomingSection.style.display = 'none';
             }
 
-            grid.innerHTML = filtered.map(event => {
-                const status = getEventStatus(event);
-                const statusClass = `event-${status}`;
-                const statusBadge = {
-                    active: '<span class="badge bg-success">Active</span>',
-                    upcoming: '<span class="badge bg-primary">Upcoming</span>',
-                    past: '<span class="badge bg-secondary">Past</span>'
-                }[status];
+            // Show no events message if neither active nor upcoming
+            if (activeEvents.length === 0 && upcomingEvents.length === 0) {
+                noEventsMessage.style.display = 'block';
+            } else {
+                noEventsMessage.style.display = 'none';
+            }
 
-                return `
-                    <div class="col-md-6 col-lg-4 mb-4">
-                        <div class="card event-card ${statusClass}">
-                            <div class="card-body">
-                                <div class="d-flex justify-content-between align-items-start mb-2">
-                                    <h5 class="card-title mb-0">${escapeHtml(event.name)}</h5>
-                                    ${statusBadge}
-                                </div>
-                                ${event.location ? `<p class="card-text text-muted small mb-1"><i class="bi bi-geo-alt"></i> ${escapeHtml(event.location)}</p>` : ''}
-                                <p class="card-text text-muted small mb-2">
-                                    <i class="bi bi-calendar"></i> ${formatDateTime(event.start_time)}<br>
-                                    <i class="bi bi-clock"></i> to ${formatDateTime(event.end_time)}
-                                </p>
-                                <p class="card-text">
-                                    <i class="bi bi-people"></i> ${event.num_entries} slots
-                                </p>
-                                <div class="d-flex gap-2 flex-wrap">
-                                    <a href="entries.php?eventid=${event.event_id}" class="btn btn-sm btn-info">
-                                        <i class="bi bi-list-ol"></i> Manage
-                                    </a>
-                                    <button class="btn btn-sm btn-outline-info" onclick="viewEvent('${event.event_id}')">
-                                        <i class="bi bi-eye"></i> View
-                                    </button>
-                                    <button class="btn btn-sm btn-outline-primary" onclick="editEvent('${event.event_id}')">
-                                        <i class="bi bi-pencil"></i> Edit
-                                    </button>
-                                    <button class="btn btn-sm btn-outline-danger" onclick="deleteEvent('${event.event_id}', '${escapeHtml(event.name)}')">
-                                        <i class="bi bi-trash"></i>
-                                    </button>
-                                </div>
+            // Show load past events button
+            loadPastSection.style.display = 'block';
+        }
+
+        function renderPastEvents() {
+            // Sort past events by end time desc (most recent first)
+            pastEvents.sort((a, b) => new Date(b.end_time) - new Date(a.end_time));
+            document.getElementById('pastEventsGrid').innerHTML = pastEvents.map(e => renderEventCard(e)).join('');
+        }
+
+        function renderEventCard(event) {
+            const status = getEventStatus(event);
+            const statusClass = `event-${status}`;
+            const statusBadge = {
+                active: '<span class="badge bg-success">Active</span>',
+                upcoming: '<span class="badge bg-primary">Upcoming</span>',
+                past: '<span class="badge bg-secondary">Past</span>'
+            }[status];
+
+            return `
+                <div class="col-md-6 col-lg-4 mb-4">
+                    <div class="card event-card ${statusClass}">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <h5 class="card-title mb-0">${escapeHtml(event.name)}</h5>
+                                ${statusBadge}
+                            </div>
+                            ${event.location ? `<p class="card-text text-muted small mb-1"><i class="bi bi-geo-alt"></i> ${escapeHtml(event.location)}</p>` : ''}
+                            <p class="card-text text-muted small mb-2">
+                                <i class="bi bi-calendar"></i> ${formatDateTime(event.start_time)}<br>
+                                <i class="bi bi-clock"></i> to ${formatDateTime(event.end_time)}
+                            </p>
+                            <p class="card-text">
+                                <i class="bi bi-people"></i> ${event.num_entries} slots
+                            </p>
+                            <div class="d-flex gap-2 flex-wrap">
+                                <a href="entries.php?eventid=${event.event_id}" class="btn btn-sm btn-info">
+                                    <i class="bi bi-list-ol"></i> Manage
+                                </a>
+                                <button class="btn btn-sm btn-outline-info" onclick="viewEvent('${event.event_id}')">
+                                    <i class="bi bi-eye"></i> View
+                                </button>
+                                <button class="btn btn-sm btn-outline-primary" onclick="editEvent('${event.event_id}')">
+                                    <i class="bi bi-pencil"></i> Edit
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger" onclick="deleteEvent('${event.event_id}', '${escapeHtml(event.name)}')">
+                                    <i class="bi bi-trash"></i>
+                                </button>
                             </div>
                         </div>
                     </div>
-                `;
-            }).join('');
+                </div>
+            `;
         }
 
         function formatDateTime(dateStr) {
@@ -457,8 +537,12 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
             updateThemePreview();
         }
 
+        function findEvent(eventId) {
+            return events.find(e => e.event_id === eventId) || pastEvents.find(e => e.event_id === eventId);
+        }
+
         function editEvent(eventId) {
-            const event = events.find(e => e.event_id === eventId);
+            const event = findEvent(eventId);
             if (!event) return;
 
             document.getElementById('eventModalTitle').textContent = 'Edit Event';
@@ -475,7 +559,7 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
         }
 
         function viewEvent(eventId) {
-            const event = events.find(e => e.event_id === eventId);
+            const event = findEvent(eventId);
             if (!event) return;
 
             currentViewEventId = eventId;
