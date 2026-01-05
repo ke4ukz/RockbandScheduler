@@ -596,7 +596,7 @@ $siteBaseUrl = $GLOBALS['config']['site']['base_url'] ?? '';
                                                 <li>Try editing the song and re-searching on Deezer to update the art</li>
                                                 <li>Some songs may have multiple versions with different album art</li>
                                                 <li>Album art must be less than 64kb, if the file is larger than this it will not be added to the database</li>
-                                                <li>If Deezer does not have artwork for the album or the song is not available on Deezer, artwork may be uploaded manually.</li>
+                                                <li>If Deezer does not have artwork for the album or the song is not available on Deezer, artwork may be uploaded manually</li>
                                             </ul>
                                         </div>
                                     </div>
