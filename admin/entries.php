@@ -721,6 +721,9 @@ if (!$eventId || !isValidUuid($eventId)) {
         }
 
         async function toggleFinished(el, entryId, finished) {
+            // Show busy overlay
+            document.getElementById('busyOverlay').classList.add('show');
+
             try {
                 const response = await fetch(`${API_BASE}/entries.php`, {
                     method: 'POST',
@@ -735,9 +738,11 @@ if (!$eventId || !isValidUuid($eventId)) {
                 const result = await response.json();
                 if (result.error) throw new Error(result.error);
 
-                loadEntries();
+                await loadEntries();
             } catch (err) {
                 alert('Failed to update: ' + err.message);
+            } finally {
+                document.getElementById('busyOverlay').classList.remove('show');
             }
         }
 
