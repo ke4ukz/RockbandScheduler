@@ -996,9 +996,8 @@ $deezerLogo = $isLightText ? 'images/Vertical-mw-rgb.svg' : 'images/Vertical-mb-
                 document.getElementById('successSongInfo').textContent =
                     song ? `"${song.title}" by ${song.artist}` : '';
 
-                // Update local entries count
-                entries.push({ position: result.position });
-                updateSlotsCounter();
+                // Reload data to get accurate entry count (don't manually push - polling handles it)
+                await loadData();
 
                 showStep('successState');
 
