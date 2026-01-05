@@ -17,7 +17,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-error_log("loading db");
+//error_log("loading db");
 $GLOBALS['db'] = FALSE;
 if ($GLOBALS['config']!== NULL && $GLOBALS['config'] !== FALSE) {
     //error_log("Trying to connect to db {$GLOBALS['config']['database']['dbname']}");
