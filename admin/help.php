@@ -650,7 +650,7 @@ $siteBaseUrl = $GLOBALS['config']['site']['base_url'] ?? '';
                 <!-- Footer -->
                 <div class="text-muted text-center mb-4">
                     <p><i class="bi bi-code-slash"></i> Rockband Scheduler - Built with Bootstrap 5 and PHP</p>
-                    <p class="small">&copy; 2026 Jonathan Dean &bull; Licensed under the <a href="https://www.gnu.org/licenses/gpl-3.0.html" target="_blank" rel="noopener noreferrer">GNU GPL v3</a></p>
+                    <p class="small">&copy; 2026 &bull; Licensed under the <a href="https://www.gnu.org/licenses/gpl-3.0.html" target="_blank" rel="noopener noreferrer">GNU GPL v3</a></p>
                 </div>
             </div>
         </div>
