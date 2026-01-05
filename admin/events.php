@@ -213,6 +213,9 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
                     <a href="#" id="manageEntriesLink" class="btn btn-info">
                         <i class="bi bi-list-ol"></i> Manage Entries
                     </a>
+                    <a href="#" id="displayLink" target="_blank" class="btn btn-outline-secondary">
+                        <i class="bi bi-qr-code"></i> Signup Display
+                    </a>
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                 </div>
             </div>
@@ -562,6 +565,9 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
                                 <button class="btn btn-sm btn-outline-info" onclick="viewEvent('${event.event_id}')">
                                     <i class="bi bi-eye"></i> View
                                 </button>
+                                <a href="../signup-display.php?eventid=${event.event_id}" target="_blank" class="btn btn-sm btn-outline-secondary" title="Open signup display">
+                                    <i class="bi bi-qr-code"></i> Display
+                                </a>
                                 <button class="btn btn-sm btn-outline-primary" onclick="editEvent('${event.event_id}')">
                                     <i class="bi bi-pencil"></i> Edit
                                 </button>
@@ -659,6 +665,7 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
             const eventUrl = `${SITE_BASE}/?eventid=${eventId}`;
             document.getElementById('viewEventUrl').textContent = eventUrl;
             document.getElementById('manageEntriesLink').href = `entries.php?eventid=${eventId}`;
+            document.getElementById('displayLink').href = `../signup-display.php?eventid=${eventId}`;
 
             // Show QR if exists
             const qrImg = document.getElementById('viewEventQr');
