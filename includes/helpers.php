@@ -60,6 +60,69 @@ function verifyAdminToken($providedToken) {
 }
 
 /**
+ * Start admin session with secure settings
+ * Call this at the top of admin pages
+ */
+function startAdminSession() {
+    if (session_status() === PHP_SESSION_NONE) {
+        // Set secure session cookie parameters
+        session_set_cookie_params([
+            'lifetime' => 0, // Session cookie (expires when browser closes)
+            'path' => '/',
+            'secure' => isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on',
+            'httponly' => true,
+            'samesite' => 'Strict'
+        ]);
+        session_start();
+    }
+
+    // Mark this session as admin-authenticated
+    // The /admin/ directory is protected by HTTP Basic Auth,
+    // so if we reach this code, the user has already authenticated
+    $_SESSION['admin_authenticated'] = true;
+
+    // Generate CSRF token if not exists
+    if (empty($_SESSION['csrf_token'])) {
+        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+    }
+}
+
+/**
+ * Get the CSRF token for the current session
+ */
+function getCsrfToken() {
+    return $_SESSION['csrf_token'] ?? '';
+}
+
+/**
+ * Verify CSRF token from request
+ */
+function verifyCsrfToken($token) {
+    if (empty($token)) return false;
+    $sessionToken = $_SESSION['csrf_token'] ?? '';
+    if (empty($sessionToken)) return false;
+    return hash_equals($sessionToken, $token);
+}
+
+/**
+ * Check if the current request has a valid admin session
+ */
+function hasValidAdminSession() {
+    if (session_status() === PHP_SESSION_NONE) {
+        // Start session to check, but with same secure params
+        session_set_cookie_params([
+            'lifetime' => 0,
+            'path' => '/',
+            'secure' => isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on',
+            'httponly' => true,
+            'samesite' => 'Strict'
+        ]);
+        session_start();
+    }
+    return !empty($_SESSION['admin_authenticated']);
+}
+
+/**
  * Send JSON response and exit
  */
 function jsonResponse($data, $statusCode = 200) {
@@ -78,12 +141,22 @@ function jsonError($message, $statusCode = 400) {
 
 /**
  * Require admin authentication for API endpoint
- * Checks token from: JSON body (preferred), X-Admin-Token header, or query param (legacy)
+ * Accepts either:
+ * 1. Session auth with CSRF token (for browser requests from admin pages)
+ * 2. Admin token (for curl/scripts) - from JSON body, header, or query param
  */
 function requireAdminAuth() {
-    // First try JSON body (most secure - doesn't appear in logs)
-    $token = null;
+    // Method 1: Check for valid admin session + CSRF token
+    // This is the preferred method for browser requests
     $jsonBody = getJsonBodyCached();
+    $csrfToken = $jsonBody['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? null;
+
+    if ($csrfToken && hasValidAdminSession() && verifyCsrfToken($csrfToken)) {
+        return; // Authenticated via session
+    }
+
+    // Method 2: Check for admin token (for curl/scripts/backwards compatibility)
+    $token = null;
     if ($jsonBody && isset($jsonBody['admin_token'])) {
         $token = $jsonBody['admin_token'];
     }
@@ -96,9 +169,11 @@ function requireAdminAuth() {
         $token = $_GET['admin_token'] ?? null;
     }
 
-    if (!verifyAdminToken($token)) {
-        jsonError('Unauthorized', 401);
+    if (verifyAdminToken($token)) {
+        return; // Authenticated via token
     }
+
+    jsonError('Unauthorized', 401);
 }
 
 /**
