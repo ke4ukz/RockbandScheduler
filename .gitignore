@@ -1,3 +1,4 @@
 *.csv
 notes.txt
 Logos/
+.DS_Store
