@@ -36,6 +36,7 @@ A web application for managing Rock Band performance sign-ups at events. Users s
 - Song library management with Deezer search
 - Entry management with reorder, mark finished, and bulk clear
 - Settings configuration for default duration and default theme
+- Dark/light mode toggle with per-user preference (saved in browser localStorage)
 
 ### Display Modes
 - **Signup Display**: Full-screen QR code for TV/projector display (hidden access via 3-second press on event title), responsive to screen orientation and size

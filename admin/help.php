@@ -429,6 +429,14 @@ $siteBaseUrl = $GLOBALS['config']['site']['base_url'] ?? '';
 
                             <h5 class="mt-4"><i class="bi bi-palette"></i> Default Theme</h5>
                             <p>Choose which color theme is pre-selected when creating new events.</p>
+
+                            <h5 class="mt-4"><i class="bi bi-moon-stars"></i> Admin Dark/Light Mode</h5>
+                            <p>The admin panel supports dark and light mode. Click the sun/moon icon in the navigation bar to toggle between modes. Your preference is saved in your browser's localStorage, so it persists across sessions.</p>
+                            <ul>
+                                <li><strong>Default on desktop</strong> (screen width &ge; 992px): Light mode</li>
+                                <li><strong>Default on mobile</strong> (screen width &lt; 992px): Dark mode</li>
+                            </ul>
+                            <p>Once you manually toggle the theme, your preference overrides the default.</p>
                         </div>
                     </div>
                 </section>
