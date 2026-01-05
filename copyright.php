@@ -120,7 +120,9 @@ require_once 'config.php';
 
                 <p>This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.</p>
 
-                <p class="mb-0">You should have received a copy of the GNU General Public License along with this program. If not, see <a href="https://www.gnu.org/licenses/" target="_blank" rel="noopener noreferrer">https://www.gnu.org/licenses/</a>.</p>
+                <p>You should have received a copy of the GNU General Public License along with this program. If not, see <a href="https://www.gnu.org/licenses/" target="_blank" rel="noopener noreferrer">https://www.gnu.org/licenses/</a>.</p>
+
+                <p class="mb-0"><i class="bi bi-github"></i> Source code available at <a href="https://github.com/ke4ukz/RockbandScheduler" target="_blank" rel="noopener noreferrer">github.com/ke4ukz/RockbandScheduler</a></p>
             </div>
         </div>
 
