@@ -289,8 +289,9 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
             for (let i = 0; i < importData.length; i++) {
                 if (importData[i].status === 'pending') {
                     await searchSong(i);
-                    // Small delay to avoid rate limiting
-                    await new Promise(r => setTimeout(r, 100));
+                    // Deezer rate limit: 50 requests per 5 seconds (100ms minimum)
+                    // Using 120ms for safety buffer
+                    await new Promise(r => setTimeout(r, 120));
                 }
             }
         }
@@ -300,7 +301,7 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
                 if (importData[i].status === 'notfound' || importData[i].status === 'ambiguous') {
                     importData[i].status = 'pending';
                     await searchSong(i);
-                    await new Promise(r => setTimeout(r, 100));
+                    await new Promise(r => setTimeout(r, 120));
                 }
             }
         }
@@ -600,6 +601,7 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
             let imported = 0;
             let skipped = 0;
             let failed = 0;
+            const failures = []; // Track failed songs with details
 
             for (let i = 0; i < songsToImport.length; i++) {
                 const item = songsToImport[i];
@@ -643,6 +645,11 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
                         } else {
                             console.error('Import error:', result.error);
                             failed++;
+                            failures.push({
+                                title: track.title,
+                                artist: track.artist.name,
+                                error: result.error
+                            });
                         }
                     } else {
                         imported++;
@@ -650,20 +657,40 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
                 } catch (err) {
                     console.error('Import failed:', err);
                     failed++;
+                    failures.push({
+                        title: track.title,
+                        artist: track.artist.name,
+                        error: err.message || 'Network error'
+                    });
                 }
 
-                // Small delay to avoid overwhelming the server
-                await new Promise(r => setTimeout(r, 50));
+                // Deezer rate limit: 50 requests per 5 seconds
+                // Each import makes 1 Deezer request (album details), so 120ms delay
+                await new Promise(r => setTimeout(r, 120));
             }
 
             progressBar.classList.remove('progress-bar-animated');
+
+            let failureHtml = '';
+            if (failures.length > 0) {
+                failureHtml = `
+                    <div class="alert alert-warning mt-3">
+                        <strong>Failed imports:</strong>
+                        <ul class="mb-0 mt-2">
+                            ${failures.map(f => `<li><strong>${escapeHtml(f.title)}</strong> by ${escapeHtml(f.artist)}: ${escapeHtml(f.error)}</li>`).join('')}
+                        </ul>
+                    </div>
+                `;
+            }
+
             statusDiv.innerHTML = `
-                <div class="alert alert-success">
+                <div class="alert ${failed > 0 ? 'alert-warning' : 'alert-success'}">
                     Import complete!
                     <strong>${imported}</strong> imported,
                     <strong>${skipped}</strong> skipped (already existed),
                     <strong>${failed}</strong> failed.
                 </div>
+                ${failureHtml}
                 <a href="songs.php" class="btn btn-primary">View Song Library</a>
             `;
         }
