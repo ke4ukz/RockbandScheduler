@@ -112,6 +112,10 @@ Admin endpoints accept token via:
 - Check browser console for JavaScript errors
 - PHP errors logged to server error log
 
+## Pending Tasks
+
+- **Clean up repo for deployment**: The website pulls content from the repo. Need to delete documentation files that shouldn't be available on the web server (e.g., CLAUDE.md, "deezer notes.txt", possibly others). Consider using .htaccess rules or a deployment script to exclude these files.
+
 ## UI Conventions
 
 - Busy overlay during async operations (`.busy-overlay` + `.show`/`.visible`)
