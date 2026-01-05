@@ -135,16 +135,19 @@ function updateSettings($configPath, $newSettings) {
     $configDir = dirname($configPath);
     if (file_exists($configPath)) {
         if (!is_writable($configPath)) {
-            jsonError("Config file is not writable: $configPath", 500);
+            error_log("Settings API: Config file is not writable: $configPath");
+            jsonError("Config file is not writable. Check server file permissions.", 500);
         }
     } else {
         if (!is_writable($configDir)) {
-            jsonError("Config directory is not writable: $configDir", 500);
+            error_log("Settings API: Config directory is not writable: $configDir");
+            jsonError("Config directory is not writable. Check server file permissions.", 500);
         }
     }
 
     if (file_put_contents($configPath, $iniContent) === false) {
-        jsonError("Failed to write config file: $configPath", 500);
+        error_log("Settings API: Failed to write config file: $configPath");
+        jsonError("Failed to save settings. Check server file permissions.", 500);
     }
 
     // Re-read to return updated settings

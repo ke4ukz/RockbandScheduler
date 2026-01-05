@@ -46,6 +46,8 @@ if ($trackId) {
     $response = @file_get_contents($deezerUrl, false, $ctx);
 
     if ($response === false) {
+        $error = error_get_last();
+        error_log("Deezer API error (track $trackId): " . ($error['message'] ?? 'unknown error'));
         http_response_code(502);
         echo json_encode(['error' => 'Failed to reach Deezer API']);
         exit;
@@ -53,7 +55,15 @@ if ($trackId) {
 
     $data = json_decode($response, true);
 
-    if (json_last_error() !== JSON_ERROR_NONE || isset($data['error'])) {
+    if (json_last_error() !== JSON_ERROR_NONE) {
+        error_log("Deezer API error (track $trackId): JSON decode failed - " . json_last_error_msg());
+        http_response_code(502);
+        echo json_encode(['error' => 'Invalid response from Deezer API']);
+        exit;
+    }
+
+    if (isset($data['error'])) {
+        error_log("Deezer API error (track $trackId): " . ($data['error']['message'] ?? 'unknown'));
         http_response_code(404);
         echo json_encode(['error' => 'Track not found']);
         exit;
@@ -77,6 +87,8 @@ if ($albumId) {
     $response = @file_get_contents($deezerUrl, false, $ctx);
 
     if ($response === false) {
+        $error = error_get_last();
+        error_log("Deezer API error (album $albumId): " . ($error['message'] ?? 'unknown error'));
         http_response_code(502);
         echo json_encode(['error' => 'Failed to reach Deezer API']);
         exit;
@@ -84,9 +96,17 @@ if ($albumId) {
 
     $data = json_decode($response, true);
 
-    if (json_last_error() !== JSON_ERROR_NONE || isset($data['error'])) {
+    if (json_last_error() !== JSON_ERROR_NONE) {
+        error_log("Deezer API error (album $albumId): JSON decode failed - " . json_last_error_msg());
         http_response_code(502);
         echo json_encode(['error' => 'Invalid response from Deezer API']);
+        exit;
+    }
+
+    if (isset($data['error'])) {
+        error_log("Deezer API error (album $albumId): " . ($data['error']['message'] ?? 'unknown'));
+        http_response_code(404);
+        echo json_encode(['error' => 'Album not found']);
         exit;
     }
 
@@ -119,6 +139,8 @@ $deezerUrl = 'https://api.deezer.com/search/track?' . http_build_query([
 $response = @file_get_contents($deezerUrl, false, $ctx);
 
 if ($response === false) {
+    $error = error_get_last();
+    error_log("Deezer API error (search '$query'): " . ($error['message'] ?? 'unknown error'));
     http_response_code(502);
     echo json_encode(['error' => 'Failed to reach Deezer API']);
     exit;
@@ -127,6 +149,7 @@ if ($response === false) {
 $data = json_decode($response, true);
 
 if (json_last_error() !== JSON_ERROR_NONE) {
+    error_log("Deezer API error (search '$query'): JSON decode failed - " . json_last_error_msg());
     http_response_code(502);
     echo json_encode(['error' => 'Invalid response from Deezer API']);
     exit;

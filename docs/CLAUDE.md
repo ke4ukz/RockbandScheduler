@@ -149,14 +149,14 @@ The site is deployed via GitHub and cPanel's Git Version Control. To push update
 **Completed:**
 - [x] **Add CSRF protection** - Implemented session-based authentication with CSRF tokens. Admin pages call `startAdminSession()` to create a secure session, and all API requests include `csrf_token` in the JSON body. Server validates both session auth and CSRF token.
 - [x] **Hide admin token from JavaScript** - Admin pages no longer embed `ADMIN_TOKEN` in page source. Instead, they use `CSRF_TOKEN` which is tied to the PHP session. The actual admin token is only used for programmatic access (curl/scripts) and is never exposed to browsers.
+- [x] **Sanitize error messages** - All API endpoints now log full error details via `error_log()` but return generic messages to clients. No database structure, file paths, or raw exception messages are exposed. Common errors (data too long, duplicate entry, encoding issues) get helpful but safe messages.
+- [x] **Remove debug logging** - Removed `error_log("loading db")` from `db.php`.
 
 **Medium Priority:**
 - [ ] **Add rate limiting** - Public signup (`/api/entries.php`) and Deezer proxy (`/api/deezer.php`) have no rate limits. Could be abused to fill event slots or get server IP banned by Deezer.
-- [ ] **Sanitize error messages** - PDO exceptions expose database structure in API responses. Log details server-side but return generic messages to clients.
 
 **Low Priority:**
 - [ ] **Add security headers** - Missing X-Frame-Options, X-Content-Type-Options, CSP, etc. Add to `.htaccess` or PHP.
-- [ ] **Remove debug logging** - `db.php` line 20 has `error_log("loading db")` that should be removed for production.
 
 ### Code Quality
 

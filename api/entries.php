@@ -405,22 +405,27 @@ function reorderEntries($db, $eventId, $data) {
     }
 
     // order should be array of { entry_id, position }
+    // Validate all items before starting transaction
+    foreach ($data['order'] as $item) {
+        if (!isset($item['entry_id']) || !isset($item['position'])) {
+            jsonError('Each order item must have entry_id and position');
+        }
+    }
+
     $db->beginTransaction();
     try {
         $stmt = $db->prepare('UPDATE entries SET position = ? WHERE entry_id = ? AND event_id = UUID_TO_BIN(?)');
 
         foreach ($data['order'] as $item) {
-            if (!isset($item['entry_id']) || !isset($item['position'])) {
-                throw new Exception('Each order item must have entry_id and position');
-            }
             $stmt->execute([(int)$item['position'], (int)$item['entry_id'], $eventId]);
         }
 
         $db->commit();
         jsonResponse(['success' => true]);
-    } catch (Exception $e) {
+    } catch (PDOException $e) {
         $db->rollBack();
-        jsonError($e->getMessage());
+        error_log('Entries reorder error: ' . $e->getMessage());
+        jsonError('Failed to reorder entries', 500);
     }
 }
 

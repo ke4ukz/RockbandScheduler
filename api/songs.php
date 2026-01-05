@@ -92,10 +92,10 @@ try {
 } catch (PDOException $e) {
     error_log('Songs API error: ' . $e->getMessage());
 
-    // Provide more helpful error messages for common issues
+    // Provide helpful error messages for common issues without exposing DB structure
     $msg = $e->getMessage();
     if (strpos($msg, 'Data too long') !== false) {
-        // Extract which column is too long
+        // Extract which column is too long (safe to expose field name)
         if (preg_match("/column '(\w+)'/", $msg, $matches)) {
             jsonError("Data too long for {$matches[1]} field", 400);
         }
@@ -106,10 +106,8 @@ try {
         jsonError('Invalid characters in song data (encoding issue)', 400);
     }
 
-    // Return the actual error for debugging (sanitize sensitive info)
-    $safeMsg = preg_replace('/SQLSTATE\[\w+\]:\s*/', '', $msg);
-    $safeMsg = preg_replace('/at row \d+/', '', $safeMsg);
-    jsonError('Database error: ' . $safeMsg, 500);
+    // Generic error for all other database issues - full details logged above
+    jsonError('Database error occurred while processing song', 500);
 }
 
 function listSongs($db, $data = []) {
