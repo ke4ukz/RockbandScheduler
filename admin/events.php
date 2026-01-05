@@ -377,6 +377,7 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
             }
 
             const btn = document.querySelector('#loadPastSection button');
+            const originalBtnHtml = btn.innerHTML;
             btn.disabled = true;
             btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Loading...';
 
@@ -393,10 +394,13 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
                 renderPastEvents();
                 document.getElementById('pastSection').style.display = 'block';
                 document.getElementById('loadPastSection').style.display = 'none';
+                // Reset button state for if user hides and re-shows
+                btn.disabled = false;
+                btn.innerHTML = originalBtnHtml;
             } catch (err) {
                 console.error('Failed to load past events:', err);
                 btn.disabled = false;
-                btn.innerHTML = '<i class="bi bi-clock-history"></i> Load Past Events';
+                btn.innerHTML = originalBtnHtml;
                 alert('Failed to load past events');
             }
         }
