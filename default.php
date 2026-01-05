@@ -53,15 +53,7 @@ if (!$eventId) {
                 }
             }
 
-            $now = new DateTime();
-            $start = new DateTime($event['start_time']);
-            $end = new DateTime($event['end_time']);
-
-            if ($now < $start) {
-                $error = 'This event hasn\'t started yet. Check back at ' . $start->format('g:i A') . '.';
-            } elseif ($now > $end) {
-                $error = 'This event has ended.';
-            }
+            // No time check - if someone has the QR code/URL, they can access the event
         }
     } catch (PDOException $e) {
         error_log('Event lookup error: ' . $e->getMessage());
