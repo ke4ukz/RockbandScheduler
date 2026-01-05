@@ -197,10 +197,16 @@ function createSong($db, $data) {
         }
     }
 
-    // Fetch album art if URL provided
+    // Get album art from URL or base64
     $albumArt = null;
     if (!empty($data['album_art_url'])) {
         $albumArt = fetchImageAsBlob($data['album_art_url']);
+    } elseif (!empty($data['album_art_base64'])) {
+        // Decode base64 album art (from manual upload)
+        $albumArt = base64_decode($data['album_art_base64']);
+        if ($albumArt === false) {
+            $albumArt = null;
+        }
     }
 
     $stmt = $db->prepare('

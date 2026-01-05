@@ -221,6 +221,15 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
                                 <input type="number" class="form-control" id="manualDuration" min="0" value="0">
                             </div>
                         </div>
+                        <div class="mb-3">
+                            <label for="manualAlbumArt" class="form-label">Album Art (optional)</label>
+                            <input type="file" class="form-control" id="manualAlbumArt" accept="image/*">
+                            <div class="form-text">Max 64KB. Recommended: square image, ~250x250px</div>
+                            <div id="manualAlbumArtPreview" class="mt-2" style="display: none;">
+                                <img id="manualAlbumArtImg" class="rounded" style="max-width: 100px; max-height: 100px;">
+                                <button type="button" class="btn btn-sm btn-link text-danger" onclick="clearManualAlbumArt()">Remove</button>
+                            </div>
+                        </div>
                     </form>
                 </div>
                 <div class="modal-footer">
@@ -649,18 +658,59 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
                 document.getElementById('manualAlbum').value = item.manualData.album;
                 document.getElementById('manualYear').value = item.manualData.year;
                 document.getElementById('manualDuration').value = item.manualData.duration || 0;
+                // Show existing album art if present
+                if (item.manualData.albumArtBase64) {
+                    document.getElementById('manualAlbumArtImg').src = 'data:image/jpeg;base64,' + item.manualData.albumArtBase64;
+                    document.getElementById('manualAlbumArtPreview').style.display = 'block';
+                } else {
+                    clearManualAlbumArt();
+                }
             } else {
                 document.getElementById('manualTitle').value = item.original.title;
                 document.getElementById('manualArtist').value = item.original.artist;
                 document.getElementById('manualAlbum').value = '';
                 document.getElementById('manualYear').value = new Date().getFullYear();
                 document.getElementById('manualDuration').value = 0;
+                clearManualAlbumArt();
             }
+
+            // Clear file input (can't set value programmatically)
+            document.getElementById('manualAlbumArt').value = '';
 
             manualEntryModal.show();
         }
 
-        function saveManualEntry() {
+        function clearManualAlbumArt() {
+            document.getElementById('manualAlbumArt').value = '';
+            document.getElementById('manualAlbumArtPreview').style.display = 'none';
+            document.getElementById('manualAlbumArtImg').src = '';
+        }
+
+        // Set up album art preview when file is selected
+        document.getElementById('manualAlbumArt').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) {
+                clearManualAlbumArt();
+                return;
+            }
+
+            // Check file size (64KB max for database BLOB)
+            if (file.size > 65535) {
+                alert('Image is too large. Maximum size is 64KB. Please resize the image or use a more compressed format.');
+                clearManualAlbumArt();
+                return;
+            }
+
+            // Preview the image
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('manualAlbumArtImg').src = e.target.result;
+                document.getElementById('manualAlbumArtPreview').style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+        });
+
+        async function saveManualEntry() {
             const form = document.getElementById('manualEntryForm');
             if (!form.checkValidity()) {
                 form.reportValidity();
@@ -670,12 +720,23 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
             const index = parseInt(document.getElementById('manualEntryIndex').value);
             const item = importData[index];
 
+            // Get album art as base64 if file was selected
+            let albumArtBase64 = null;
+            const fileInput = document.getElementById('manualAlbumArt');
+            if (fileInput.files.length > 0) {
+                albumArtBase64 = await readFileAsBase64(fileInput.files[0]);
+            } else if (item.manualData?.albumArtBase64) {
+                // Keep existing album art if no new file selected
+                albumArtBase64 = item.manualData.albumArtBase64;
+            }
+
             item.manualData = {
                 title: document.getElementById('manualTitle').value.trim(),
                 artist: document.getElementById('manualArtist').value.trim(),
                 album: document.getElementById('manualAlbum').value.trim(),
                 year: parseInt(document.getElementById('manualYear').value),
-                duration: parseInt(document.getElementById('manualDuration').value) || 0
+                duration: parseInt(document.getElementById('manualDuration').value) || 0,
+                albumArtBase64: albumArtBase64
             };
             item.status = 'manual';
             item.selectedTrack = null;
@@ -683,6 +744,19 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
             manualEntryModal.hide();
             renderImportRow(index);
             updateCounts();
+        }
+
+        function readFileAsBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => {
+                    // Extract just the base64 part (remove data:image/...;base64, prefix)
+                    const base64 = reader.result.split(',')[1];
+                    resolve(base64);
+                };
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
         }
 
         async function retrySearch(index) {
@@ -794,6 +868,7 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
                             duration: item.manualData.duration || 0,
                             deezer_id: null,
                             album_art_url: null,
+                            album_art_base64: item.manualData.albumArtBase64 || null,
                             skip_existing: skipExisting
                         };
                     } else {
