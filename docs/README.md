@@ -120,6 +120,20 @@ The config file should be placed outside the web root for security. Example dire
 **[theme]** - Theme settings (configurable via admin settings page)
 - `default_theme_id` - Default theme for new events
 
+**[sightengine]** - Optional content filtering (requires free account at sightengine.com)
+- `api_user` - Sightengine API user ID
+- `api_secret` - Sightengine API secret
+
+**[content_filter]** - Content filter settings (requires Sightengine credentials; also configurable via admin settings page)
+- `profanity_sexual` - Sexual language filter level (0=off, 1=low, 2=medium, 3=high)
+- `profanity_discriminatory` - Discriminatory language filter level (0-3)
+- `profanity_insult` - Insults filter level (0-3)
+- `profanity_inappropriate` - Other inappropriate language filter level (0-3)
+- `profanity_grawlix` - Symbol substitution filter level (0-3)
+- `block_extremism` - Block extremism content (0=off, 1=on)
+- `block_violence` - Block violence/self-harm content (0=off, 1=on)
+- `block_drugs` - Block drug/medicine references (0=off, 1=on)
+
 ## Database Schema
 
 Four main tables:
@@ -302,6 +316,12 @@ The site is deployed via GitHub and cPanel's Git Version Control. To push update
 ## AI Disclosure
 
 This software was developed with assistance from Claude, an AI assistant by Anthropic. AI tools were used for code generation, documentation, and development guidance throughout the project.
+
+## Disclaimer
+
+This software is provided free of charge under the GPL v3 license. It was developed for a specific personal use case and is shared publicly in case others find it useful.
+
+**There is no expectation of support, maintenance, or updates of any kind**, including critical security updates. Use at your own risk. If you choose to deploy this software, you are solely responsible for its security and maintenance.
 
 ## License
 
