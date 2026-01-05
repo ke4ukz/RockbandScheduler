@@ -91,17 +91,25 @@ function listEvents($db, $excludePast = false, $onlyPast = false) {
         LEFT JOIN themes t ON e.theme_id = t.theme_id
     ';
 
+    // Use PHP's current time to avoid MySQL timezone issues
+    $now = date('Y-m-d H:i:s');
+
     if ($excludePast) {
         // Include active (end_time >= now) and upcoming (start_time > now)
-        $sql .= ' WHERE e.end_time >= NOW()';
+        $sql .= ' WHERE e.end_time >= ?';
     } elseif ($onlyPast) {
         // Only past events (end_time < now)
-        $sql .= ' WHERE e.end_time < NOW()';
+        $sql .= ' WHERE e.end_time < ?';
     }
 
     $sql .= ' ORDER BY e.start_time DESC';
 
-    $stmt = $db->query($sql);
+    if ($excludePast || $onlyPast) {
+        $stmt = $db->prepare($sql);
+        $stmt->execute([$now]);
+    } else {
+        $stmt = $db->query($sql);
+    }
     $events = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     // Convert numeric fields
