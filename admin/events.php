@@ -346,7 +346,12 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
             }
         }
 
-        async function loadEvents() {
+        async function loadEvents(isRefresh = false) {
+            // Only show loading indicator on initial load, not refreshes
+            if (!isRefresh) {
+                document.getElementById('loadingIndicator').style.display = 'block';
+            }
+
             try {
                 const response = await fetch(`${API_BASE}/events.php`, {
                     method: 'POST',
@@ -424,6 +429,7 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
             const activeSection = document.getElementById('activeSection');
             const upcomingSection = document.getElementById('upcomingSection');
             const noEventsMessage = document.getElementById('noEventsMessage');
+            const pastSection = document.getElementById('pastSection');
             const loadPastSection = document.getElementById('loadPastSection');
 
             // Render active events
@@ -449,8 +455,13 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
                 noEventsMessage.style.display = 'none';
             }
 
-            // Show load past events button
-            loadPastSection.style.display = 'block';
+            // Handle past events section visibility
+            // If past events are currently shown, keep them shown; otherwise show the load button
+            if (pastSection.style.display === 'block') {
+                loadPastSection.style.display = 'none';
+            } else {
+                loadPastSection.style.display = 'block';
+            }
         }
 
         function renderPastEvents() {
@@ -642,7 +653,7 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
                 if (result.error) throw new Error(result.error);
 
                 eventModal.hide();
-                loadEvents();
+                loadEvents(true);
             } catch (err) {
                 alert('Failed to save event: ' + err.message);
             }
@@ -671,8 +682,13 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
                 if (result.error) throw new Error(result.error);
 
                 deleteModal.hide();
+                // Remove from pastEvents if it was there
+                pastEvents = pastEvents.filter(e => e.event_id !== deleteEventId);
+                if (pastEventsLoaded) {
+                    renderPastEvents();
+                }
                 deleteEventId = null;
-                loadEvents();
+                loadEvents(true);
             } catch (err) {
                 alert('Failed to delete event: ' + err.message);
             }
