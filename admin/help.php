@@ -1,4 +1,22 @@
 <?php
+/**
+ * Rockband Scheduler - Admin Help
+ * Copyright (C) 2026 Jonathan Dean
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/../db.php';
 require_once __DIR__ . '/../includes/helpers.php';
@@ -101,7 +119,9 @@ $siteBaseUrl = $GLOBALS['config']['site']['base_url'] ?? '';
                         <a href="#display-modes">Display Modes</a>
                         <a href="#settings">Settings</a>
                         <a href="#tips">Tips & Best Practices</a>
+                        <a href="#third-party">Third-Party APIs</a>
                         <a href="#troubleshooting">Troubleshooting</a>
+                        <a href="#copyright">Copyright & License</a>
                     </div>
                 </div>
             </div>
@@ -436,6 +456,47 @@ $siteBaseUrl = $GLOBALS['config']['site']['base_url'] ?? '';
                     </div>
                 </section>
 
+                <!-- Third-Party APIs -->
+                <section id="third-party" class="section-anchor mb-5">
+                    <div class="card">
+                        <div class="card-header">
+                            <h4 class="mb-0"><i class="bi bi-plug"></i> Third-Party APIs & Libraries</h4>
+                        </div>
+                        <div class="card-body">
+                            <p>Rockband Scheduler uses the following third-party services and libraries:</p>
+
+                            <h5 class="mt-4"><i class="bi bi-music-note-beamed"></i> Deezer API</h5>
+                            <p>The Deezer API is used to search for songs and retrieve metadata including:</p>
+                            <ul>
+                                <li>Song title, artist, and album information</li>
+                                <li>Album artwork</li>
+                                <li>Song duration</li>
+                                <li>30-second audio previews</li>
+                            </ul>
+                            <p>When using this application, please ensure you comply with Deezer's terms of service:</p>
+                            <ul>
+                                <li><a href="https://developers.deezer.com/guidelines" target="_blank" rel="noopener noreferrer"><i class="bi bi-box-arrow-up-right"></i> Deezer API Guidelines</a></li>
+                                <li><a href="https://deezerbrand.com/document/37#/-/overview" target="_blank" rel="noopener noreferrer"><i class="bi bi-box-arrow-up-right"></i> Deezer Brand Guidelines</a></li>
+                            </ul>
+                            <div class="card tip-card mt-3">
+                                <div class="card-body">
+                                    <h6><i class="bi bi-info-circle"></i> Note</h6>
+                                    <p class="mb-0">The Deezer API has rate limits (50 requests per 5 seconds). The import feature includes automatic throttling to respect these limits.</p>
+                                </div>
+                            </div>
+
+                            <h5 class="mt-4"><i class="bi bi-qr-code"></i> QR Code Generation</h5>
+                            <p>QR codes are generated using the <a href="https://goqr.me/api/" target="_blank" rel="noopener noreferrer">QR Server API</a>, a free QR code generation service provided by <a href="https://goqr.me/" target="_blank" rel="noopener noreferrer">goQR.me</a>.</p>
+
+                            <h5 class="mt-4"><i class="bi bi-bootstrap"></i> Frontend Libraries</h5>
+                            <ul>
+                                <li><strong><a href="https://getbootstrap.com/" target="_blank" rel="noopener noreferrer">Bootstrap 5.3</a></strong> - CSS framework for responsive design</li>
+                                <li><strong><a href="https://icons.getbootstrap.com/" target="_blank" rel="noopener noreferrer">Bootstrap Icons</a></strong> - Icon library</li>
+                            </ul>
+                        </div>
+                    </div>
+                </section>
+
                 <!-- Troubleshooting -->
                 <section id="troubleshooting" class="section-anchor mb-5">
                     <div class="card">
@@ -556,9 +617,29 @@ $siteBaseUrl = $GLOBALS['config']['site']['base_url'] ?? '';
                     </div>
                 </section>
 
+                <!-- Copyright & License -->
+                <section id="copyright" class="section-anchor mb-5">
+                    <div class="card">
+                        <div class="card-header">
+                            <h4 class="mb-0"><i class="bi bi-c-circle"></i> Copyright & License</h4>
+                        </div>
+                        <div class="card-body">
+                            <p><strong>Rockband Scheduler</strong><br>
+                            Copyright &copy; 2026 Jonathan Dean</p>
+
+                            <p>This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.</p>
+
+                            <p>This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.</p>
+
+                            <p>You should have received a copy of the GNU General Public License along with this program. If not, see <a href="https://www.gnu.org/licenses/" target="_blank" rel="noopener noreferrer">https://www.gnu.org/licenses/</a>.</p>
+                        </div>
+                    </div>
+                </section>
+
                 <!-- Footer -->
                 <div class="text-muted text-center mb-4">
                     <p><i class="bi bi-code-slash"></i> Rockband Scheduler - Built with Bootstrap 5 and PHP</p>
+                    <p class="small">&copy; 2026 Jonathan Dean &bull; Licensed under the <a href="https://www.gnu.org/licenses/gpl-3.0.html" target="_blank" rel="noopener noreferrer">GNU GPL v3</a></p>
                 </div>
             </div>
         </div>
