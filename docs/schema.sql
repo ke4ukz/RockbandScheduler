@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Generation Time: Jan 04, 2026 at 10:03 PM
+-- Generation Time: Jan 05, 2026 at 03:06 PM
 -- Server version: 8.0.44-35
 -- PHP Version: 8.3.26
 
@@ -14,8 +14,6 @@ SET time_zone = "+00:00";
 --
 -- Database: `izvyufte_RockbandSchedule`
 --
-CREATE DATABASE IF NOT EXISTS `izvyufte_RockbandSchedule` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
-USE `izvyufte_RockbandSchedule`;
 
 -- --------------------------------------------------------
 
@@ -117,7 +115,8 @@ INSERT INTO `themes` (`theme_id`, `name`, `primary_color`, `bg_gradient_start`, 
 --
 ALTER TABLE `entries`
   ADD PRIMARY KEY (`entry_id`),
-  ADD UNIQUE KEY `enty_id` (`entry_id`),
+  ADD UNIQUE KEY `entry_id` (`entry_id`),
+  ADD UNIQUE KEY `event_id-position` (`event_id`,`position`),
   ADD KEY `idx_event_id` (`event_id`),
   ADD KEY `fk_songs` (`song_id`);
 

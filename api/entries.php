@@ -215,39 +215,67 @@ function userCreateEntry($db, $eventId, $data) {
         jsonError('Song not found', 404);
     }
 
-    // Find next available position (auto-assign)
-    $stmt = $db->prepare('
-        SELECT position FROM entries
-        WHERE event_id = UUID_TO_BIN(?)
-    ');
-    $stmt->execute([$eventId]);
-    $takenPositions = $stmt->fetchAll(PDO::FETCH_COLUMN);
-
+    // Retry loop to handle race conditions when two users try to claim the same slot
+    // The unique constraint (event_id, position) prevents duplicates at the database level
+    $maxRetries = 3;
+    $attempt = 0;
+    $entryId = null;
     $position = null;
-    for ($i = 1; $i <= $event['num_entries']; $i++) {
-        if (!in_array($i, $takenPositions)) {
-            $position = $i;
-            break;
+
+    while ($attempt < $maxRetries) {
+        $attempt++;
+
+        // Find next available position (auto-assign)
+        $stmt = $db->prepare('
+            SELECT position FROM entries
+            WHERE event_id = UUID_TO_BIN(?)
+        ');
+        $stmt->execute([$eventId]);
+        $takenPositions = $stmt->fetchAll(PDO::FETCH_COLUMN);
+
+        $position = null;
+        for ($i = 1; $i <= $event['num_entries']; $i++) {
+            if (!in_array($i, $takenPositions)) {
+                $position = $i;
+                break;
+            }
+        }
+
+        if ($position === null) {
+            jsonError('All slots are full', 409);
+        }
+
+        // Try to create entry - may fail with duplicate key if another request took this slot
+        try {
+            $stmt = $db->prepare('
+                INSERT INTO entries (event_id, song_id, position, performer_name)
+                VALUES (UUID_TO_BIN(?), ?, ?, ?)
+            ');
+            $stmt->execute([
+                $eventId,
+                $songId,
+                $position,
+                $performerName
+            ]);
+
+            $entryId = $db->lastInsertId();
+            break; // Success - exit retry loop
+
+        } catch (PDOException $e) {
+            // Check for duplicate key error (MySQL error 1062)
+            if ($e->getCode() == 23000 && strpos($e->getMessage(), '1062') !== false) {
+                // Another request claimed this slot - retry with next available
+                if ($attempt >= $maxRetries) {
+                    error_log("Entry creation failed after $maxRetries retries for event $eventId");
+                    jsonError('Unable to claim slot, please try again', 409);
+                }
+                // Continue to next iteration
+            } else {
+                // Different error - rethrow
+                throw $e;
+            }
         }
     }
-
-    if ($position === null) {
-        jsonError('All slots are full', 409);
-    }
-
-    // Create entry
-    $stmt = $db->prepare('
-        INSERT INTO entries (event_id, song_id, position, performer_name)
-        VALUES (UUID_TO_BIN(?), ?, ?, ?)
-    ');
-    $stmt->execute([
-        $eventId,
-        $songId,
-        $position,
-        $performerName
-    ]);
-
-    $entryId = $db->lastInsertId();
 
     // Update song selection stats
     updateSongSelectionStats($db, $songId);

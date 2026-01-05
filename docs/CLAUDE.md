@@ -167,7 +167,7 @@ The site is deployed via GitHub and cPanel's Git Version Control. To push update
 ### Known Issues (from Jan 2026 audit)
 
 **High Priority:**
-- [ ] **Race condition in slot assignment** (`api/entries.php:219-248`) - Two users submitting simultaneously could claim the same slot. The code queries for available positions, then inserts, but another request could take that position in between. **Fix**: Add unique constraint `(event_id, position)` to the entries table and handle duplicate key errors with retry logic.
+- [x] **Race condition in slot assignment** - Fixed by adding unique constraint `(event_id, position)` to entries table and implementing retry logic in `userCreateEntry()`. On duplicate key error (another user claimed the slot), retries up to 3 times with next available slot.
 - [ ] **Event UUID retrieval uses name lookup** (`api/events.php:209-219`) - After creating an event, the code retrieves its UUID by matching on name. If two events with identical names are created simultaneously, the wrong UUID could be returned. **Fix**: Generate UUID in PHP before insert, or use `LAST_INSERT_ID()` approach.
 
 **Medium Priority:**
