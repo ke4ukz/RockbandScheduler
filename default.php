@@ -106,6 +106,22 @@ if (!$eventId) {
             opacity: 0.8;
         }
 
+        .signage-link {
+            display: block;
+            text-align: center;
+            padding: 1rem;
+            color: var(--text-color);
+            opacity: 0.5;
+            font-size: 0.85rem;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .signage-link:hover {
+            opacity: 0.7;
+            color: var(--text-color);
+        }
+
         .slot-list {
             padding: 1rem;
             padding-bottom: 100px; /* Space for bottom nav */
@@ -419,6 +435,10 @@ if (!$eventId) {
             <div>Loading lineup...</div>
         </div>
     </div>
+
+    <a href="#" class="signage-link" onclick="openSignageDisplay(); return false;">
+        Open signup display
+    </a>
 
     <!-- Sign Up Modal -->
     <div class="modal fade signup-modal" id="signupModal" tabindex="-1">
@@ -829,6 +849,12 @@ if (!$eventId) {
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
+        }
+
+        function openSignageDisplay() {
+            if (confirm('Open the signage display? This is designed for TVs and large screens.')) {
+                window.location.href = `signage.php?eventid=${EVENT_ID}`;
+            }
         }
     </script>
 <?php endif; ?>
