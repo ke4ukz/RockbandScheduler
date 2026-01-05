@@ -151,10 +151,10 @@ function timeAgo($datetime) {
 
             <div class="col">
                 <div class="card text-bg-success">
-                    <div class="card-body" style="min-height: 156px;">
+                    <div class="card-body">
                         <h5 class="card-title"><i class="bi bi-broadcast"></i> Active Now</h5>
                         <p class="card-text display-4" id="activeCount">-</p>
-                        <div id="activeEventsList"></div>
+                        <div id="activeEventsList"><span class="btn btn-light invisible">Placeholder</span></div>
                     </div>
                 </div>
             </div>
@@ -329,7 +329,7 @@ function timeAgo($datetime) {
                 document.getElementById('upcomingCount').textContent = upcomingEvents.length;
                 document.getElementById('activeCount').textContent = activeEvents.length;
 
-                // Show links to active events
+                // Show links to active events (or invisible placeholder for equal card height)
                 const listEl = document.getElementById('activeEventsList');
                 if (activeEvents.length > 0) {
                     listEl.innerHTML = activeEvents.map(event =>
@@ -338,7 +338,7 @@ function timeAgo($datetime) {
                         </a>`
                     ).join('');
                 } else {
-                    listEl.innerHTML = '';
+                    listEl.innerHTML = '<span class="btn btn-light invisible">Placeholder</span>';
                 }
             } catch (err) {
                 console.error('Failed to load active count:', err);
