@@ -112,7 +112,7 @@ if (!$eventId) {
         }
 
         .slot-card {
-            background: rgba(255,255,255,0.1);
+            background: color-mix(in srgb, var(--text-color) 10%, transparent);
             border-radius: 12px;
             padding: 1rem;
             margin-bottom: 0.75rem;
@@ -124,18 +124,18 @@ if (!$eventId) {
         }
 
         .slot-card.available {
-            border: 2px dashed rgba(255,255,255,0.3);
+            border: 2px dashed color-mix(in srgb, var(--text-color) 40%, transparent);
             cursor: pointer;
         }
 
         .slot-card.available:hover,
         .slot-card.available:active {
-            background: rgba(255,255,255,0.15);
+            background: color-mix(in srgb, var(--text-color) 15%, transparent);
             border-color: var(--primary-color);
         }
 
         .slot-card.taken {
-            background: rgba(255,255,255,0.05);
+            background: color-mix(in srgb, var(--text-color) 5%, transparent);
         }
 
         .slot-card.finished {
@@ -160,7 +160,7 @@ if (!$eventId) {
         }
 
         .slot-card.taken .slot-number {
-            background: rgba(255,255,255,0.2);
+            background: color-mix(in srgb, var(--text-color) 20%, transparent);
         }
 
         .slot-info {
@@ -198,11 +198,11 @@ if (!$eventId) {
             font-size: 1.5rem;
             cursor: pointer;
             flex-shrink: 0;
-            color: rgba(255,255,255,0.7);
+            color: color-mix(in srgb, var(--text-color) 70%, transparent);
         }
 
         .preview-btn:hover {
-            color: #fff;
+            color: var(--text-color);
         }
 
         .preview-btn.playing {
@@ -219,7 +219,7 @@ if (!$eventId) {
         }
 
         .preview-btn.loading {
-            color: rgba(255,255,255,0.5);
+            color: color-mix(in srgb, var(--text-color) 50%, transparent);
             animation: spin 1s linear infinite;
             /* Override general .loading class */
             display: inline;
@@ -243,7 +243,25 @@ if (!$eventId) {
         }
 
         .signup-modal .modal-header {
-            border-bottom: 1px solid rgba(255,255,255,0.1);
+            border-bottom: 1px solid color-mix(in srgb, var(--text-color) 10%, transparent);
+        }
+
+        .signup-modal .btn-close {
+            /* Remove Bootstrap's white filter and use theme text color */
+            filter: none;
+            opacity: 0.7;
+            color: var(--text-color);
+            background: transparent;
+            font-size: 1.5rem;
+        }
+
+        .signup-modal .btn-close::before {
+            content: "\00d7"; /* × symbol */
+            display: block;
+        }
+
+        .signup-modal .btn-close:hover {
+            opacity: 1;
         }
 
         .signup-modal .modal-body {
@@ -251,22 +269,22 @@ if (!$eventId) {
         }
 
         .signup-modal .form-control {
-            background: rgba(255,255,255,0.1);
-            border: 1px solid rgba(255,255,255,0.2);
-            color: #fff;
+            background: color-mix(in srgb, var(--text-color) 10%, transparent);
+            border: 1px solid color-mix(in srgb, var(--text-color) 30%, transparent);
+            color: var(--text-color);
             font-size: 1.1rem;
             padding: 0.75rem 1rem;
         }
 
         .signup-modal .form-control:focus {
-            background: rgba(255,255,255,0.15);
+            background: color-mix(in srgb, var(--text-color) 15%, transparent);
             border-color: var(--primary-color);
-            color: #fff;
-            box-shadow: 0 0 0 0.25rem rgba(111, 66, 193, 0.25);
+            color: var(--text-color);
+            box-shadow: 0 0 0 0.25rem color-mix(in srgb, var(--primary-color) 25%, transparent);
         }
 
         .signup-modal .form-control::placeholder {
-            color: rgba(255,255,255,0.5);
+            color: color-mix(in srgb, var(--text-color) 50%, transparent);
         }
 
         .song-search-results {
@@ -279,7 +297,7 @@ if (!$eventId) {
             align-items: center;
             gap: 0.75rem;
             padding: 0.75rem;
-            background: rgba(255,255,255,0.05);
+            background: color-mix(in srgb, var(--text-color) 5%, transparent);
             border-radius: 8px;
             margin-bottom: 0.5rem;
             cursor: pointer;
@@ -288,7 +306,7 @@ if (!$eventId) {
 
         .song-item:hover,
         .song-item:active {
-            background: rgba(255,255,255,0.1);
+            background: color-mix(in srgb, var(--text-color) 10%, transparent);
         }
 
         .song-item.selected {
@@ -340,8 +358,8 @@ if (!$eventId) {
         }
 
         .btn-signup:disabled {
-            background: rgba(255,255,255,0.2);
-            color: rgba(255,255,255,0.5);
+            background: color-mix(in srgb, var(--text-color) 20%, transparent);
+            color: color-mix(in srgb, var(--text-color) 50%, transparent);
         }
 
         .error-page {
@@ -408,7 +426,7 @@ if (!$eventId) {
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">Sign Up for Slot <span id="signupSlotNumber"></span></h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     <div class="mb-4">
