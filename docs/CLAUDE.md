@@ -184,6 +184,7 @@ The site is deployed via GitHub and cPanel's Git Version Control. To push update
 **Deferred (Won't Fix):**
 - [ ] **Rate limiting** - Public signup and Deezer proxy have no rate limits. Risk is low: human interaction won't hit Deezer's 50/5sec limit, and any issues are temporary/recoverable (slots can be cleared, Deezer bans are brief). Complexity cost outweighs benefit for this use case.
 - [ ] **Security headers** - Headers like X-Frame-Options, X-Content-Type-Options, CSP provide minimal value here: admin is already protected by HTTP Basic Auth, CSRF protection is in place, no sensitive data exposed to clickjacking. CSP would be complex to configure with Bootstrap CDN and inline scripts.
+- [ ] **SSRF in album art fetching** - `fetchImageAsBlob()` accepts user-provided URLs (from Deezer or manual entry) without blocking internal/private IP ranges. Risk is low: requires admin access (already trusted), response must be a valid parseable image (`validateImageData()` rejects non-images), shared hosting has limited internal network, and no response content is leaked to the attacker. The attack surface is minimal for this use case.
 
 ### Code Quality
 
@@ -196,7 +197,6 @@ The site is deployed via GitHub and cPanel's Git Version Control. To push update
 - [x] **Event UUID retrieval uses name lookup** - Fixed by generating UUID via `SELECT UUID()` before insert, then using that UUID in the INSERT statement. Eliminates race condition where two events with identical names could return wrong UUID.
 
 **Medium Priority:**
-- [ ] **SSRF in album art fetching** (`api/songs.php:297-346`) - `fetchImageAsBlob()` accepts user-provided URLs without blocking internal/private IP ranges. An attacker could probe internal network services. **Fix**: Validate URL scheme is http/https and block private IPs (10.x, 172.16-31.x, 192.168.x, 169.254.x, localhost).
 - [x] **Base64 album art not validated** - Added `validateImageData()` helper that checks MIME type via magic bytes and verifies image is parseable. Applied to both base64 uploads and URL fetches. Rejects non-image data with clear error message.
 
 **Low Priority:**
