@@ -171,38 +171,22 @@ The site is deployed via GitHub and cPanel's Git Version Control. To push update
 
 **Troubleshooting**: If the pull fails due to local changes (e.g., cPanel modifying `.htaccess`), you may need to delete the repo in cPanel and re-add it. The cPanel Git interface doesn't provide an easy way to discard local changes.
 
-## Pending Tasks
+## Security Features
 
-### Security Improvements (from Jan 2026 audit)
+### Implemented (Jan 2026 audit)
+- **CSRF protection** - Session-based authentication with CSRF tokens for admin API requests
+- **Admin token hidden from JavaScript** - Browser requests use session auth; token only for programmatic access
+- **Sanitized error messages** - Full details logged server-side; generic messages returned to clients
+- **Race condition prevention** - Unique constraint `(event_id, position)` on entries table with retry logic
+- **UUID generation fix** - UUIDs generated before INSERT to prevent race conditions
+- **Image validation** - `validateImageData()` checks MIME type and parseability for album art
+- **Input validation** - Performer name length limited to 150 characters
+- **Songs pagination** - Entries API limits songs to 500 per request with offset/search support
 
-**Completed:**
-- [x] **Add CSRF protection** - Implemented session-based authentication with CSRF tokens. Admin pages call `startAdminSession()` to create a secure session, and all API requests include `csrf_token` in the JSON body. Server validates both session auth and CSRF token.
-- [x] **Hide admin token from JavaScript** - Admin pages no longer embed `ADMIN_TOKEN` in page source. Instead, they use `CSRF_TOKEN` which is tied to the PHP session. The actual admin token is only used for programmatic access (curl/scripts) and is never exposed to browsers.
-- [x] **Sanitize error messages** - All API endpoints now log full error details via `error_log()` but return generic messages to clients. No database structure, file paths, or raw exception messages are exposed. Common errors (data too long, duplicate entry, encoding issues) get helpful but safe messages.
-- [x] **Remove debug logging** - Removed `error_log("loading db")` from `db.php`.
-
-**Deferred (Won't Fix):**
-- [ ] **Rate limiting** - Public signup and Deezer proxy have no rate limits. Risk is low: human interaction won't hit Deezer's 50/5sec limit, and any issues are temporary/recoverable (slots can be cleared, Deezer bans are brief). Complexity cost outweighs benefit for this use case.
-- [ ] **Security headers** - Headers like X-Frame-Options, X-Content-Type-Options, CSP provide minimal value here: admin is already protected by HTTP Basic Auth, CSRF protection is in place, no sensitive data exposed to clickjacking. CSP would be complex to configure with Bootstrap CDN and inline scripts.
-- [ ] **SSRF in album art fetching** - `fetchImageAsBlob()` accepts user-provided URLs (from Deezer or manual entry) without blocking internal/private IP ranges. Risk is low: requires admin access (already trusted), response must be a valid parseable image (`validateImageData()` rejects non-images), shared hosting has limited internal network, and no response content is leaked to the attacker. The attack surface is minimal for this use case.
-
-### Code Quality
-
-- [x] **Fix db.php config key mismatch** - Updated db.php to use `host`, `name`, `user`, `pass` to match config.sample.ini. Also fixed DSN string that had `host=localhost` hardcoded instead of using the config value.
-
-### Known Issues (from Jan 2026 audit)
-
-**High Priority:**
-- [x] **Race condition in slot assignment** - Fixed by adding unique constraint `(event_id, position)` to entries table and implementing retry logic in `userCreateEntry()`. On duplicate key error (another user claimed the slot), retries up to 3 times with next available slot.
-- [x] **Event UUID retrieval uses name lookup** - Fixed by generating UUID via `SELECT UUID()` before insert, then using that UUID in the INSERT statement. Eliminates race condition where two events with identical names could return wrong UUID.
-
-**Medium Priority:**
-- [x] **Base64 album art not validated** - Added `validateImageData()` helper that checks MIME type via magic bytes and verifies image is parseable. Applied to both base64 uploads and URL fetches. Rejects non-image data with clear error message.
-
-**Low Priority:**
-- [x] **Missing performer_name length validation** - Added `mb_strlen()` check (max 150 chars) in `userCreateEntry()`, `adminCreateEntry()`, and `updateEntry()`. Returns clear error message before database insert.
-- [x] **Songs list not paginated in entries API** - Added pagination with 500-song limit per request. Response now includes `songs_total`, `songs_limit`, `songs_offset`. Supports `songs_offset` and `songs_search` query params for pagination and server-side filtering.
-- [x] **Admin entry creation response inconsistent** - Admin entry creation now returns `position` in the response, matching public signup behavior.
+### Accepted Risks (documented)
+- **No rate limiting** - Human interaction patterns don't hit API limits; issues are recoverable
+- **No security headers** - Admin protected by HTTP Basic Auth; CSP complex with CDN dependencies
+- **SSRF in album art** - Requires admin access, response must be valid image, no content leaked
 
 ## UI Conventions
 
