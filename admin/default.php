@@ -9,14 +9,65 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
 // Get quick stats
 $songCount = 0;
 $eventCount = 0;
+$songStats = [];
 
 if ($db) {
     try {
         $songCount = $db->query('SELECT COUNT(*) FROM songs')->fetchColumn();
         $eventCount = $db->query('SELECT COUNT(*) FROM events')->fetchColumn();
+
+        // Get song statistics
+        // Shortest song (with duration > 0)
+        $stmt = $db->query('SELECT title, artist, duration FROM songs WHERE duration > 0 ORDER BY duration ASC LIMIT 1');
+        $songStats['shortest'] = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        // Longest song
+        $stmt = $db->query('SELECT title, artist, duration FROM songs ORDER BY duration DESC LIMIT 1');
+        $songStats['longest'] = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        // Top 5 most selected
+        $stmt = $db->query('SELECT title, artist, selection_count FROM songs WHERE selection_count > 0 ORDER BY selection_count DESC LIMIT 5');
+        $songStats['most_selected'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        // Top 5 least selected (that have been selected at least once)
+        $stmt = $db->query('SELECT title, artist, selection_count FROM songs WHERE selection_count > 0 ORDER BY selection_count ASC LIMIT 5');
+        $songStats['least_selected'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        // Most recently selected
+        $stmt = $db->query('SELECT title, artist, last_selected FROM songs WHERE last_selected IS NOT NULL ORDER BY last_selected DESC LIMIT 1');
+        $songStats['most_recent'] = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        // Oldest selected (longest time since selection)
+        $stmt = $db->query('SELECT title, artist, last_selected FROM songs WHERE last_selected IS NOT NULL ORDER BY last_selected ASC LIMIT 1');
+        $songStats['oldest_selected'] = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        // Never selected count
+        $songStats['never_selected_count'] = $db->query('SELECT COUNT(*) FROM songs WHERE selection_count = 0')->fetchColumn();
+
     } catch (PDOException $e) {
         error_log('Dashboard stats error: ' . $e->getMessage());
     }
+}
+
+// Helper to format duration
+function formatDuration($seconds) {
+    if (!$seconds) return '-';
+    $mins = floor($seconds / 60);
+    $secs = $seconds % 60;
+    return sprintf('%d:%02d', $mins, $secs);
+}
+
+// Helper to format relative time
+function timeAgo($datetime) {
+    if (!$datetime) return '-';
+    $time = strtotime($datetime);
+    $diff = time() - $time;
+
+    if ($diff < 60) return 'just now';
+    if ($diff < 3600) return floor($diff / 60) . 'm ago';
+    if ($diff < 86400) return floor($diff / 3600) . 'h ago';
+    if ($diff < 604800) return floor($diff / 86400) . 'd ago';
+    return date('M j', $time);
 }
 ?>
 <!DOCTYPE html>
@@ -101,6 +152,118 @@ if ($db) {
                             <a href="events.php?action=add" class="btn btn-outline-primary">
                                 <i class="bi bi-plus-lg"></i> Create Event
                             </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Song Statistics -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-graph-up"></i> Song Statistics</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <!-- Duration Stats -->
+                            <div class="col-md-6 col-lg-3 mb-3">
+                                <div class="border rounded p-3 h-100">
+                                    <h6 class="text-muted mb-3"><i class="bi bi-clock"></i> Duration</h6>
+                                    <?php if ($songStats['shortest']): ?>
+                                        <div class="mb-2">
+                                            <small class="text-muted">Shortest:</small>
+                                            <div class="fw-bold"><?= h($songStats['shortest']['title']) ?></div>
+                                            <small class="text-muted"><?= h($songStats['shortest']['artist']) ?> &bull; <?= formatDuration($songStats['shortest']['duration']) ?></small>
+                                        </div>
+                                    <?php endif; ?>
+                                    <?php if ($songStats['longest']): ?>
+                                        <div>
+                                            <small class="text-muted">Longest:</small>
+                                            <div class="fw-bold"><?= h($songStats['longest']['title']) ?></div>
+                                            <small class="text-muted"><?= h($songStats['longest']['artist']) ?> &bull; <?= formatDuration($songStats['longest']['duration']) ?></small>
+                                        </div>
+                                    <?php endif; ?>
+                                    <?php if (!$songStats['shortest'] && !$songStats['longest']): ?>
+                                        <p class="text-muted mb-0">No song data</p>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+
+                            <!-- Most Selected -->
+                            <div class="col-md-6 col-lg-3 mb-3">
+                                <div class="border rounded p-3 h-100">
+                                    <h6 class="text-muted mb-3"><i class="bi bi-fire"></i> Most Popular</h6>
+                                    <?php if (!empty($songStats['most_selected'])): ?>
+                                        <?php foreach ($songStats['most_selected'] as $i => $song): ?>
+                                            <div class="<?= $i < count($songStats['most_selected']) - 1 ? 'mb-2' : '' ?>">
+                                                <div class="d-flex justify-content-between align-items-start">
+                                                    <div class="text-truncate me-2">
+                                                        <span class="fw-bold"><?= h($song['title']) ?></span>
+                                                        <br><small class="text-muted"><?= h($song['artist']) ?></small>
+                                                    </div>
+                                                    <span class="badge bg-primary"><?= $song['selection_count'] ?></span>
+                                                </div>
+                                            </div>
+                                        <?php endforeach; ?>
+                                    <?php else: ?>
+                                        <p class="text-muted mb-0">No selections yet</p>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+
+                            <!-- Least Selected -->
+                            <div class="col-md-6 col-lg-3 mb-3">
+                                <div class="border rounded p-3 h-100">
+                                    <h6 class="text-muted mb-3"><i class="bi bi-snow"></i> Least Popular</h6>
+                                    <?php if (!empty($songStats['least_selected'])): ?>
+                                        <?php foreach ($songStats['least_selected'] as $i => $song): ?>
+                                            <div class="<?= $i < count($songStats['least_selected']) - 1 ? 'mb-2' : '' ?>">
+                                                <div class="d-flex justify-content-between align-items-start">
+                                                    <div class="text-truncate me-2">
+                                                        <span class="fw-bold"><?= h($song['title']) ?></span>
+                                                        <br><small class="text-muted"><?= h($song['artist']) ?></small>
+                                                    </div>
+                                                    <span class="badge bg-secondary"><?= $song['selection_count'] ?></span>
+                                                </div>
+                                            </div>
+                                        <?php endforeach; ?>
+                                    <?php else: ?>
+                                        <p class="text-muted mb-0">No selections yet</p>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+
+                            <!-- Recent Activity -->
+                            <div class="col-md-6 col-lg-3 mb-3">
+                                <div class="border rounded p-3 h-100">
+                                    <h6 class="text-muted mb-3"><i class="bi bi-calendar-check"></i> Selection Activity</h6>
+                                    <?php if ($songStats['most_recent']): ?>
+                                        <div class="mb-2">
+                                            <small class="text-muted">Most recent:</small>
+                                            <div class="fw-bold"><?= h($songStats['most_recent']['title']) ?></div>
+                                            <small class="text-muted"><?= h($songStats['most_recent']['artist']) ?> &bull; <?= timeAgo($songStats['most_recent']['last_selected']) ?></small>
+                                        </div>
+                                    <?php endif; ?>
+                                    <?php if ($songStats['oldest_selected']): ?>
+                                        <div class="mb-2">
+                                            <small class="text-muted">Longest ago:</small>
+                                            <div class="fw-bold"><?= h($songStats['oldest_selected']['title']) ?></div>
+                                            <small class="text-muted"><?= h($songStats['oldest_selected']['artist']) ?> &bull; <?= timeAgo($songStats['oldest_selected']['last_selected']) ?></small>
+                                        </div>
+                                    <?php endif; ?>
+                                    <?php if ($songStats['never_selected_count'] > 0): ?>
+                                        <div>
+                                            <small class="text-muted">Never selected:</small>
+                                            <div><span class="badge bg-warning text-dark"><?= $songStats['never_selected_count'] ?> songs</span></div>
+                                        </div>
+                                    <?php endif; ?>
+                                    <?php if (!$songStats['most_recent'] && !$songStats['oldest_selected'] && $songStats['never_selected_count'] == 0): ?>
+                                        <p class="text-muted mb-0">No selection data</p>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
