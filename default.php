@@ -477,6 +477,38 @@ if (!$eventId) {
             opacity: 0.5;
         }
 
+        .busy-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.2s, visibility 0.2s;
+            backdrop-filter: blur(4px);
+        }
+
+        .busy-overlay.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .busy-overlay .spinner-border {
+            width: 3rem;
+            height: 3rem;
+            color: #fff;
+        }
+
+        .busy-overlay .busy-text {
+            color: #fff;
+            margin-top: 1rem;
+            font-size: 1.1rem;
+        }
+
         .error-page h1 {
             font-size: 1.5rem;
             margin-bottom: 0.5rem;
@@ -558,6 +590,12 @@ if (preg_match('/^#([0-9a-fA-F]{6})$/', $textColor, $matches)) {
 }
 $deezerLogo = $isLightText ? 'images/Vertical-mw-rgb.svg' : 'images/Vertical-mb-rgb.svg';
 ?>
+    <!-- Busy overlay for signup -->
+    <div class="busy-overlay" id="busyOverlay">
+        <div class="spinner-border" role="status"></div>
+        <div class="busy-text">Signing you up...</div>
+    </div>
+
     <div class="header">
         <div class="header-inner">
             <h1><?= h($event['name']) ?></h1>
@@ -973,6 +1011,10 @@ $deezerLogo = $isLightText ? 'images/Vertical-mw-rgb.svg' : 'images/Vertical-mb-
             document.getElementById('fixedNextBtn').disabled = false;
         }
 
+        function showBusy(show) {
+            document.getElementById('busyOverlay').classList.toggle('visible', show);
+        }
+
         async function submitSignup() {
             const name = document.getElementById('performerName').value.trim();
             const songId = document.getElementById('selectedSongId').value;
@@ -982,6 +1024,7 @@ $deezerLogo = $isLightText ? 'images/Vertical-mw-rgb.svg' : 'images/Vertical-mb-
             const btn = document.getElementById('signupBtn');
             btn.disabled = true;
             btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Signing up...';
+            showBusy(true);
 
             try {
                 const response = await fetch(`${API_BASE}/entries.php?event_id=${EVENT_ID}`, {
@@ -1012,9 +1055,11 @@ $deezerLogo = $isLightText ? 'images/Vertical-mw-rgb.svg' : 'images/Vertical-mb-
                 // Reload data to get accurate entry count (don't manually push - polling handles it)
                 await loadData();
 
+                showBusy(false);
                 showStep('successState');
 
             } catch (err) {
+                showBusy(false);
                 const errorMsg = err.message || 'Failed to sign up. Please try again.';
 
                 if (errorMsg.toLowerCase().includes('full')) {
