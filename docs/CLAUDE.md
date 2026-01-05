@@ -135,7 +135,23 @@ The site is deployed via GitHub and cPanel's Git Version Control. To push update
 
 ## Pending Tasks
 
-None currently.
+### Security Improvements (from Jan 2026 audit)
+
+**High Priority:**
+- [ ] **Add CSRF protection** - State-changing API endpoints (create/update/delete for entries, events, songs, settings) have no CSRF tokens. Consider adding tokens to forms or validating Origin/Referer headers.
+
+**Medium Priority:**
+- [ ] **Hide admin token from JavaScript** - The admin token is embedded in page source on admin pages (`const ADMIN_TOKEN = ...`). Consider using session-based auth or server-side token handling instead.
+- [ ] **Add rate limiting** - Public signup (`/api/entries.php`) and Deezer proxy (`/api/deezer.php`) have no rate limits. Could be abused to fill event slots or get server IP banned by Deezer.
+- [ ] **Sanitize error messages** - PDO exceptions expose database structure in API responses. Log details server-side but return generic messages to clients.
+
+**Low Priority:**
+- [ ] **Add security headers** - Missing X-Frame-Options, X-Content-Type-Options, CSP, etc. Add to `.htaccess` or PHP.
+- [ ] **Remove debug logging** - `db.php` line 20 has `error_log("loading db")` that should be removed for production.
+
+### Code Quality
+
+- [ ] **Fix db.php config key mismatch** - Code uses `host`, `dbname`, `username`, `password` but config sample uses `host`, `name`, `user`, `pass`. Verify which is correct and align them.
 
 ## UI Conventions
 
