@@ -668,7 +668,7 @@ $deezerLogo = $isLightText ? 'images/Vertical-mw-rgb.svg' : 'images/Vertical-mb-
     <script>
         const EVENT_ID = <?= json_encode($eventId) ?>;
         const API_BASE = 'api';
-        const NUM_SLOTS = <?= (int)$event['num_entries'] ?>;
+        let numSlots = <?= (int)$event['num_entries'] ?>;
 
         let entries = [];
         let songs = [];
@@ -770,10 +770,15 @@ $deezerLogo = $isLightText ? 'images/Vertical-mw-rgb.svg' : 'images/Vertical-mb-
 
                 if (data.error) return;
 
+                // Update total slots if event was edited
+                if (data.total_slots && data.total_slots !== numSlots) {
+                    numSlots = data.total_slots;
+                }
+
                 const newEntriesJson = JSON.stringify(data.entries || []);
                 const oldEntriesJson = JSON.stringify(entries);
 
-                if (newEntriesJson !== oldEntriesJson) {
+                if (newEntriesJson !== oldEntriesJson || data.total_slots !== numSlots) {
                     entries = data.entries || [];
                     updateSlotsCounter();
                 }
@@ -792,12 +797,17 @@ $deezerLogo = $isLightText ? 'images/Vertical-mw-rgb.svg' : 'images/Vertical-mb-
                 entries = data.entries || [];
                 songs = data.songs || [];
 
+                // Update total slots from server (in case event was edited)
+                if (data.total_slots) {
+                    numSlots = data.total_slots;
+                }
+
                 updateSlotsCounter();
 
                 // Hide loading, show appropriate state
                 document.getElementById('loadingState').style.display = 'none';
 
-                if (entries.length >= NUM_SLOTS) {
+                if (entries.length >= numSlots) {
                     showStep('fullState');
                 } else {
                     showStep('step1');
@@ -812,17 +822,17 @@ $deezerLogo = $isLightText ? 'images/Vertical-mw-rgb.svg' : 'images/Vertical-mb-
 
         function updateSlotsCounter() {
             document.getElementById('filledCount').textContent = entries.length;
-            document.getElementById('totalCount').textContent = NUM_SLOTS;
+            document.getElementById('totalCount').textContent = numSlots;
 
             const currentStep = document.querySelector('.signup-step.active');
 
             // Check if slots are now full and user is on step 1
-            if (currentStep && currentStep.id === 'step1' && entries.length >= NUM_SLOTS) {
+            if (currentStep && currentStep.id === 'step1' && entries.length >= numSlots) {
                 showStep('fullState');
             }
 
             // Check if slots have opened up and user is on full state
-            if (currentStep && currentStep.id === 'fullState' && entries.length < NUM_SLOTS) {
+            if (currentStep && currentStep.id === 'fullState' && entries.length < numSlots) {
                 showStep('step1');
                 renderSongList(songs);
             }

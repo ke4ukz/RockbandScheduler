@@ -268,13 +268,14 @@ function updateEvent($db, $eventId, $data) {
         $values[] = date('Y-m-d H:i:s', $endTime);
     }
 
+    $newNumEntries = null;
     if (array_key_exists('num_entries', $data)) {
-        $numEntries = (int)$data['num_entries'];
-        if ($numEntries < 1 || $numEntries > 255) {
+        $newNumEntries = (int)$data['num_entries'];
+        if ($newNumEntries < 1 || $newNumEntries > 255) {
             jsonError('num_entries must be between 1 and 255');
         }
         $fields[] = 'num_entries = ?';
-        $values[] = $numEntries;
+        $values[] = $newNumEntries;
     }
 
     if (array_key_exists('theme_id', $data)) {
@@ -291,6 +292,15 @@ function updateEvent($db, $eventId, $data) {
 
     $stmt = $db->prepare($sql);
     $stmt->execute($values);
+
+    // If num_entries was reduced, delete entries beyond the new limit
+    if ($newNumEntries !== null) {
+        $stmt = $db->prepare('
+            DELETE FROM entries
+            WHERE event_id = UUID_TO_BIN(?) AND position > ?
+        ');
+        $stmt->execute([$eventId, $newNumEntries]);
+    }
 
     jsonResponse(['success' => true]);
 }

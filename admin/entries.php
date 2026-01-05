@@ -420,7 +420,8 @@ if (!$eventId || !isValidUuid($eventId)) {
             document.getElementById('eventStart').textContent = formatDateTime(event.start_time);
             document.getElementById('eventEnd').textContent = formatDateTime(event.end_time);
 
-            const filled = entries.filter(e => e.performer_name).length;
+            // Only count entries within the valid slot range
+            const filled = entries.filter(e => e.performer_name && e.position <= event.num_entries).length;
             document.getElementById('slotsFilled').textContent = `${filled} / ${event.num_entries}`;
 
             const status = getEventStatus();
