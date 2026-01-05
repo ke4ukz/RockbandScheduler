@@ -484,6 +484,12 @@ $siteBaseUrl = $GLOBALS['config']['site']['base_url'] ?? '';
                                     <p class="mb-0">The Deezer API has rate limits (50 requests per 5 seconds). The import feature includes automatic throttling to respect these limits.</p>
                                 </div>
                             </div>
+                            <div class="card tip-card mt-3">
+                                <div class="card-body">
+                                    <h6><i class="bi bi-music-note"></i> Audio Previews</h6>
+                                    <p class="mb-0">As of January 2026, Deezer allows 30-second audio previews for non-authenticated users, making this feature free to use without requiring a Deezer account or API key.</p>
+                                </div>
+                            </div>
 
                             <h5 class="mt-4"><i class="bi bi-qr-code"></i> QR Code Generation</h5>
                             <p>QR codes are generated using the <a href="https://goqr.me/api/" target="_blank" rel="noopener noreferrer">QR Server API</a>, a free QR code generation service provided by <a href="https://goqr.me/" target="_blank" rel="noopener noreferrer">goQR.me</a>.</p>

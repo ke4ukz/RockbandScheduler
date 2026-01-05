@@ -434,6 +434,21 @@ if (!$eventId) {
             opacity: 0.8;
         }
 
+        .copyright-link {
+            display: block;
+            text-align: center;
+            padding: 1rem;
+            color: var(--text-color);
+            opacity: 0.4;
+            font-size: 0.75rem;
+            text-decoration: none;
+        }
+
+        .copyright-link:hover {
+            opacity: 0.6;
+            color: var(--text-color);
+        }
+
         /* Loading state */
         .loading {
             display: flex;
@@ -452,6 +467,7 @@ if (!$eventId) {
         <h1>Oops!</h1>
         <p><?= h($error) ?></p>
     </div>
+    <a href="copyright.php" class="copyright-link">&copy; 2026 Jonathan Dean</a>
 <?php else: ?>
 <?php
 // Determine if text color is light or dark to choose appropriate Deezer logo
@@ -489,6 +505,8 @@ $deezerLogo = $isLightText ? 'images/Vertical-mw-rgb.svg' : 'images/Vertical-mb-
     <a href="#" class="signage-link" onclick="openSignageDisplay(); return false;">
         Open signup display
     </a>
+
+    <a href="copyright.php" class="copyright-link">&copy; 2026 Jonathan Dean</a>
 
     <!-- Sign Up Modal -->
     <div class="modal fade signup-modal" id="signupModal" tabindex="-1">
