@@ -503,6 +503,17 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
                                 <span class="small">Skip this song</span>
                             </div>
                         </div>
+                        <div class="mt-2">
+                            <small class="text-muted">Or try a different search:</small>
+                            <div class="input-group input-group-sm mt-1">
+                                <input type="text" class="form-control" id="retry-query-${index}"
+                                       value="${escapeHtml(item.original.title + ' ' + item.original.artist)}"
+                                       placeholder="Try a different search...">
+                                <button class="btn btn-outline-secondary" onclick="retrySearch(${index})">
+                                    <i class="bi bi-search"></i>
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 `;
             } else if (item.status === 'notfound') {
