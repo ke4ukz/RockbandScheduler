@@ -443,48 +443,27 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
         }
 
         function checkEventStatusChanges() {
-            // Track current statuses
-            const statusesBefore = {};
-            events.forEach(e => {
-                statusesBefore[e.event_id] = getEventStatus(e);
-            });
+            // Find any events that are now past
+            const newlyPast = events.filter(e => getEventStatus(e) === 'past');
 
-            // Find events that have changed status
-            let hasChanges = false;
-            const newlyPast = [];
-
-            events.forEach(e => {
-                const newStatus = getEventStatus(e);
-                if (statusesBefore[e.event_id] !== newStatus) {
-                    hasChanges = true;
-                    // If event became past, we need to move it
-                    if (newStatus === 'past') {
-                        newlyPast.push(e);
+            if (newlyPast.length > 0) {
+                // Add to pastEvents array (avoiding duplicates)
+                const existingPastIds = new Set(pastEvents.map(e => e.event_id));
+                newlyPast.forEach(e => {
+                    if (!existingPastIds.has(e.event_id)) {
+                        pastEvents.unshift(e); // Add to beginning (most recent)
                     }
-                }
-            });
-
-            if (hasChanges) {
-                // Always add newly past events to pastEvents array so they appear when loaded
-                if (newlyPast.length > 0) {
-                    const existingPastIds = new Set(pastEvents.map(e => e.event_id));
-                    newlyPast.forEach(e => {
-                        // Only add if not already in pastEvents (avoid duplicates)
-                        if (!existingPastIds.has(e.event_id)) {
-                            pastEvents.unshift(e); // Add to beginning (most recent)
-                        }
-                    });
-                    if (pastEventsLoaded) {
-                        renderPastEvents();
-                    }
+                });
+                if (pastEventsLoaded) {
+                    renderPastEvents();
                 }
 
-                // Remove newly past events from main events array
+                // Remove past events from main events array
                 events = events.filter(e => getEventStatus(e) !== 'past');
-
-                // Re-render to reflect status changes
-                renderEvents();
             }
+
+            // Re-render to reflect any status changes (active <-> upcoming)
+            renderEvents();
         }
 
         function getEventStatus(event) {
