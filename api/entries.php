@@ -204,6 +204,9 @@ function userCreateEntry($db, $eventId, $data) {
     if (empty($performerName)) {
         jsonError('performer_name is required');
     }
+    if (mb_strlen($performerName) > 150) {
+        jsonError('performer_name is too long (max 150 characters)');
+    }
     if (empty($songId)) {
         jsonError('song_id is required');
     }
@@ -308,6 +311,12 @@ function adminCreateEntry($db, $eventId, $data) {
     $existing = $stmt->fetch();
 
     $songId = $data['song_id'] ?? null;
+    $performerName = trim($data['performer_name'] ?? '');
+
+    // Validate performer_name length
+    if (mb_strlen($performerName) > 150) {
+        jsonError('performer_name is too long (max 150 characters)');
+    }
 
     if ($existing) {
         // Get the current song_id to check if it changed
@@ -324,7 +333,7 @@ function adminCreateEntry($db, $eventId, $data) {
             WHERE entry_id = ?
         ');
         $stmt->execute([
-            $data['performer_name'] ?? '',
+            $performerName,
             $songId,
             $existing['entry_id']
         ]);
@@ -345,7 +354,7 @@ function adminCreateEntry($db, $eventId, $data) {
             $eventId,
             $songId,
             $position,
-            $data['performer_name'] ?? ''
+            $performerName
         ]);
 
         // Update song selection stats if a song was selected
@@ -373,8 +382,12 @@ function updateEntry($db, $entryId, $data) {
     $values = [];
 
     if (array_key_exists('performer_name', $data)) {
+        $performerName = trim($data['performer_name'] ?? '');
+        if (mb_strlen($performerName) > 150) {
+            jsonError('performer_name is too long (max 150 characters)');
+        }
         $fields[] = 'performer_name = ?';
-        $values[] = $data['performer_name'];
+        $values[] = $performerName;
     }
 
     $newSongId = null;

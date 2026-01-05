@@ -175,8 +175,7 @@ The site is deployed via GitHub and cPanel's Git Version Control. To push update
 - [x] **Base64 album art not validated** - Added `validateImageData()` helper that checks MIME type via magic bytes and verifies image is parseable. Applied to both base64 uploads and URL fetches. Rejects non-image data with clear error message.
 
 **Low Priority:**
-- [ ] **Song selection count not decremented** - When an entry's song is changed via admin edit, the new song's `selection_count` is incremented but the old song's count is not decremented. Stats may be slightly inflated over time.
-- [ ] **Missing performer_name length validation** - Name is trimmed but not length-checked before insert. Database will error on overflow (150 chars) but explicit validation would give better error messages.
+- [x] **Missing performer_name length validation** - Added `mb_strlen()` check (max 150 chars) in `userCreateEntry()`, `adminCreateEntry()`, and `updateEntry()`. Returns clear error message before database insert.
 - [ ] **Songs list not paginated in entries API** - `listEntries()` fetches all songs for the selection dropdown. With thousands of songs, this could cause performance issues.
 - [ ] **Admin entry creation response inconsistent** - Public signup returns `position` in response; admin creation does not.
 
