@@ -44,9 +44,9 @@ if (!$db) {
 
 $method = $_SERVER['REQUEST_METHOD'];
 
-// Check if this is an admin request (has admin_token in body)
+// Check if this is an admin request (has admin_token or csrf_token with action in body)
 $data = getJsonBody();
-$isAdminRequest = $data && isset($data['admin_token']);
+$isAdminRequest = $data && (isset($data['admin_token']) || (isset($data['csrf_token']) && isset($data['action'])));
 
 try {
     if ($method === 'GET') {
