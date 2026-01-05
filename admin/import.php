@@ -172,7 +172,7 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
                 <div class="form-check mb-3">
                     <input class="form-check-input" type="checkbox" id="skipExisting" checked>
                     <label class="form-check-label" for="skipExisting">
-                        Skip songs that already exist (match by title + artist)
+                        Skip songs that already exist
                     </label>
                 </div>
                 <button class="btn btn-success btn-lg" onclick="importSongs()">
