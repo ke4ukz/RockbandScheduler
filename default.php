@@ -852,8 +852,8 @@ if (!$eventId) {
         }
 
         function openSignageDisplay() {
-            if (confirm('Open the signage display? This is designed for TVs and large screens.')) {
-                window.location.href = `signage.php?eventid=${EVENT_ID}`;
+            if (confirm('Open the signup display? This shows a QR code for TVs and large screens.')) {
+                window.location.href = `signup-display.php?eventid=${EVENT_ID}`;
             }
         }
     </script>
