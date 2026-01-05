@@ -154,8 +154,7 @@ function timeAgo($datetime) {
                     <div class="card-body">
                         <h5 class="card-title"><i class="bi bi-broadcast"></i> Active Now</h5>
                         <p class="card-text display-4" id="activeCount">-</p>
-                        <a href="events.php" class="btn btn-light">View Events</a>
-                        <div id="activeEventsList" class="mt-3" style="display: none;"></div>
+                        <div id="activeEventsList" style="display: none;"></div>
                     </div>
                 </div>
             </div>
@@ -330,7 +329,7 @@ function timeAgo($datetime) {
                 document.getElementById('upcomingCount').textContent = upcomingEvents.length;
                 document.getElementById('activeCount').textContent = activeEvents.length;
 
-                // Show links to active events below the View Events button
+                // Show links to active events
                 const listEl = document.getElementById('activeEventsList');
                 if (activeEvents.length > 0) {
                     listEl.style.display = 'block';
