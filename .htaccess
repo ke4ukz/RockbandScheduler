@@ -1,11 +1,3 @@
-
-# php -- BEGIN cPanel-generated handler, do not edit
-# Set the "ea-php84" package as the default "PHP" programming language.
-<IfModule mime_module>
-  AddHandler application/x-httpd-ea-php84___lsphp .php .php8 .phtml
-</IfModule>
-# php -- END cPanel-generated handler, do not edit
-
 <IfModule mod_dir.c>
     DirectoryIndex default.php default.html default.htm
 </IfModule>
@@ -22,3 +14,9 @@ Options -Indexes
     Require all denied
 </FilesMatch>
 
+# php -- BEGIN cPanel-generated handler, do not edit
+# Set the "ea-php84" package as the default "PHP" programming language.
+<IfModule mime_module>
+  AddHandler application/x-httpd-ea-php84___lsphp .php .php8 .phtml
+</IfModule>
+# php -- END cPanel-generated handler, do not edit
