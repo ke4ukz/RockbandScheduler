@@ -67,36 +67,6 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
             <div class="col-lg-6">
                 <div class="card">
                     <div class="card-header">
-                        <h5 class="mb-0"><i class="bi bi-person-plus"></i> User Signup Requirements</h5>
-                    </div>
-                    <div class="card-body">
-                        <p class="text-muted">Control what information users must provide when signing up for a slot.</p>
-
-                        <div class="form-check mb-3">
-                            <input class="form-check-input" type="checkbox" id="requireName" checked>
-                            <label class="form-check-label" for="requireName">
-                                Require performer name
-                            </label>
-                            <div class="form-text">If unchecked, users can sign up with just a song selection.</div>
-                        </div>
-
-                        <div class="form-check mb-3">
-                            <input class="form-check-input" type="checkbox" id="requireSong" checked>
-                            <label class="form-check-label" for="requireSong">
-                                Require song selection
-                            </label>
-                            <div class="form-text">If unchecked, users can sign up with just their name.</div>
-                        </div>
-
-                        <div class="alert alert-info small mb-3">
-                            <i class="bi bi-info-circle"></i>
-                            At least one option must be required. Users must provide either a name, a song, or both.
-                        </div>
-                    </div>
-                </div>
-
-                <div class="card mt-4">
-                    <div class="card-header">
                         <h5 class="mb-0"><i class="bi bi-calendar-event"></i> Event Defaults</h5>
                     </div>
                     <div class="card-body">
@@ -222,8 +192,6 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
                 if (data.error) throw new Error(data.error);
 
                 const settings = data.settings;
-                document.getElementById('requireName').checked = settings.signup?.require_name ?? true;
-                document.getElementById('requireSong').checked = settings.signup?.require_song ?? true;
 
                 // Set default duration
                 document.getElementById('defaultDuration').value = settings.event?.default_duration_hours ?? 4;
@@ -244,16 +212,8 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
         }
 
         async function saveSettings() {
-            const requireName = document.getElementById('requireName').checked;
-            const requireSong = document.getElementById('requireSong').checked;
             const defaultDuration = parseInt(document.getElementById('defaultDuration').value) || 4;
             const defaultThemeId = document.getElementById('defaultTheme').value;
-
-            // At least one must be required
-            if (!requireName && !requireSong) {
-                showStatus('At least one requirement must be enabled', 'warning');
-                return;
-            }
 
             // Validate duration
             if (defaultDuration < 1 || defaultDuration > 24) {
@@ -272,10 +232,6 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
                         admin_token: ADMIN_TOKEN,
                         action: 'update',
                         settings: {
-                            signup: {
-                                require_name: requireName,
-                                require_song: requireSong
-                            },
                             event: {
                                 default_duration_hours: defaultDuration
                             },

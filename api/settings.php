@@ -78,10 +78,6 @@ function getSettings() {
 
     jsonResponse([
         'settings' => [
-            'signup' => [
-                'require_name' => $config['signup']['require_name'] ?? true,
-                'require_song' => $config['signup']['require_song'] ?? true
-            ],
             'event' => [
                 'default_duration_hours' => (int)($config['event']['default_duration_hours'] ?? 4)
             ],
@@ -95,19 +91,6 @@ function getSettings() {
 function updateSettings($configPath, $newSettings) {
     // Read current config file
     $config = $GLOBALS['config'];
-
-    // Update signup settings
-    if (isset($newSettings['signup'])) {
-        if (!isset($config['signup'])) {
-            $config['signup'] = [];
-        }
-        if (isset($newSettings['signup']['require_name'])) {
-            $config['signup']['require_name'] = $newSettings['signup']['require_name'] ? '1' : '0';
-        }
-        if (isset($newSettings['signup']['require_song'])) {
-            $config['signup']['require_song'] = $newSettings['signup']['require_song'] ? '1' : '0';
-        }
-    }
 
     // Update event settings
     if (isset($newSettings['event'])) {
@@ -168,14 +151,6 @@ function updateSettings($configPath, $newSettings) {
     $GLOBALS['config'] = parse_ini_file($configPath, true);
 
     // Re-apply defaults
-    if (!isset($GLOBALS['config']['signup'])) {
-        $GLOBALS['config']['signup'] = [];
-    }
-    $GLOBALS['config']['signup']['require_name'] =
-        ($GLOBALS['config']['signup']['require_name'] ?? '1') === '1';
-    $GLOBALS['config']['signup']['require_song'] =
-        ($GLOBALS['config']['signup']['require_song'] ?? '1') === '1';
-
     if (!isset($GLOBALS['config']['theme'])) {
         $GLOBALS['config']['theme'] = [];
     }

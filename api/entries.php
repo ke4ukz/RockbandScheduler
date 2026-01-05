@@ -18,8 +18,9 @@
  *
  * PUBLIC (no auth, event must be active):
  *   GET  /api/entries.php?event_id=uuid              - List entries for event
- *   POST /api/entries.php?event_id=uuid              - Create/claim a slot (user signup)
- *        Body: { "position": 1, "performer_name": "...", "song_id": 123 }
+ *   POST /api/entries.php?event_id=uuid              - Create entry (auto-assigns next available slot)
+ *        Body: { "performer_name": "...", "song_id": 123 }
+ *        Returns: { "success": true, "entry_id": 456, "position": 1 }
  *
  * ADMIN (POST with admin_token in body):
  *   POST /api/entries.php
@@ -196,53 +197,42 @@ function userCreateEntry($db, $eventId, $data) {
         jsonError('Invalid JSON body');
     }
 
-    // Get signup settings
-    $signupSettings = $GLOBALS['config']['signup'] ?? [];
-    $requireName = $signupSettings['require_name'] ?? true;
-    $requireSong = $signupSettings['require_song'] ?? true;
-
-    // Validate required fields
-    if (empty($data['position'])) {
-        jsonError('position is required');
-    }
-
     $performerName = trim($data['performer_name'] ?? '');
     $songId = $data['song_id'] ?? null;
 
-    // Check requirements based on settings
-    if ($requireName && empty($performerName)) {
+    // Both name and song are required for public signup
+    if (empty($performerName)) {
         jsonError('performer_name is required');
     }
-    if ($requireSong && empty($songId)) {
+    if (empty($songId)) {
         jsonError('song_id is required');
     }
-    // At least one must be provided
-    if (empty($performerName) && empty($songId)) {
-        jsonError('Please provide a name or select a song');
+
+    // Verify song exists
+    $stmt = $db->prepare('SELECT song_id FROM songs WHERE song_id = ?');
+    $stmt->execute([$songId]);
+    if (!$stmt->fetch()) {
+        jsonError('Song not found', 404);
     }
 
-    $position = (int)$data['position'];
-    if ($position < 1 || $position > $event['num_entries']) {
-        jsonError('Invalid position');
-    }
-
-    // Check if position is already taken
+    // Find next available position (auto-assign)
     $stmt = $db->prepare('
-        SELECT entry_id FROM entries
-        WHERE event_id = UUID_TO_BIN(?) AND position = ?
+        SELECT position FROM entries
+        WHERE event_id = UUID_TO_BIN(?)
     ');
-    $stmt->execute([$eventId, $position]);
-    if ($stmt->fetch()) {
-        jsonError('This slot is already taken', 409);
+    $stmt->execute([$eventId]);
+    $takenPositions = $stmt->fetchAll(PDO::FETCH_COLUMN);
+
+    $position = null;
+    for ($i = 1; $i <= $event['num_entries']; $i++) {
+        if (!in_array($i, $takenPositions)) {
+            $position = $i;
+            break;
+        }
     }
 
-    // Verify song exists (if provided)
-    if ($songId) {
-        $stmt = $db->prepare('SELECT song_id FROM songs WHERE song_id = ?');
-        $stmt->execute([$songId]);
-        if (!$stmt->fetch()) {
-            jsonError('Song not found', 404);
-        }
+    if ($position === null) {
+        jsonError('All slots are full', 409);
     }
 
     // Create entry
@@ -252,19 +242,21 @@ function userCreateEntry($db, $eventId, $data) {
     ');
     $stmt->execute([
         $eventId,
-        $songId ?: null,
+        $songId,
         $position,
         $performerName
     ]);
 
     $entryId = $db->lastInsertId();
 
-    // Update song selection stats if a song was selected
-    if ($songId) {
-        updateSongSelectionStats($db, $songId);
-    }
+    // Update song selection stats
+    updateSongSelectionStats($db, $songId);
 
-    jsonResponse(['success' => true, 'entry_id' => (int)$entryId], 201);
+    jsonResponse([
+        'success' => true,
+        'entry_id' => (int)$entryId,
+        'position' => $position
+    ], 201);
 }
 
 function adminCreateEntry($db, $eventId, $data) {
