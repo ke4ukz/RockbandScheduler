@@ -770,16 +770,15 @@ $deezerLogo = $isLightText ? 'images/Vertical-mw-rgb.svg' : 'images/Vertical-mb-
 
                 if (data.error) return;
 
-                // Update total slots if event was edited
-                if (data.total_slots && data.total_slots !== numSlots) {
-                    numSlots = data.total_slots;
-                }
-
                 const newEntriesJson = JSON.stringify(data.entries || []);
                 const oldEntriesJson = JSON.stringify(entries);
+                const slotsChanged = data.total_slots && data.total_slots !== numSlots;
 
-                if (newEntriesJson !== oldEntriesJson || data.total_slots !== numSlots) {
+                if (newEntriesJson !== oldEntriesJson || slotsChanged) {
                     entries = data.entries || [];
+                    if (slotsChanged) {
+                        numSlots = data.total_slots;
+                    }
                     updateSlotsCounter();
                 }
             } catch (err) {
