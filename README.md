@@ -233,6 +233,10 @@ Event times are stored and displayed as **venue local time** (no timezone conver
 - HTML output escaping prevents XSS
 - Config file stored outside web root
 
+## AI Disclosure
+
+This software was developed with assistance from Claude, an AI assistant by Anthropic. AI tools were used for code generation, documentation, and development guidance throughout the project.
+
 ## License
 
 GNU General Public License v3.0 - See [LICENSE](LICENSE) or <https://www.gnu.org/licenses/gpl-3.0.html>

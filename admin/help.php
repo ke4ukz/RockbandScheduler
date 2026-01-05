@@ -679,6 +679,9 @@ $siteBaseUrl = $GLOBALS['config']['site']['base_url'] ?? '';
                             <h5 class="mt-4"><i class="bi bi-trademark"></i> Trademark Notice</h5>
                             <p>Rock Band&trade; is a registered trademark of Harmonix Music Systems, Inc. This application is not affiliated with, endorsed by, or sponsored by Harmonix Music Systems, Inc. or any of its subsidiaries or affiliates.</p>
                             <p>This is an independent, fan-made tool created to help organize Rock Band performance events. All product names, logos, and brands are property of their respective owners.</p>
+
+                            <h5 class="mt-4"><i class="bi bi-robot"></i> AI Disclosure</h5>
+                            <p>This software was developed with assistance from Claude, an AI assistant by Anthropic. AI tools were used for code generation, documentation, and development guidance throughout the project.</p>
                         </div>
                     </div>
                 </section>
