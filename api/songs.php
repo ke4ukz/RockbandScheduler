@@ -131,6 +131,18 @@ function createSong($db, $data) {
         }
     }
 
+    // Check for existing song if skip_existing is set
+    if (!empty($data['skip_existing'])) {
+        $stmt = $db->prepare('
+            SELECT song_id FROM songs
+            WHERE LOWER(title) = LOWER(?) AND LOWER(artist) = LOWER(?)
+        ');
+        $stmt->execute([$data['title'], $data['artist']]);
+        if ($stmt->fetch()) {
+            jsonError('Song already exists', 409);
+        }
+    }
+
     // Fetch album art if URL provided
     $albumArt = null;
     if (!empty($data['album_art_url'])) {
@@ -210,7 +222,7 @@ function deleteSong($db, $songId) {
     jsonResponse(['success' => true]);
 }
 
-function fetchImageAsBlob($url) {
+function fetchImageAsBlob($url, $maxSize = 65535) {
     // Try cURL first, fallback to file_get_contents
     if (function_exists('curl_init')) {
         $ch = curl_init($url);
@@ -247,6 +259,76 @@ function fetchImageAsBlob($url) {
         return null;
     }
 
+    // If image is too large, try to compress it
+    if (strlen($imageData) > $maxSize && function_exists('imagecreatefromstring')) {
+        $imageData = compressImage($imageData, $maxSize, $mimeType);
+    }
+
+    // If still too large after compression, skip it
+    if (strlen($imageData) > $maxSize) {
+        error_log("Image too large after compression: " . strlen($imageData) . " bytes (max: $maxSize)");
+        return null;
+    }
+
     return $imageData;
+}
+
+/**
+ * Compress an image to fit within maxSize bytes
+ */
+function compressImage($imageData, $maxSize, $mimeType) {
+    $image = @imagecreatefromstring($imageData);
+    if (!$image) {
+        return $imageData;
+    }
+
+    $width = imagesx($image);
+    $height = imagesy($image);
+
+    // Try progressively smaller sizes and lower quality
+    $scales = [1.0, 0.75, 0.5, 0.35, 0.25];
+    $qualities = [85, 70, 55, 40];
+
+    foreach ($scales as $scale) {
+        $newWidth = (int)($width * $scale);
+        $newHeight = (int)($height * $scale);
+
+        if ($newWidth < 50 || $newHeight < 50) {
+            continue; // Don't go smaller than 50px
+        }
+
+        $resized = imagecreatetruecolor($newWidth, $newHeight);
+
+        // Preserve transparency for PNG
+        if ($mimeType === 'image/png') {
+            imagealphablending($resized, false);
+            imagesavealpha($resized, true);
+        }
+
+        imagecopyresampled($resized, $image, 0, 0, 0, 0, $newWidth, $newHeight, $width, $height);
+
+        foreach ($qualities as $quality) {
+            ob_start();
+            if ($mimeType === 'image/png') {
+                // PNG quality is 0-9 (0 = no compression, 9 = max)
+                $pngQuality = (int)(9 - ($quality / 10));
+                imagepng($resized, null, $pngQuality);
+            } else {
+                imagejpeg($resized, null, $quality);
+            }
+            $compressed = ob_get_clean();
+
+            if (strlen($compressed) <= $maxSize) {
+                imagedestroy($resized);
+                imagedestroy($image);
+                return $compressed;
+            }
+        }
+
+        imagedestroy($resized);
+    }
+
+    imagedestroy($image);
+    return $imageData; // Return original if we couldn't compress enough
 }
 ?>

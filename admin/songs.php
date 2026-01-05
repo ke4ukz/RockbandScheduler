@@ -81,9 +81,14 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
     <div class="container-fluid mt-4">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h1>Song Library</h1>
-            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#songModal" onclick="openAddModal()">
-                <i class="bi bi-plus-lg"></i> Add Song
-            </button>
+            <div>
+                <a href="import.php" class="btn btn-outline-primary me-2">
+                    <i class="bi bi-upload"></i> Import CSV
+                </a>
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#songModal" onclick="openAddModal()">
+                    <i class="bi bi-plus-lg"></i> Add Song
+                </button>
+            </div>
         </div>
 
         <div class="card">

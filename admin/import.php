@@ -1,0 +1,666 @@
+<?php
+require_once __DIR__ . '/../config.php';
+require_once __DIR__ . '/../db.php';
+require_once __DIR__ . '/../includes/helpers.php';
+
+$adminToken = $GLOBALS['config']['admin']['token'] ?? '';
+?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Import Songs - Rockband Admin</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        .import-row {
+            border-bottom: 1px solid #dee2e6;
+            padding: 0.75rem 0;
+        }
+        .import-row:last-child {
+            border-bottom: none;
+        }
+        .import-row.success { background-color: #d1e7dd; }
+        .import-row.warning { background-color: #fff3cd; }
+        .import-row.error { background-color: #f8d7da; }
+        .import-row.pending { background-color: #f8f9fa; }
+        .import-row.skipped { background-color: #e9ecef; opacity: 0.7; }
+        .deezer-option {
+            cursor: pointer;
+            padding: 0.5rem;
+            border: 1px solid #dee2e6;
+            border-radius: 0.375rem;
+            margin-bottom: 0.5rem;
+        }
+        .deezer-option:hover {
+            background-color: #f8f9fa;
+        }
+        .deezer-option.selected {
+            border-color: #0d6efd;
+            background-color: #e7f1ff;
+        }
+        .deezer-thumb {
+            width: 40px;
+            height: 40px;
+            object-fit: cover;
+        }
+        .progress-section {
+            position: sticky;
+            top: 0;
+            background: white;
+            z-index: 100;
+            padding: 1rem 0;
+            border-bottom: 1px solid #dee2e6;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="default.php">Rockband Admin</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link" href="songs.php">Songs</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="events.php">Events</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="settings.php">Settings</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid mt-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1><i class="bi bi-upload"></i> Import Songs</h1>
+            <a href="songs.php" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Back to Songs
+            </a>
+        </div>
+
+        <!-- Step 1: Upload -->
+        <div id="uploadSection" class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Step 1: Upload CSV File</h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">Upload a CSV file with columns: <code>Song,Artist</code> (or <code>Title,Artist</code>)</p>
+                <div class="mb-3">
+                    <input type="file" class="form-control" id="csvFile" accept=".csv">
+                </div>
+                <button class="btn btn-primary" onclick="parseCSV()">
+                    <i class="bi bi-file-earmark-spreadsheet"></i> Parse CSV
+                </button>
+            </div>
+        </div>
+
+        <!-- Step 2: Review & Search -->
+        <div id="reviewSection" class="card mb-4" style="display: none;">
+            <div class="card-header">
+                <h5 class="mb-0">Step 2: Review & Match Songs</h5>
+            </div>
+            <div class="card-body">
+                <div class="progress-section mb-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div>
+                            <span class="badge bg-success" id="matchedCount">0</span> matched
+                            <span class="badge bg-warning text-dark" id="ambiguousCount">0</span> need review
+                            <span class="badge bg-danger" id="notFoundCount">0</span> not found
+                            <span class="badge bg-secondary" id="skippedCount">0</span> skipped
+                        </div>
+                        <div>
+                            <button class="btn btn-sm btn-outline-secondary me-2" onclick="searchAll()">
+                                <i class="bi bi-search"></i> Search All
+                            </button>
+                            <button class="btn btn-sm btn-outline-primary" onclick="searchUnmatched()">
+                                <i class="bi bi-arrow-repeat"></i> Retry Unmatched
+                            </button>
+                        </div>
+                    </div>
+                    <div class="progress" style="height: 8px;">
+                        <div class="progress-bar bg-success" id="progressMatched" style="width: 0%"></div>
+                        <div class="progress-bar bg-warning" id="progressAmbiguous" style="width: 0%"></div>
+                        <div class="progress-bar bg-danger" id="progressNotFound" style="width: 0%"></div>
+                        <div class="progress-bar bg-secondary" id="progressSkipped" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <div class="btn-group" role="group">
+                        <input type="radio" class="btn-check" name="filterView" id="filterAll" checked onchange="filterView('all')">
+                        <label class="btn btn-outline-secondary" for="filterAll">All</label>
+
+                        <input type="radio" class="btn-check" name="filterView" id="filterAmbiguous" onchange="filterView('ambiguous')">
+                        <label class="btn btn-outline-warning" for="filterAmbiguous">Need Review</label>
+
+                        <input type="radio" class="btn-check" name="filterView" id="filterNotFound" onchange="filterView('notfound')">
+                        <label class="btn btn-outline-danger" for="filterNotFound">Not Found</label>
+
+                        <input type="radio" class="btn-check" name="filterView" id="filterMatched" onchange="filterView('matched')">
+                        <label class="btn btn-outline-success" for="filterMatched">Matched</label>
+                    </div>
+                </div>
+
+                <div id="importList"></div>
+            </div>
+        </div>
+
+        <!-- Step 3: Import -->
+        <div id="importSection" class="card mb-4" style="display: none;">
+            <div class="card-header">
+                <h5 class="mb-0">Step 3: Import to Database</h5>
+            </div>
+            <div class="card-body">
+                <p>Ready to import <strong id="readyCount">0</strong> songs.</p>
+                <div class="form-check mb-3">
+                    <input class="form-check-input" type="checkbox" id="skipExisting" checked>
+                    <label class="form-check-label" for="skipExisting">
+                        Skip songs that already exist (match by title + artist)
+                    </label>
+                </div>
+                <button class="btn btn-success btn-lg" onclick="importSongs()">
+                    <i class="bi bi-database-add"></i> Import Songs
+                </button>
+                <div id="importProgress" class="mt-3" style="display: none;">
+                    <div class="progress mb-2">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated" id="importProgressBar" style="width: 0%"></div>
+                    </div>
+                    <div id="importStatus" class="text-muted"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const ADMIN_TOKEN = <?= json_encode($adminToken) ?>;
+        const API_BASE = '../api';
+
+        let importData = []; // Array of { original: {title, artist}, status, deezerResults, selectedTrack }
+        let currentFilter = 'all';
+
+        function parseCSV() {
+            const fileInput = document.getElementById('csvFile');
+            if (!fileInput.files.length) {
+                alert('Please select a CSV file');
+                return;
+            }
+
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+
+            reader.onload = function(e) {
+                const text = e.target.result;
+                const lines = text.split(/\r?\n/).filter(line => line.trim());
+
+                if (lines.length < 2) {
+                    alert('CSV file appears to be empty');
+                    return;
+                }
+
+                // Parse header
+                const header = parseCSVLine(lines[0]).map(h => h.toLowerCase().trim());
+                const titleIdx = header.findIndex(h => h === 'song' || h === 'title');
+                const artistIdx = header.findIndex(h => h === 'artist');
+
+                if (titleIdx === -1 || artistIdx === -1) {
+                    alert('CSV must have "Song" (or "Title") and "Artist" columns');
+                    return;
+                }
+
+                // Parse data rows
+                importData = [];
+                for (let i = 1; i < lines.length; i++) {
+                    const cols = parseCSVLine(lines[i]);
+                    const title = cols[titleIdx]?.trim();
+                    const artist = cols[artistIdx]?.trim();
+
+                    if (title && artist) {
+                        importData.push({
+                            original: { title, artist },
+                            status: 'pending', // pending, searching, matched, ambiguous, notfound, skipped
+                            deezerResults: [],
+                            selectedTrack: null
+                        });
+                    }
+                }
+
+                if (importData.length === 0) {
+                    alert('No valid song entries found in CSV');
+                    return;
+                }
+
+                document.getElementById('uploadSection').style.display = 'none';
+                document.getElementById('reviewSection').style.display = 'block';
+                document.getElementById('importSection').style.display = 'block';
+
+                renderImportList();
+                updateCounts();
+
+                // Auto-start searching
+                searchAll();
+            };
+
+            reader.readAsText(file);
+        }
+
+        function parseCSVLine(line) {
+            const result = [];
+            let current = '';
+            let inQuotes = false;
+
+            for (let i = 0; i < line.length; i++) {
+                const char = line[i];
+                if (char === '"') {
+                    inQuotes = !inQuotes;
+                } else if (char === ',' && !inQuotes) {
+                    result.push(current);
+                    current = '';
+                } else {
+                    current += char;
+                }
+            }
+            result.push(current);
+            return result;
+        }
+
+        async function searchAll() {
+            for (let i = 0; i < importData.length; i++) {
+                if (importData[i].status === 'pending') {
+                    await searchSong(i);
+                    // Small delay to avoid rate limiting
+                    await new Promise(r => setTimeout(r, 100));
+                }
+            }
+        }
+
+        async function searchUnmatched() {
+            for (let i = 0; i < importData.length; i++) {
+                if (importData[i].status === 'notfound' || importData[i].status === 'ambiguous') {
+                    importData[i].status = 'pending';
+                    await searchSong(i);
+                    await new Promise(r => setTimeout(r, 100));
+                }
+            }
+        }
+
+        async function searchSong(index) {
+            const item = importData[index];
+            item.status = 'searching';
+            renderImportRow(index);
+
+            const query = `${item.original.title} ${item.original.artist}`;
+
+            try {
+                const response = await fetch(`${API_BASE}/deezer.php?q=${encodeURIComponent(query)}&limit=10`);
+                const data = await response.json();
+
+                if (data.error || !data.data || data.data.length === 0) {
+                    item.status = 'notfound';
+                    item.deezerResults = [];
+                } else {
+                    item.deezerResults = data.data;
+
+                    // Check for exact or close match
+                    const exactMatch = findBestMatch(item.original, data.data);
+
+                    if (exactMatch.confidence === 'high') {
+                        item.status = 'matched';
+                        item.selectedTrack = exactMatch.track;
+                    } else if (exactMatch.confidence === 'medium') {
+                        item.status = 'ambiguous';
+                        item.selectedTrack = exactMatch.track; // Pre-select best guess
+                    } else {
+                        item.status = 'ambiguous';
+                    }
+                }
+            } catch (err) {
+                console.error('Search failed:', err);
+                item.status = 'notfound';
+            }
+
+            renderImportRow(index);
+            updateCounts();
+        }
+
+        function findBestMatch(original, tracks) {
+            const normalizedTitle = normalize(original.title);
+            const normalizedArtist = normalize(original.artist);
+
+            for (const track of tracks) {
+                const trackTitle = normalize(track.title);
+                const trackArtist = normalize(track.artist.name);
+
+                // Exact match
+                if (trackTitle === normalizedTitle && trackArtist === normalizedArtist) {
+                    return { track, confidence: 'high' };
+                }
+
+                // Title contains original (handles "The Wind" vs "The Wind (Greatest Hits Version)")
+                if (trackTitle.includes(normalizedTitle) && trackArtist === normalizedArtist) {
+                    return { track, confidence: 'high' };
+                }
+
+                // Original title contains track title (for shortened titles)
+                if (normalizedTitle.includes(trackTitle) && trackArtist === normalizedArtist) {
+                    return { track, confidence: 'medium' };
+                }
+            }
+
+            // Check first result if artist matches
+            if (tracks.length > 0) {
+                const firstTrack = tracks[0];
+                if (normalize(firstTrack.artist.name) === normalizedArtist) {
+                    return { track: firstTrack, confidence: 'medium' };
+                }
+            }
+
+            return { track: tracks[0] || null, confidence: 'low' };
+        }
+
+        function normalize(str) {
+            return str.toLowerCase()
+                .replace(/[^\w\s]/g, '') // Remove punctuation
+                .replace(/\s+/g, ' ')    // Normalize whitespace
+                .trim();
+        }
+
+        function renderImportList() {
+            const container = document.getElementById('importList');
+            let html = '';
+
+            importData.forEach((item, index) => {
+                if (shouldShow(item)) {
+                    html += renderImportRowHtml(item, index);
+                }
+            });
+
+            container.innerHTML = html || '<p class="text-muted">No items to show</p>';
+        }
+
+        function shouldShow(item) {
+            if (currentFilter === 'all') return true;
+            if (currentFilter === 'ambiguous') return item.status === 'ambiguous';
+            if (currentFilter === 'notfound') return item.status === 'notfound';
+            if (currentFilter === 'matched') return item.status === 'matched';
+            return true;
+        }
+
+        function renderImportRow(index) {
+            const item = importData[index];
+            const row = document.getElementById(`import-row-${index}`);
+            if (row && shouldShow(item)) {
+                row.outerHTML = renderImportRowHtml(item, index);
+            } else if (!shouldShow(item) && row) {
+                row.remove();
+            }
+        }
+
+        function renderImportRowHtml(item, index) {
+            let statusClass = item.status;
+            let statusIcon = '';
+            let statusText = '';
+
+            switch (item.status) {
+                case 'pending':
+                    statusIcon = '<i class="bi bi-hourglass text-muted"></i>';
+                    statusText = 'Pending';
+                    break;
+                case 'searching':
+                    statusIcon = '<span class="spinner-border spinner-border-sm"></span>';
+                    statusText = 'Searching...';
+                    break;
+                case 'matched':
+                    statusIcon = '<i class="bi bi-check-circle-fill text-success"></i>';
+                    statusText = 'Matched';
+                    break;
+                case 'ambiguous':
+                    statusIcon = '<i class="bi bi-question-circle-fill text-warning"></i>';
+                    statusText = 'Review needed';
+                    break;
+                case 'notfound':
+                    statusIcon = '<i class="bi bi-x-circle-fill text-danger"></i>';
+                    statusText = 'Not found';
+                    break;
+                case 'skipped':
+                    statusIcon = '<i class="bi bi-dash-circle text-secondary"></i>';
+                    statusText = 'Skipped';
+                    break;
+            }
+
+            let optionsHtml = '';
+            if ((item.status === 'ambiguous' || item.status === 'matched') && item.deezerResults.length > 0) {
+                optionsHtml = `
+                    <div class="mt-2">
+                        <small class="text-muted">Select the correct match:</small>
+                        <div class="deezer-options mt-1">
+                            ${item.deezerResults.slice(0, 5).map((track, i) => `
+                                <div class="deezer-option d-flex align-items-center ${item.selectedTrack?.id === track.id ? 'selected' : ''}"
+                                     onclick="selectTrack(${index}, ${i})">
+                                    <img src="${track.album.cover_small}" class="deezer-thumb rounded me-2">
+                                    <div class="flex-grow-1">
+                                        <div class="fw-bold small">${escapeHtml(track.title)}</div>
+                                        <div class="text-muted small">${escapeHtml(track.artist.name)} - ${escapeHtml(track.album.title)}</div>
+                                    </div>
+                                    ${item.selectedTrack?.id === track.id ? '<i class="bi bi-check-lg text-primary"></i>' : ''}
+                                </div>
+                            `).join('')}
+                            <div class="deezer-option d-flex align-items-center ${item.status === 'skipped' ? 'selected' : ''}"
+                                 onclick="skipSong(${index})">
+                                <i class="bi bi-skip-forward me-2"></i>
+                                <span class="small">Skip this song</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } else if (item.status === 'notfound') {
+                optionsHtml = `
+                    <div class="mt-2">
+                        <div class="input-group input-group-sm">
+                            <input type="text" class="form-control" id="retry-query-${index}"
+                                   value="${escapeHtml(item.original.title + ' ' + item.original.artist)}"
+                                   placeholder="Try a different search...">
+                            <button class="btn btn-outline-secondary" onclick="retrySearch(${index})">
+                                <i class="bi bi-search"></i>
+                            </button>
+                        </div>
+                        <button class="btn btn-sm btn-outline-secondary mt-1" onclick="skipSong(${index})">
+                            <i class="bi bi-skip-forward"></i> Skip
+                        </button>
+                    </div>
+                `;
+            }
+
+            return `
+                <div class="import-row ${statusClass}" id="import-row-${index}">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <strong>${escapeHtml(item.original.title)}</strong>
+                            <span class="text-muted">by ${escapeHtml(item.original.artist)}</span>
+                        </div>
+                        <div class="text-end">
+                            ${statusIcon} <span class="small">${statusText}</span>
+                        </div>
+                    </div>
+                    ${optionsHtml}
+                </div>
+            `;
+        }
+
+        function selectTrack(index, trackIndex) {
+            const item = importData[index];
+            item.selectedTrack = item.deezerResults[trackIndex];
+            item.status = 'matched';
+            renderImportRow(index);
+            updateCounts();
+        }
+
+        function skipSong(index) {
+            importData[index].status = 'skipped';
+            importData[index].selectedTrack = null;
+            renderImportRow(index);
+            updateCounts();
+        }
+
+        async function retrySearch(index) {
+            const query = document.getElementById(`retry-query-${index}`).value;
+            if (!query) return;
+
+            const item = importData[index];
+            item.status = 'searching';
+            renderImportRow(index);
+
+            try {
+                const response = await fetch(`${API_BASE}/deezer.php?q=${encodeURIComponent(query)}&limit=10`);
+                const data = await response.json();
+
+                if (data.error || !data.data || data.data.length === 0) {
+                    item.status = 'notfound';
+                    item.deezerResults = [];
+                } else {
+                    item.deezerResults = data.data;
+                    item.status = 'ambiguous';
+                }
+            } catch (err) {
+                item.status = 'notfound';
+            }
+
+            renderImportRow(index);
+            updateCounts();
+        }
+
+        function filterView(filter) {
+            currentFilter = filter;
+            renderImportList();
+        }
+
+        function updateCounts() {
+            const counts = {
+                matched: 0,
+                ambiguous: 0,
+                notfound: 0,
+                skipped: 0
+            };
+
+            importData.forEach(item => {
+                if (counts[item.status] !== undefined) {
+                    counts[item.status]++;
+                }
+            });
+
+            document.getElementById('matchedCount').textContent = counts.matched;
+            document.getElementById('ambiguousCount').textContent = counts.ambiguous;
+            document.getElementById('notFoundCount').textContent = counts.notfound;
+            document.getElementById('skippedCount').textContent = counts.skipped;
+            document.getElementById('readyCount').textContent = counts.matched;
+
+            const total = importData.length;
+            document.getElementById('progressMatched').style.width = (counts.matched / total * 100) + '%';
+            document.getElementById('progressAmbiguous').style.width = (counts.ambiguous / total * 100) + '%';
+            document.getElementById('progressNotFound').style.width = (counts.notfound / total * 100) + '%';
+            document.getElementById('progressSkipped').style.width = (counts.skipped / total * 100) + '%';
+        }
+
+        async function importSongs() {
+            const songsToImport = importData.filter(item => item.status === 'matched' && item.selectedTrack);
+
+            if (songsToImport.length === 0) {
+                alert('No songs ready to import');
+                return;
+            }
+
+            const skipExisting = document.getElementById('skipExisting').checked;
+            const progressDiv = document.getElementById('importProgress');
+            const progressBar = document.getElementById('importProgressBar');
+            const statusDiv = document.getElementById('importStatus');
+
+            progressDiv.style.display = 'block';
+
+            let imported = 0;
+            let skipped = 0;
+            let failed = 0;
+
+            for (let i = 0; i < songsToImport.length; i++) {
+                const item = songsToImport[i];
+                const track = item.selectedTrack;
+
+                statusDiv.textContent = `Importing ${i + 1} of ${songsToImport.length}: ${track.title}...`;
+                progressBar.style.width = ((i + 1) / songsToImport.length * 100) + '%';
+
+                try {
+                    // First fetch album details to get the year
+                    const albumResponse = await fetch(`${API_BASE}/deezer.php?album_id=${track.album.id}`);
+                    const albumData = await albumResponse.json();
+                    const year = albumData.year || new Date().getFullYear();
+
+                    // Use cover_small (56x56) to avoid 64KB limit, or cover_medium (250x250) with compression
+                    // cover_small is typically 2-5KB, cover_medium is typically 15-30KB
+                    const albumArtUrl = track.album.cover_medium || track.album.cover_small;
+
+                    const response = await fetch(`${API_BASE}/songs.php`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            admin_token: ADMIN_TOKEN,
+                            action: 'create',
+                            title: track.title,
+                            artist: track.artist.name,
+                            album: track.album.title,
+                            year: year,
+                            duration: track.duration || 0,
+                            deezer_id: track.id,
+                            album_art_url: albumArtUrl,
+                            skip_existing: skipExisting
+                        })
+                    });
+
+                    const result = await response.json();
+
+                    if (result.error) {
+                        if (result.error.includes('already exists') || result.error.includes('Duplicate')) {
+                            skipped++;
+                        } else {
+                            console.error('Import error:', result.error);
+                            failed++;
+                        }
+                    } else {
+                        imported++;
+                    }
+                } catch (err) {
+                    console.error('Import failed:', err);
+                    failed++;
+                }
+
+                // Small delay to avoid overwhelming the server
+                await new Promise(r => setTimeout(r, 50));
+            }
+
+            progressBar.classList.remove('progress-bar-animated');
+            statusDiv.innerHTML = `
+                <div class="alert alert-success">
+                    Import complete!
+                    <strong>${imported}</strong> imported,
+                    <strong>${skipped}</strong> skipped (already existed),
+                    <strong>${failed}</strong> failed.
+                </div>
+                <a href="songs.php" class="btn btn-primary">View Song Library</a>
+            `;
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>
