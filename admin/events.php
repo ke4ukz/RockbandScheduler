@@ -191,7 +191,7 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
                                 <dd class="col-sm-8" id="viewEventEnd"></dd>
                                 <dt class="col-sm-4">Performance Slots</dt>
                                 <dd class="col-sm-8" id="viewEventSlots"></dd>
-                                <dt class="col-sm-4">Event URL</dt>
+                                <dt class="col-sm-4">Signup URL</dt>
                                 <dd class="col-sm-8">
                                     <code id="viewEventUrl" class="user-select-all"></code>
                                     <button class="btn btn-sm btn-outline-secondary ms-2" onclick="copyEventUrl()">
@@ -202,7 +202,7 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
                         </div>
                         <div class="col-md-4 text-center">
                             <div id="qrCodeContainer">
-                                <p class="text-muted">QR Code</p>
+                                <p class="text-muted">Signup Page QR Code</p>
                                 <img id="viewEventQr" class="qr-preview img-fluid border" alt="QR Code" style="display:none;">
                                 <p id="noQrMessage" class="text-muted small">QR code unavailable</p>
                             </div>
