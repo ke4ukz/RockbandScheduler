@@ -411,10 +411,40 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
         function renderImportRow(index) {
             const item = importData[index];
             const row = document.getElementById(`import-row-${index}`);
-            if (row && shouldShow(item)) {
+            const shouldDisplay = shouldShow(item);
+
+            if (row && shouldDisplay) {
+                // Row exists and should be shown - update it
                 row.outerHTML = renderImportRowHtml(item, index);
-            } else if (!shouldShow(item) && row) {
+            } else if (!shouldDisplay && row) {
+                // Row exists but shouldn't be shown - remove it
                 row.remove();
+            } else if (shouldDisplay && !row) {
+                // Row doesn't exist but should be shown - add it in the right position
+                const container = document.getElementById('importList');
+                const newRowHtml = renderImportRowHtml(item, index);
+
+                // Find the right position to insert (maintain order by index)
+                const existingRows = container.querySelectorAll('.import-row');
+                let inserted = false;
+
+                for (const existingRow of existingRows) {
+                    const existingIndex = parseInt(existingRow.id.replace('import-row-', ''));
+                    if (existingIndex > index) {
+                        existingRow.insertAdjacentHTML('beforebegin', newRowHtml);
+                        inserted = true;
+                        break;
+                    }
+                }
+
+                if (!inserted) {
+                    // Add at end (or container is empty)
+                    if (container.querySelector('p.text-muted')) {
+                        container.innerHTML = newRowHtml;
+                    } else {
+                        container.insertAdjacentHTML('beforeend', newRowHtml);
+                    }
+                }
             }
         }
 
