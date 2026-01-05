@@ -74,6 +74,11 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
                         <a class="nav-link" href="settings.php">Settings</a>
                     </li>
                 </ul>
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="help.php"><i class="bi bi-question-circle"></i> Help</a>
+                    </li>
+                </ul>
             </div>
         </div>
     </nav>
