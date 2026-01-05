@@ -151,11 +151,18 @@ function createSong($db, $data) {
 
     // Check for existing song if skip_existing is set
     if (!empty($data['skip_existing'])) {
-        $stmt = $db->prepare('
-            SELECT song_id FROM songs
-            WHERE LOWER(title) = LOWER(?) AND LOWER(artist) = LOWER(?)
-        ');
-        $stmt->execute([$data['title'], $data['artist']]);
+        // Prefer deezer_id for duplicate check (exact track match)
+        // Fall back to title+artist if no deezer_id
+        if (!empty($data['deezer_id'])) {
+            $stmt = $db->prepare('SELECT song_id FROM songs WHERE deezer_id = ?');
+            $stmt->execute([$data['deezer_id']]);
+        } else {
+            $stmt = $db->prepare('
+                SELECT song_id FROM songs
+                WHERE LOWER(title) = LOWER(?) AND LOWER(artist) = LOWER(?)
+            ');
+            $stmt->execute([$data['title'], $data['artist']]);
+        }
         if ($stmt->fetch()) {
             jsonError('Song already exists', 409);
         }
