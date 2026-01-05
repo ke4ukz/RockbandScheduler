@@ -21,9 +21,11 @@ if (!$eventId) {
 } else {
     try {
         $stmt = $db->prepare('
-            SELECT BIN_TO_UUID(event_id) as event_id, name, location, start_time, end_time, num_entries
-            FROM events
-            WHERE event_id = UUID_TO_BIN(?)
+            SELECT BIN_TO_UUID(e.event_id) as event_id, e.name, e.location, e.start_time, e.end_time, e.num_entries,
+                   t.primary_color, t.bg_gradient_start, t.bg_gradient_end
+            FROM events e
+            LEFT JOIN themes t ON e.theme_id = t.theme_id
+            WHERE e.event_id = UUID_TO_BIN(?)
         ');
         $stmt->execute([$eventId]);
         $event = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -59,11 +61,13 @@ if (!$eventId) {
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
     <style>
         :root {
-            --primary-color: #6f42c1;
+            --primary-color: <?= h($event['primary_color'] ?? '#6f42c1') ?>;
+            --bg-gradient-start: <?= h($event['bg_gradient_start'] ?? '#1a1a2e') ?>;
+            --bg-gradient-end: <?= h($event['bg_gradient_end'] ?? '#16213e') ?>;
         }
 
         body {
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            background: linear-gradient(135deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
             min-height: 100vh;
             color: #fff;
         }
@@ -220,7 +224,7 @@ if (!$eventId) {
         .signup-modal .modal-content {
             min-height: 100vh;
             border-radius: 0;
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            background: linear-gradient(135deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
             color: #fff;
             border: none;
         }
@@ -317,7 +321,8 @@ if (!$eventId) {
         }
 
         .btn-signup:hover {
-            background: #5a32a3;
+            background: var(--primary-color);
+            filter: brightness(0.85);
             color: #fff;
         }
 

@@ -82,16 +82,19 @@ try {
 
 function listEvents($db) {
     $stmt = $db->query('
-        SELECT BIN_TO_UUID(event_id) as event_id, name, location, start_time, end_time, num_entries,
-               TO_BASE64(qr_image) as qr_image, created, modified
-        FROM events
-        ORDER BY start_time DESC
+        SELECT BIN_TO_UUID(e.event_id) as event_id, e.name, e.location, e.start_time, e.end_time, e.num_entries,
+               TO_BASE64(e.qr_image) as qr_image, e.created, e.modified, e.theme_id,
+               t.name as theme_name, t.primary_color, t.bg_gradient_start, t.bg_gradient_end
+        FROM events e
+        LEFT JOIN themes t ON e.theme_id = t.theme_id
+        ORDER BY e.start_time DESC
     ');
     $events = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     // Convert numeric fields
     foreach ($events as &$event) {
         $event['num_entries'] = (int)$event['num_entries'];
+        $event['theme_id'] = $event['theme_id'] ? (int)$event['theme_id'] : null;
     }
 
     jsonResponse(['events' => $events]);
@@ -103,10 +106,12 @@ function getEvent($db, $eventId) {
     }
 
     $stmt = $db->prepare('
-        SELECT BIN_TO_UUID(event_id) as event_id, name, location, start_time, end_time, num_entries,
-               TO_BASE64(qr_image) as qr_image, created, modified
-        FROM events
-        WHERE event_id = UUID_TO_BIN(?)
+        SELECT BIN_TO_UUID(e.event_id) as event_id, e.name, e.location, e.start_time, e.end_time, e.num_entries,
+               TO_BASE64(e.qr_image) as qr_image, e.created, e.modified, e.theme_id,
+               t.name as theme_name, t.primary_color, t.bg_gradient_start, t.bg_gradient_end
+        FROM events e
+        LEFT JOIN themes t ON e.theme_id = t.theme_id
+        WHERE e.event_id = UUID_TO_BIN(?)
     ');
     $stmt->execute([$eventId]);
     $event = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -116,6 +121,7 @@ function getEvent($db, $eventId) {
     }
 
     $event['num_entries'] = (int)$event['num_entries'];
+    $event['theme_id'] = $event['theme_id'] ? (int)$event['theme_id'] : null;
 
     jsonResponse(['event' => $event]);
 }
@@ -145,10 +151,13 @@ function createEvent($db, $data) {
         jsonError('num_entries must be between 1 and 255');
     }
 
+    // Validate theme_id if provided
+    $themeId = isset($data['theme_id']) && $data['theme_id'] !== '' ? (int)$data['theme_id'] : null;
+
     // Insert with auto-generated UUID
     $stmt = $db->prepare('
-        INSERT INTO events (name, location, start_time, end_time, num_entries)
-        VALUES (?, ?, ?, ?, ?)
+        INSERT INTO events (name, location, start_time, end_time, num_entries, theme_id)
+        VALUES (?, ?, ?, ?, ?, ?)
     ');
 
     $stmt->execute([
@@ -156,7 +165,8 @@ function createEvent($db, $data) {
         $data['location'] ?? null,
         date('Y-m-d H:i:s', $startTime),
         date('Y-m-d H:i:s', $endTime),
-        $numEntries
+        $numEntries,
+        $themeId
     ]);
 
     // Get the generated UUID
@@ -229,6 +239,11 @@ function updateEvent($db, $eventId, $data) {
         }
         $fields[] = 'num_entries = ?';
         $values[] = $numEntries;
+    }
+
+    if (array_key_exists('theme_id', $data)) {
+        $fields[] = 'theme_id = ?';
+        $values[] = $data['theme_id'] !== '' && $data['theme_id'] !== null ? (int)$data['theme_id'] : null;
     }
 
     if (empty($fields)) {

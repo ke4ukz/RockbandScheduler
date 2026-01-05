@@ -121,6 +121,13 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
                             <input type="number" class="form-control" id="numEntries" name="num_entries" min="1" max="255" value="10" required>
                             <div class="form-text">How many performers can sign up for this event</div>
                         </div>
+                        <div class="mb-3">
+                            <label for="eventTheme" class="form-label">Color Theme</label>
+                            <select class="form-select" id="eventTheme" name="theme_id">
+                                <option value="">Default (Purple Night)</option>
+                            </select>
+                            <div class="form-text">Choose a color theme for the user-facing signup page</div>
+                        </div>
                     </form>
                 </div>
                 <div class="modal-footer">
@@ -208,6 +215,7 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
         const SITE_BASE = window.location.origin + window.location.pathname.replace(/\/admin\/.*$/, '');
 
         let events = [];
+        let themes = [];
         let deleteEventId = null;
         let currentViewEventId = null;
         let eventModal, viewEventModal, deleteModal;
@@ -216,6 +224,7 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
             eventModal = new bootstrap.Modal(document.getElementById('eventModal'));
             viewEventModal = new bootstrap.Modal(document.getElementById('viewEventModal'));
             deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
+            loadThemes();
             loadEvents();
 
             document.getElementById('filterStatus').addEventListener('change', renderEvents);
@@ -229,6 +238,35 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
                 window.history.replaceState({}, '', window.location.pathname);
             }
         });
+
+        async function loadThemes() {
+            try {
+                const response = await fetch(`${API_BASE}/themes.php`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ admin_token: ADMIN_TOKEN, action: 'list' })
+                });
+                const data = await response.json();
+                if (data.error) throw new Error(data.error);
+                themes = data.themes || [];
+                populateThemeDropdown();
+            } catch (err) {
+                console.error('Failed to load themes:', err);
+            }
+        }
+
+        function populateThemeDropdown() {
+            const select = document.getElementById('eventTheme');
+            select.innerHTML = '<option value="">Default (Purple Night)</option>';
+            themes.forEach(theme => {
+                const opt = document.createElement('option');
+                opt.value = theme.theme_id;
+                opt.textContent = theme.name;
+                opt.style.backgroundColor = theme.primary_color;
+                opt.style.color = '#fff';
+                select.appendChild(opt);
+            });
+        }
 
         async function loadEvents() {
             try {
@@ -354,6 +392,7 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
             document.getElementById('eventModalTitle').textContent = 'Create Event';
             document.getElementById('eventForm').reset();
             document.getElementById('eventId').value = '';
+            document.getElementById('eventTheme').value = '';
 
             // Set default times (start now, end in 4 hours)
             const now = new Date();
@@ -373,6 +412,7 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
             document.getElementById('startTime').value = formatDateTimeLocal(event.start_time);
             document.getElementById('endTime').value = formatDateTimeLocal(event.end_time);
             document.getElementById('numEntries').value = event.num_entries;
+            document.getElementById('eventTheme').value = event.theme_id || '';
 
             eventModal.show();
         }
@@ -425,12 +465,14 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
             }
 
             const eventId = document.getElementById('eventId').value;
+            const themeVal = document.getElementById('eventTheme').value;
             const data = {
                 name: document.getElementById('eventName').value,
                 location: document.getElementById('eventLocation').value || null,
                 start_time: document.getElementById('startTime').value,
                 end_time: document.getElementById('endTime').value,
-                num_entries: parseInt(document.getElementById('numEntries').value)
+                num_entries: parseInt(document.getElementById('numEntries').value),
+                theme_id: themeVal ? parseInt(themeVal) : null
             };
 
             // Validate times
