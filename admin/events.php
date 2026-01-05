@@ -731,6 +731,21 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
                 const result = await response.json();
                 if (result.error) throw new Error(result.error);
 
+                // If editing an existing event, check if it moved out of "past" status
+                if (eventId) {
+                    const newStatus = getEventStatus({
+                        start_time: data.start_time,
+                        end_time: data.end_time
+                    });
+                    // Remove from pastEvents if it's no longer past
+                    if (newStatus !== 'past') {
+                        pastEvents = pastEvents.filter(e => e.event_id !== eventId);
+                        if (pastEventsLoaded) {
+                            renderPastEvents();
+                        }
+                    }
+                }
+
                 eventModal.hide();
                 loadEvents(true);
             } catch (err) {
