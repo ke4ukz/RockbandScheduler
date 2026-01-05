@@ -357,10 +357,12 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
             }
 
             try {
+                // Pass client's current time for accurate filtering
+                const clientNow = new Date().toISOString().slice(0, 19).replace('T', ' ');
                 const response = await fetch(`${API_BASE}/events.php`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ admin_token: ADMIN_TOKEN, action: 'list', exclude_past: true })
+                    body: JSON.stringify({ admin_token: ADMIN_TOKEN, action: 'list', exclude_past: true, client_time: clientNow })
                 });
                 const data = await response.json();
                 if (data.error) throw new Error(data.error);
@@ -386,10 +388,12 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
             btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Loading...';
 
             try {
+                // Pass client's current time for accurate filtering
+                const clientNow = new Date().toISOString().slice(0, 19).replace('T', ' ');
                 const response = await fetch(`${API_BASE}/events.php`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ admin_token: ADMIN_TOKEN, action: 'list', only_past: true })
+                    body: JSON.stringify({ admin_token: ADMIN_TOKEN, action: 'list', only_past: true, client_time: clientNow })
                 });
                 const data = await response.json();
                 if (data.error) throw new Error(data.error);

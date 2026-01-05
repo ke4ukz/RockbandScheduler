@@ -10,10 +10,6 @@ if ($configPath && file_exists($configPath)) {
 }
 unset($configPath);
 
-// Set timezone from config or default to America/New_York
-$timezone = $GLOBALS['config']['site']['timezone'] ?? 'America/New_York';
-date_default_timezone_set($timezone);
-
 // Default settings for signup requirements
 if (!isset($GLOBALS['config']['signup']) || !is_array($GLOBALS['config']['signup'])) {
     $GLOBALS['config']['signup'] = [];

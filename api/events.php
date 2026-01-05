@@ -46,7 +46,8 @@ try {
         case 'list':
             $excludePast = $data['exclude_past'] ?? false;
             $onlyPast = $data['only_past'] ?? false;
-            listEvents($db, $excludePast, $onlyPast);
+            $clientTime = $data['client_time'] ?? null;
+            listEvents($db, $excludePast, $onlyPast, $clientTime);
             break;
 
         case 'get':
@@ -82,7 +83,7 @@ try {
     jsonError('Database error', 500);
 }
 
-function listEvents($db, $excludePast = false, $onlyPast = false) {
+function listEvents($db, $excludePast = false, $onlyPast = false, $clientTime = null) {
     $sql = '
         SELECT BIN_TO_UUID(e.event_id) as event_id, e.name, e.location, e.start_time, e.end_time, e.num_entries,
                TO_BASE64(e.qr_image) as qr_image, e.created, e.modified, e.theme_id,
@@ -91,8 +92,8 @@ function listEvents($db, $excludePast = false, $onlyPast = false) {
         LEFT JOIN themes t ON e.theme_id = t.theme_id
     ';
 
-    // Use PHP's current time to avoid MySQL timezone issues
-    $now = date('Y-m-d H:i:s');
+    // Use client time if provided (browser knows user's local time), otherwise fall back to server time
+    $now = $clientTime ?: date('Y-m-d H:i:s');
 
     if ($excludePast) {
         // Include active (end_time >= now) and upcoming (start_time > now)
