@@ -129,7 +129,7 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
                             <div id="themePreview" class="mt-2 p-3 rounded" style="display: none;">
                                 <div class="d-flex align-items-center gap-2">
                                     <div class="rounded-circle" id="previewAccent" style="width: 24px; height: 24px;"></div>
-                                    <span class="text-white small">Sample Text</span>
+                                    <span class="small" id="previewText">Sample Text</span>
                                     <button type="button" class="btn btn-sm ms-auto" id="previewButton">Sign Up</button>
                                 </div>
                             </div>
@@ -266,7 +266,8 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
         const DEFAULT_THEME = {
             primary_color: '#6f42c1',
             bg_gradient_start: '#1a1a2e',
-            bg_gradient_end: '#16213e'
+            bg_gradient_end: '#16213e',
+            text_color: '#ffffff'
         };
 
         function populateThemeDropdown() {
@@ -285,17 +286,20 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
             const preview = document.getElementById('themePreview');
             const accent = document.getElementById('previewAccent');
             const button = document.getElementById('previewButton');
+            const text = document.getElementById('previewText');
 
             const themeId = select.value;
             const theme = themeId ? themes.find(t => t.theme_id == themeId) : DEFAULT_THEME;
 
             if (theme) {
+                const textColor = theme.text_color || '#ffffff';
                 preview.style.display = 'block';
                 preview.style.background = `linear-gradient(135deg, ${theme.bg_gradient_start} 0%, ${theme.bg_gradient_end} 100%)`;
                 accent.style.backgroundColor = theme.primary_color;
                 button.style.backgroundColor = theme.primary_color;
                 button.style.borderColor = theme.primary_color;
                 button.style.color = '#fff';
+                text.style.color = textColor;
             }
         }
 

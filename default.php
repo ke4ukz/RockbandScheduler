@@ -22,7 +22,7 @@ if (!$eventId) {
     try {
         $stmt = $db->prepare('
             SELECT BIN_TO_UUID(e.event_id) as event_id, e.name, e.location, e.start_time, e.end_time, e.num_entries,
-                   t.primary_color, t.bg_gradient_start, t.bg_gradient_end
+                   t.primary_color, t.bg_gradient_start, t.bg_gradient_end, t.text_color
             FROM events e
             LEFT JOIN themes t ON e.theme_id = t.theme_id
             WHERE e.event_id = UUID_TO_BIN(?)
@@ -64,12 +64,13 @@ if (!$eventId) {
             --primary-color: <?= h($event['primary_color'] ?? '#6f42c1') ?>;
             --bg-gradient-start: <?= h($event['bg_gradient_start'] ?? '#1a1a2e') ?>;
             --bg-gradient-end: <?= h($event['bg_gradient_end'] ?? '#16213e') ?>;
+            --text-color: <?= h($event['text_color'] ?? '#ffffff') ?>;
         }
 
         body {
             background: linear-gradient(135deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
             min-height: 100vh;
-            color: #fff;
+            color: var(--text-color);
         }
 
         .header {
@@ -225,7 +226,7 @@ if (!$eventId) {
             min-height: 100vh;
             border-radius: 0;
             background: linear-gradient(135deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
-            color: #fff;
+            color: var(--text-color);
             border: none;
         }
 

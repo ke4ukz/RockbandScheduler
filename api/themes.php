@@ -47,7 +47,7 @@ try {
 
 function listThemes($db) {
     $stmt = $db->query('
-        SELECT theme_id, name, primary_color, bg_gradient_start, bg_gradient_end
+        SELECT theme_id, name, primary_color, bg_gradient_start, bg_gradient_end, text_color
         FROM themes
         ORDER BY name
     ');
