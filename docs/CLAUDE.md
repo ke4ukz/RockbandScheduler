@@ -160,7 +160,7 @@ The site is deployed via GitHub and cPanel's Git Version Control. To push update
 
 ### Code Quality
 
-- [ ] **Fix db.php config key mismatch** - Code uses `host`, `dbname`, `username`, `password` but config sample uses `host`, `name`, `user`, `pass`. Verify which is correct and align them.
+- [x] **Fix db.php config key mismatch** - Updated db.php to use `host`, `name`, `user`, `pass` to match config.sample.ini. Also fixed DSN string that had `host=localhost` hardcoded instead of using the config value.
 
 ## UI Conventions
 

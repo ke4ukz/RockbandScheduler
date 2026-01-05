@@ -17,15 +17,17 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-//error_log("loading db");
 $GLOBALS['db'] = FALSE;
-if ($GLOBALS['config']!== NULL && $GLOBALS['config'] !== FALSE) {
-    //error_log("Trying to connect to db {$GLOBALS['config']['database']['dbname']}");
+if ($GLOBALS['config'] !== NULL && $GLOBALS['config'] !== FALSE) {
     try {
-        $GLOBALS['db'] = new PDO("mysql:{$GLOBALS['config']['database']['host']}=localhost;dbname={$GLOBALS['config']['database']['dbname']}", $GLOBALS['config']['database']['username'], $GLOBALS['config']['database']['password']);
+        $host = $GLOBALS['config']['database']['host'];
+        $name = $GLOBALS['config']['database']['name'];
+        $user = $GLOBALS['config']['database']['user'];
+        $pass = $GLOBALS['config']['database']['pass'];
+        $GLOBALS['db'] = new PDO("mysql:host={$host};dbname={$name}", $user, $pass);
     } catch (PDOException $e) {
-        error_log($e);
-        die('error connecting to db');
+        error_log('Database connection error: ' . $e->getMessage());
+        die('Error connecting to database');
     }
 }
 
