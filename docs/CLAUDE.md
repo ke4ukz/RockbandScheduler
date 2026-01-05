@@ -164,6 +164,22 @@ The site is deployed via GitHub and cPanel's Git Version Control. To push update
 
 - [x] **Fix db.php config key mismatch** - Updated db.php to use `host`, `name`, `user`, `pass` to match config.sample.ini. Also fixed DSN string that had `host=localhost` hardcoded instead of using the config value.
 
+### Known Issues (from Jan 2026 audit)
+
+**High Priority:**
+- [ ] **Race condition in slot assignment** (`api/entries.php:219-248`) - Two users submitting simultaneously could claim the same slot. The code queries for available positions, then inserts, but another request could take that position in between. **Fix**: Add unique constraint `(event_id, position)` to the entries table and handle duplicate key errors with retry logic.
+- [ ] **Event UUID retrieval uses name lookup** (`api/events.php:209-219`) - After creating an event, the code retrieves its UUID by matching on name. If two events with identical names are created simultaneously, the wrong UUID could be returned. **Fix**: Generate UUID in PHP before insert, or use `LAST_INSERT_ID()` approach.
+
+**Medium Priority:**
+- [ ] **SSRF in album art fetching** (`api/songs.php:297-346`) - `fetchImageAsBlob()` accepts user-provided URLs without blocking internal/private IP ranges. An attacker could probe internal network services. **Fix**: Validate URL scheme is http/https and block private IPs (10.x, 172.16-31.x, 192.168.x, 169.254.x, localhost).
+- [ ] **Base64 album art not validated** (`api/songs.php:216-222`) - Manual base64 uploads aren't checked to be actual images before storing. **Fix**: Apply same MIME type validation as `fetchImageAsBlob()`.
+
+**Low Priority:**
+- [ ] **Song selection count not decremented** - When an entry's song is changed via admin edit, the new song's `selection_count` is incremented but the old song's count is not decremented. Stats may be slightly inflated over time.
+- [ ] **Missing performer_name length validation** - Name is trimmed but not length-checked before insert. Database will error on overflow (150 chars) but explicit validation would give better error messages.
+- [ ] **Songs list not paginated in entries API** - `listEntries()` fetches all songs for the selection dropdown. With thousands of songs, this could cause performance issues.
+- [ ] **Admin entry creation response inconsistent** - Public signup returns `position` in response; admin creation does not.
+
 ## UI Conventions
 
 - Busy overlay during async operations (`.busy-overlay` + `.show`/`.visible`)
