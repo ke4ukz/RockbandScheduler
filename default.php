@@ -117,11 +117,6 @@ if (!$eventId) {
             transform: translateY(-50%);
             height: 70%;
             max-height: 48px;
-            opacity: 0.7;
-        }
-
-        .header .deezer-credit:hover {
-            opacity: 1;
         }
 
         .signage-link {
