@@ -152,8 +152,8 @@ The site is deployed via GitHub and cPanel's Git Version Control. To push update
 - [x] **Sanitize error messages** - All API endpoints now log full error details via `error_log()` but return generic messages to clients. No database structure, file paths, or raw exception messages are exposed. Common errors (data too long, duplicate entry, encoding issues) get helpful but safe messages.
 - [x] **Remove debug logging** - Removed `error_log("loading db")` from `db.php`.
 
-**Medium Priority:**
-- [ ] **Add rate limiting** - Public signup (`/api/entries.php`) and Deezer proxy (`/api/deezer.php`) have no rate limits. Could be abused to fill event slots or get server IP banned by Deezer.
+**Deferred (Won't Fix):**
+- [ ] **Rate limiting** - Public signup and Deezer proxy have no rate limits. Risk is low: human interaction won't hit Deezer's 50/5sec limit, and any issues are temporary/recoverable (slots can be cleared, Deezer bans are brief). Complexity cost outweighs benefit for this use case.
 
 **Low Priority:**
 - [ ] **Add security headers** - Missing X-Frame-Options, X-Content-Type-Options, CSP, etc. Add to `.htaccess` or PHP.
