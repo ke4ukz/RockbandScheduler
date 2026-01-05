@@ -188,13 +188,57 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
         </div>
     </div>
 
+    <!-- Manual Entry Modal -->
+    <div class="modal fade" id="manualEntryModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Enter Song Details Manually</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="manualEntryForm">
+                        <input type="hidden" id="manualEntryIndex">
+                        <div class="mb-3">
+                            <label for="manualTitle" class="form-label">Title *</label>
+                            <input type="text" class="form-control" id="manualTitle" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="manualArtist" class="form-label">Artist *</label>
+                            <input type="text" class="form-control" id="manualArtist" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="manualAlbum" class="form-label">Album *</label>
+                            <input type="text" class="form-control" id="manualAlbum" required>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="manualYear" class="form-label">Year *</label>
+                                <input type="number" class="form-control" id="manualYear" min="1900" max="2100" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="manualDuration" class="form-label">Duration (seconds)</label>
+                                <input type="number" class="form-control" id="manualDuration" min="0" value="0">
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="saveManualEntry()">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         const ADMIN_TOKEN = <?= json_encode($adminToken) ?>;
         const API_BASE = '../api';
 
-        let importData = []; // Array of { original: {title, artist}, status, deezerResults, selectedTrack }
+        let importData = []; // Array of { original: {title, artist}, status, deezerResults, selectedTrack, manualData }
         let currentFilter = 'all';
+        let manualEntryModal;
 
         function parseCSV() {
             const fileInput = document.getElementById('csvFile');
@@ -478,6 +522,10 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
                     statusIcon = '<i class="bi bi-dash-circle text-secondary"></i>';
                     statusText = 'Skipped';
                     break;
+                case 'manual':
+                    statusIcon = '<i class="bi bi-pencil-square text-info"></i>';
+                    statusText = 'Manual entry';
+                    break;
             }
 
             let optionsHtml = '';
@@ -497,6 +545,11 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
                                     ${item.selectedTrack?.id === track.id ? '<i class="bi bi-check-lg text-primary"></i>' : ''}
                                 </div>
                             `).join('')}
+                            <div class="deezer-option d-flex align-items-center"
+                                 onclick="openManualEntry(${index})">
+                                <i class="bi bi-pencil me-2"></i>
+                                <span class="small">Enter details manually</span>
+                            </div>
                             <div class="deezer-option d-flex align-items-center ${item.status === 'skipped' ? 'selected' : ''}"
                                  onclick="skipSong(${index})">
                                 <i class="bi bi-skip-forward me-2"></i>
@@ -527,9 +580,25 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
                                 <i class="bi bi-search"></i>
                             </button>
                         </div>
-                        <button class="btn btn-sm btn-outline-secondary mt-1" onclick="skipSong(${index})">
-                            <i class="bi bi-skip-forward"></i> Skip
-                        </button>
+                        <div class="mt-1">
+                            <button class="btn btn-sm btn-outline-primary me-1" onclick="openManualEntry(${index})">
+                                <i class="bi bi-pencil"></i> Enter Manually
+                            </button>
+                            <button class="btn btn-sm btn-outline-secondary" onclick="skipSong(${index})">
+                                <i class="bi bi-skip-forward"></i> Skip
+                            </button>
+                        </div>
+                    </div>
+                `;
+            } else if (item.status === 'manual') {
+                optionsHtml = `
+                    <div class="mt-2">
+                        <div class="alert alert-info py-2 mb-0 small">
+                            <i class="bi bi-pencil-square"></i>
+                            <strong>${escapeHtml(item.manualData.title)}</strong> by ${escapeHtml(item.manualData.artist)}
+                            <br><small class="text-muted">${escapeHtml(item.manualData.album)} (${item.manualData.year})</small>
+                            <button class="btn btn-sm btn-link p-0 ms-2" onclick="openManualEntry(${index})">Edit</button>
+                        </div>
                     </div>
                 `;
             }
@@ -561,6 +630,57 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
         function skipSong(index) {
             importData[index].status = 'skipped';
             importData[index].selectedTrack = null;
+            renderImportRow(index);
+            updateCounts();
+        }
+
+        function openManualEntry(index) {
+            if (!manualEntryModal) {
+                manualEntryModal = new bootstrap.Modal(document.getElementById('manualEntryModal'));
+            }
+
+            const item = importData[index];
+            document.getElementById('manualEntryIndex').value = index;
+
+            // Pre-fill with existing data if available, otherwise use original
+            if (item.manualData) {
+                document.getElementById('manualTitle').value = item.manualData.title;
+                document.getElementById('manualArtist').value = item.manualData.artist;
+                document.getElementById('manualAlbum').value = item.manualData.album;
+                document.getElementById('manualYear').value = item.manualData.year;
+                document.getElementById('manualDuration').value = item.manualData.duration || 0;
+            } else {
+                document.getElementById('manualTitle').value = item.original.title;
+                document.getElementById('manualArtist').value = item.original.artist;
+                document.getElementById('manualAlbum').value = '';
+                document.getElementById('manualYear').value = new Date().getFullYear();
+                document.getElementById('manualDuration').value = 0;
+            }
+
+            manualEntryModal.show();
+        }
+
+        function saveManualEntry() {
+            const form = document.getElementById('manualEntryForm');
+            if (!form.checkValidity()) {
+                form.reportValidity();
+                return;
+            }
+
+            const index = parseInt(document.getElementById('manualEntryIndex').value);
+            const item = importData[index];
+
+            item.manualData = {
+                title: document.getElementById('manualTitle').value.trim(),
+                artist: document.getElementById('manualArtist').value.trim(),
+                album: document.getElementById('manualAlbum').value.trim(),
+                year: parseInt(document.getElementById('manualYear').value),
+                duration: parseInt(document.getElementById('manualDuration').value) || 0
+            };
+            item.status = 'manual';
+            item.selectedTrack = null;
+
+            manualEntryModal.hide();
             renderImportRow(index);
             updateCounts();
         }
@@ -602,7 +722,8 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
                 matched: 0,
                 ambiguous: 0,
                 notfound: 0,
-                skipped: 0
+                skipped: 0,
+                manual: 0
             };
 
             importData.forEach(item => {
@@ -611,21 +732,26 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
                 }
             });
 
-            document.getElementById('matchedCount').textContent = counts.matched;
+            document.getElementById('matchedCount').textContent = counts.matched + counts.manual;
             document.getElementById('ambiguousCount').textContent = counts.ambiguous;
             document.getElementById('notFoundCount').textContent = counts.notfound;
             document.getElementById('skippedCount').textContent = counts.skipped;
-            document.getElementById('readyCount').textContent = counts.matched;
+            document.getElementById('readyCount').textContent = counts.matched + counts.manual;
 
             const total = importData.length;
-            document.getElementById('progressMatched').style.width = (counts.matched / total * 100) + '%';
+            // Manual entries show in the "matched" (green) portion of the progress bar
+            document.getElementById('progressMatched').style.width = ((counts.matched + counts.manual) / total * 100) + '%';
             document.getElementById('progressAmbiguous').style.width = (counts.ambiguous / total * 100) + '%';
             document.getElementById('progressNotFound').style.width = (counts.notfound / total * 100) + '%';
             document.getElementById('progressSkipped').style.width = (counts.skipped / total * 100) + '%';
         }
 
         async function importSongs() {
-            const songsToImport = importData.filter(item => item.status === 'matched' && item.selectedTrack);
+            // Include both Deezer-matched and manual entries
+            const songsToImport = importData.filter(item =>
+                (item.status === 'matched' && item.selectedTrack) ||
+                (item.status === 'manual' && item.manualData)
+            );
 
             if (songsToImport.length === 0) {
                 alert('No songs ready to import');
@@ -646,25 +772,42 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
 
             for (let i = 0; i < songsToImport.length; i++) {
                 const item = songsToImport[i];
-                const track = item.selectedTrack;
+                const isManual = item.status === 'manual';
+                const songTitle = isManual ? item.manualData.title : item.selectedTrack.title;
+                const songArtist = isManual ? item.manualData.artist : item.selectedTrack.artist.name;
 
-                statusDiv.textContent = `Importing ${i + 1} of ${songsToImport.length}: ${track.title}...`;
+                statusDiv.textContent = `Importing ${i + 1} of ${songsToImport.length}: ${songTitle}...`;
                 progressBar.style.width = ((i + 1) / songsToImport.length * 100) + '%';
 
                 try {
-                    // First fetch album details to get the year
-                    const albumResponse = await fetch(`${API_BASE}/deezer.php?album_id=${track.album.id}`);
-                    const albumData = await albumResponse.json();
-                    const year = albumData.year || new Date().getFullYear();
+                    let songData;
 
-                    // Use cover_small (56x56) to avoid 64KB limit, or cover_medium (250x250) with compression
-                    // cover_small is typically 2-5KB, cover_medium is typically 15-30KB
-                    const albumArtUrl = track.album.cover_medium || track.album.cover_small;
+                    if (isManual) {
+                        // Manual entry - no Deezer data
+                        songData = {
+                            admin_token: ADMIN_TOKEN,
+                            action: 'create',
+                            title: item.manualData.title,
+                            artist: item.manualData.artist,
+                            album: item.manualData.album,
+                            year: item.manualData.year,
+                            duration: item.manualData.duration || 0,
+                            deezer_id: null,
+                            album_art_url: null,
+                            skip_existing: skipExisting
+                        };
+                    } else {
+                        // Deezer track - fetch album details for year
+                        const track = item.selectedTrack;
+                        const albumResponse = await fetch(`${API_BASE}/deezer.php?album_id=${track.album.id}`);
+                        const albumData = await albumResponse.json();
+                        const year = albumData.year || new Date().getFullYear();
 
-                    const response = await fetch(`${API_BASE}/songs.php`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
+                        // Use cover_small (56x56) to avoid 64KB limit, or cover_medium (250x250) with compression
+                        // cover_small is typically 2-5KB, cover_medium is typically 15-30KB
+                        const albumArtUrl = track.album.cover_medium || track.album.cover_small;
+
+                        songData = {
                             admin_token: ADMIN_TOKEN,
                             action: 'create',
                             title: track.title,
@@ -675,7 +818,13 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
                             deezer_id: track.id,
                             album_art_url: albumArtUrl,
                             skip_existing: skipExisting
-                        })
+                        };
+                    }
+
+                    const response = await fetch(`${API_BASE}/songs.php`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(songData)
                     });
 
                     const result = await response.json();
@@ -687,8 +836,8 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
                             console.error('Import error:', result.error);
                             failed++;
                             failures.push({
-                                title: track.title,
-                                artist: track.artist.name,
+                                title: songTitle,
+                                artist: songArtist,
                                 error: result.error
                             });
                         }
@@ -699,15 +848,17 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
                     console.error('Import failed:', err);
                     failed++;
                     failures.push({
-                        title: track.title,
-                        artist: track.artist.name,
+                        title: songTitle,
+                        artist: songArtist,
                         error: err.message || 'Network error'
                     });
                 }
 
                 // Deezer rate limit: 50 requests per 5 seconds
-                // Each import makes 1 Deezer request (album details), so 120ms delay
-                await new Promise(r => setTimeout(r, 120));
+                // Only delay for Deezer tracks (manual entries don't make Deezer API calls)
+                if (!isManual) {
+                    await new Promise(r => setTimeout(r, 120));
+                }
             }
 
             progressBar.classList.remove('progress-bar-animated');
