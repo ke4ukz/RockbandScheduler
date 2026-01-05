@@ -131,6 +131,8 @@ The site is deployed via GitHub and cPanel's Git Version Control. To push update
 8. Click the **Pull or Deploy** tab
 9. Click **Update from Remote**
 
+**Troubleshooting**: If the pull fails due to local changes (e.g., cPanel modifying `.htaccess`), you may need to delete the repo in cPanel and re-add it. The cPanel Git interface doesn't provide an easy way to discard local changes.
+
 ## Pending Tasks
 
 None currently.
