@@ -119,6 +119,15 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
                         </tbody>
                     </table>
                 </div>
+                <div id="loadMoreSection" class="text-center py-3" style="display: none;">
+                    <button class="btn btn-outline-primary" onclick="loadMoreSongs()">
+                        <i class="bi bi-arrow-down-circle"></i> Load More
+                    </button>
+                    <span class="text-muted ms-2" id="loadedCount"></span>
+                </div>
+                <div id="loadingMore" class="text-center py-3" style="display: none;">
+                    <span class="spinner-border spinner-border-sm"></span> Loading...
+                </div>
             </div>
         </div>
     </div>
@@ -220,8 +229,14 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
     <script>
         const ADMIN_TOKEN = <?= json_encode($adminToken) ?>;
         const API_BASE = '../api';
+        const PAGE_SIZE = 50;
 
         let songs = [];
+        let totalSongs = 0;
+        let currentOffset = 0;
+        let currentSearch = '';
+        let isLoading = false;
+        let searchTimeout = null;
         let currentAudio = null;
         let deleteSongId = null;
         let songModal, deleteModal;
@@ -231,7 +246,17 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
             deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
             loadSongs();
 
-            document.getElementById('searchInput').addEventListener('input', filterSongs);
+            // Debounced search
+            document.getElementById('searchInput').addEventListener('input', function() {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(() => {
+                    currentSearch = this.value.trim();
+                    currentOffset = 0;
+                    songs = [];
+                    loadSongs();
+                }, 300);
+            });
+
             document.getElementById('deezerSearch').addEventListener('keypress', function(e) {
                 if (e.key === 'Enter') {
                     e.preventDefault();
@@ -249,21 +274,72 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
             }
         });
 
-        async function loadSongs() {
+        async function loadSongs(append = false) {
+            if (isLoading) return;
+            isLoading = true;
+
+            if (!append) {
+                document.getElementById('songsTableBody').innerHTML =
+                    '<tr><td colspan="8" class="text-center"><span class="spinner-border spinner-border-sm"></span> Loading...</td></tr>';
+                document.getElementById('loadMoreSection').style.display = 'none';
+            } else {
+                document.getElementById('loadingMore').style.display = 'block';
+            }
+
             try {
                 const response = await fetch(`${API_BASE}/songs.php`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ admin_token: ADMIN_TOKEN, action: 'list' })
+                    body: JSON.stringify({
+                        admin_token: ADMIN_TOKEN,
+                        action: 'list',
+                        limit: PAGE_SIZE,
+                        offset: currentOffset,
+                        search: currentSearch
+                    })
                 });
                 const data = await response.json();
                 if (data.error) throw new Error(data.error);
-                songs = data.songs || [];
-                renderSongs(songs);
+
+                totalSongs = data.total;
+                const newSongs = data.songs || [];
+
+                if (append) {
+                    songs = songs.concat(newSongs);
+                    appendSongs(newSongs);
+                } else {
+                    songs = newSongs;
+                    renderSongs(songs);
+                }
+
+                currentOffset += newSongs.length;
+                updateLoadMoreButton();
+
             } catch (err) {
                 console.error('Failed to load songs:', err);
-                document.getElementById('songsTableBody').innerHTML =
-                    '<tr><td colspan="8" class="text-center text-danger">Failed to load songs</td></tr>';
+                if (!append) {
+                    document.getElementById('songsTableBody').innerHTML =
+                        '<tr><td colspan="8" class="text-center text-danger">Failed to load songs</td></tr>';
+                }
+            } finally {
+                isLoading = false;
+                document.getElementById('loadingMore').style.display = 'none';
+            }
+        }
+
+        function loadMoreSongs() {
+            loadSongs(true);
+        }
+
+        function updateLoadMoreButton() {
+            const loadMoreSection = document.getElementById('loadMoreSection');
+            const loadedCount = document.getElementById('loadedCount');
+
+            if (songs.length < totalSongs) {
+                loadMoreSection.style.display = 'block';
+                loadedCount.textContent = `Showing ${songs.length} of ${totalSongs} songs`;
+            } else {
+                loadMoreSection.style.display = 'none';
             }
         }
 
@@ -274,8 +350,17 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
                 return;
             }
 
-            tbody.innerHTML = songsToRender.map(song => `
-                <tr>
+            tbody.innerHTML = songsToRender.map(song => renderSongRow(song)).join('');
+        }
+
+        function appendSongs(newSongs) {
+            const tbody = document.getElementById('songsTableBody');
+            tbody.insertAdjacentHTML('beforeend', newSongs.map(song => renderSongRow(song)).join(''));
+        }
+
+        function renderSongRow(song) {
+            return `
+                <tr data-song-id="${song.song_id}">
                     <td>
                         ${song.album_art
                             ? `<img src="data:image/jpeg;base64,${song.album_art}" class="album-art-thumb rounded" alt="">`
@@ -295,26 +380,12 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
                         <button class="btn btn-sm btn-outline-primary me-1" onclick="editSong(${song.song_id})" title="Edit">
                             <i class="bi bi-pencil"></i>
                         </button>
-                        <button class="btn btn-sm btn-outline-danger" onclick="deleteSong(${song.song_id}, '${escapeHtml(song.title)}')" title="Delete">
+                        <button class="btn btn-sm btn-outline-danger" onclick="deleteSong(${song.song_id}, '${escapeHtml(song.title).replace(/'/g, "\\'")}')">
                             <i class="bi bi-trash"></i>
                         </button>
                     </td>
                 </tr>
-            `).join('');
-        }
-
-        function filterSongs() {
-            const query = document.getElementById('searchInput').value.toLowerCase();
-            if (!query) {
-                renderSongs(songs);
-                return;
-            }
-            const filtered = songs.filter(s =>
-                s.title.toLowerCase().includes(query) ||
-                s.artist.toLowerCase().includes(query) ||
-                s.album.toLowerCase().includes(query)
-            );
-            renderSongs(filtered);
+            `;
         }
 
         function formatDuration(seconds) {
@@ -463,6 +534,9 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
                 if (result.error) throw new Error(result.error);
 
                 songModal.hide();
+                // Reset and reload from beginning
+                currentOffset = 0;
+                songs = [];
                 loadSongs();
             } catch (err) {
                 alert('Failed to save song: ' + err.message);
@@ -493,6 +567,9 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
 
                 deleteModal.hide();
                 deleteSongId = null;
+                // Reset and reload from beginning
+                currentOffset = 0;
+                songs = [];
                 loadSongs();
             } catch (err) {
                 alert('Failed to delete song: ' + err.message);

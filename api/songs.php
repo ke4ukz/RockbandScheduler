@@ -44,7 +44,7 @@ $songId = $data['song_id'] ?? null;
 try {
     switch ($action) {
         case 'list':
-            listSongs($db);
+            listSongs($db, $data);
             break;
 
         case 'get':
@@ -98,13 +98,37 @@ try {
     jsonError('Database error: ' . $safeMsg, 500);
 }
 
-function listSongs($db) {
-    $stmt = $db->query('
+function listSongs($db, $data = []) {
+    $limit = isset($data['limit']) ? min((int)$data['limit'], 100) : 50;
+    $offset = isset($data['offset']) ? (int)$data['offset'] : 0;
+    $search = isset($data['search']) ? trim($data['search']) : '';
+
+    // Build query with optional search
+    $where = '';
+    $params = [];
+    if ($search !== '') {
+        $where = 'WHERE title LIKE ? OR artist LIKE ? OR album LIKE ?';
+        $searchParam = '%' . $search . '%';
+        $params = [$searchParam, $searchParam, $searchParam];
+    }
+
+    // Get total count
+    $countSql = "SELECT COUNT(*) FROM songs $where";
+    $countStmt = $db->prepare($countSql);
+    $countStmt->execute($params);
+    $total = (int)$countStmt->fetchColumn();
+
+    // Get paginated results
+    $sql = "
         SELECT song_id, artist, album, title, year, duration, deezer_id,
                TO_BASE64(album_art) as album_art
         FROM songs
+        $where
         ORDER BY artist, title
-    ');
+        LIMIT $limit OFFSET $offset
+    ";
+    $stmt = $db->prepare($sql);
+    $stmt->execute($params);
     $songs = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     // Convert numeric fields
@@ -115,7 +139,12 @@ function listSongs($db) {
         $song['deezer_id'] = $song['deezer_id'] ? (int)$song['deezer_id'] : null;
     }
 
-    jsonResponse(['songs' => $songs]);
+    jsonResponse([
+        'songs' => $songs,
+        'total' => $total,
+        'limit' => $limit,
+        'offset' => $offset
+    ]);
 }
 
 function getSong($db, $songId) {
