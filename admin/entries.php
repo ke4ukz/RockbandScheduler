@@ -85,9 +85,33 @@ if (!$eventId || !isValidUuid($eventId)) {
             font-size: 0.75rem;
             line-height: 1;
         }
+        .busy-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.4);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+        .busy-overlay.show {
+            display: flex;
+        }
+        .busy-overlay .spinner-border {
+            width: 3rem;
+            height: 3rem;
+            color: white;
+        }
     </style>
 </head>
 <body>
+    <div class="busy-overlay" id="busyOverlay">
+        <div class="spinner-border"></div>
+    </div>
+
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container-fluid">
             <a class="navbar-brand" href="default.php">Rockband Admin</a>
@@ -632,6 +656,9 @@ if (!$eventId || !isValidUuid($eventId)) {
             const newPos = currentPos + direction;
             if (newPos < 1 || newPos > event.num_entries) return;
 
+            // Show busy overlay
+            document.getElementById('busyOverlay').classList.add('show');
+
             // Find if there's an entry at the target position
             const entryMap = {};
             entries.forEach(e => entryMap[e.position] = e);
@@ -660,10 +687,12 @@ if (!$eventId || !isValidUuid($eventId)) {
                 const result = await response.json();
                 if (result.error) throw new Error(result.error);
 
-                loadEntries();
+                await loadEntries();
             } catch (err) {
                 alert('Failed to move: ' + err.message);
-                loadEntries();
+                await loadEntries();
+            } finally {
+                document.getElementById('busyOverlay').classList.remove('show');
             }
         }
 
