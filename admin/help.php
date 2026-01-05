@@ -632,6 +632,10 @@ $siteBaseUrl = $GLOBALS['config']['site']['base_url'] ?? '';
                             <p>This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.</p>
 
                             <p>You should have received a copy of the GNU General Public License along with this program. If not, see <a href="https://www.gnu.org/licenses/" target="_blank" rel="noopener noreferrer">https://www.gnu.org/licenses/</a>.</p>
+
+                            <h5 class="mt-4"><i class="bi bi-trademark"></i> Trademark Notice</h5>
+                            <p>Rock Band&trade; is a registered trademark of Harmonix Music Systems, Inc. This application is not affiliated with, endorsed by, or sponsored by Harmonix Music Systems, Inc. or any of its subsidiaries or affiliates.</p>
+                            <p>This is an independent, fan-made tool created to help organize Rock Band performance events. All product names, logos, and brands are property of their respective owners.</p>
                         </div>
                     </div>
                 </section>
