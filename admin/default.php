@@ -132,7 +132,7 @@ function timeAgo($datetime) {
 
         <div class="row row-cols-1 row-cols-md-3 g-4">
             <div class="col">
-                <div class="card text-bg-primary">
+                <div class="card text-bg-primary h-100">
                     <div class="card-body">
                         <h5 class="card-title"><i class="bi bi-music-note-list"></i> Song Library</h5>
                         <p class="card-text display-4"><?= $songCount ?></p>
@@ -142,7 +142,7 @@ function timeAgo($datetime) {
             </div>
 
             <div class="col">
-                <div class="card text-bg-info">
+                <div class="card text-bg-info h-100">
                     <div class="card-body">
                         <h5 class="card-title"><i class="bi bi-calendar-event"></i> Total Events</h5>
                         <p class="card-text display-4"><?= $eventCount ?></p>
@@ -152,7 +152,7 @@ function timeAgo($datetime) {
             </div>
 
             <div class="col">
-                <div class="card text-bg-success">
+                <div class="card text-bg-success h-100">
                     <div class="card-body">
                         <h5 class="card-title"><i class="bi bi-broadcast"></i> Active Now</h5>
                         <p class="card-text display-4" id="activeCount">-</p>
