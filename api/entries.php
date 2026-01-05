@@ -107,10 +107,11 @@ try {
 }
 
 /**
- * Check if event exists and is currently active (within start/end times)
+ * Check if event exists
  * Returns event data if valid, or calls jsonError if not
+ * Note: No time-based checks - if someone has the URL/QR code, they can access
  */
-function validateEventAccess($db, $eventId, $requireActive = true) {
+function validateEventAccess($db, $eventId) {
     if (!isValidUuid($eventId)) {
         jsonError('Invalid event ID format');
     }
@@ -127,25 +128,11 @@ function validateEventAccess($db, $eventId, $requireActive = true) {
         jsonError('Event not found', 404);
     }
 
-    if ($requireActive) {
-        $now = new DateTime();
-        $start = new DateTime($event['start_time']);
-        $end = new DateTime($event['end_time']);
-
-        if ($now < $start) {
-            jsonError('Event has not started yet', 403);
-        }
-        if ($now > $end) {
-            jsonError('Event has ended', 403);
-        }
-    }
-
     return $event;
 }
 
 function listEntries($db, $eventId, $isAdmin) {
-    // For public access, require event to be active
-    $event = validateEventAccess($db, $eventId, !$isAdmin);
+    $event = validateEventAccess($db, $eventId);
 
     $stmt = $db->prepare('
         SELECT e.entry_id, e.position, e.performer_name, e.modified, e.finished,
@@ -189,8 +176,7 @@ function listEntries($db, $eventId, $isAdmin) {
 }
 
 function userCreateEntry($db, $eventId, $data) {
-    // Validate event is active
-    $event = validateEventAccess($db, $eventId, true);
+    $event = validateEventAccess($db, $eventId);
 
     if (!$data) {
         jsonError('Invalid JSON body');
@@ -263,8 +249,7 @@ function userCreateEntry($db, $eventId, $data) {
 }
 
 function adminCreateEntry($db, $eventId, $data) {
-    // Admin can create entries even if event is not active
-    $event = validateEventAccess($db, $eventId, false);
+    $event = validateEventAccess($db, $eventId);
 
     if (empty($data['position'])) {
         jsonError('position is required');
