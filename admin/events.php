@@ -459,8 +459,12 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
             if (hasChanges) {
                 // Always add newly past events to pastEvents array so they appear when loaded
                 if (newlyPast.length > 0) {
+                    const existingPastIds = new Set(pastEvents.map(e => e.event_id));
                     newlyPast.forEach(e => {
-                        pastEvents.unshift(e); // Add to beginning (most recent)
+                        // Only add if not already in pastEvents (avoid duplicates)
+                        if (!existingPastIds.has(e.event_id)) {
+                            pastEvents.unshift(e); // Add to beginning (most recent)
+                        }
                     });
                     if (pastEventsLoaded) {
                         renderPastEvents();
