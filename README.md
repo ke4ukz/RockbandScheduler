@@ -10,13 +10,14 @@ A web application for managing Rock Band performance sign-ups at events. Users s
 - Event theming with 16 pre-configured color schemes (8 dark, 8 light)
 - Event status tracking (active, upcoming, past)
 - Configurable default event duration
+- Adjustable slot count (increasing adds available slots; decreasing deletes entries beyond the new limit)
 
 ### Song Library
 - Searchable song database with artist, album, title, year, and duration
 - Deezer integration for automatic metadata lookup and album art
 - 30-second audio previews from Deezer
 - Song popularity tracking (selection count and last selected date)
-- CSV bulk import support
+- CSV bulk import (Song/Title and Artist columns, Deezer fetches remaining metadata)
 - Album art stored locally (up to 64KB per image)
 
 ### Public Signup
@@ -37,7 +38,7 @@ A web application for managing Rock Band performance sign-ups at events. Users s
 - Settings configuration for default duration and default theme
 
 ### Display Modes
-- **Signup Display**: Full-screen QR code for TV/projector display (hidden access via 3-second press on event title)
+- **Signup Display**: Full-screen QR code for TV/projector display (hidden access via 3-second press on event title), responsive to screen orientation and size
 - **Signage**: Performance queue display showing current and upcoming performers
 
 ## Requirements

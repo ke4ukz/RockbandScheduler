@@ -251,7 +251,8 @@ $siteBaseUrl = $GLOBALS['config']['site']['base_url'] ?? '';
                             </div>
 
                             <h5 class="mt-4"><i class="bi bi-upload"></i> CSV Import</h5>
-                            <p>You can bulk import songs from a CSV file. The CSV should have columns for: title, artist, album, year. The import will search Deezer for each song to get album art and duration.</p>
+                            <p>You can bulk import songs from a CSV file. The CSV needs columns for: <code>Song</code> (or <code>Title</code>) and <code>Artist</code>. The import will search Deezer for each song to automatically get album, year, album art, and duration.</p>
+                            <p>After parsing the CSV, each song is searched on Deezer. Songs that don't find an exact match will be marked for review - you can select from multiple results, retry with a different search query, or enter the song details manually. This means you can resolve all issues during the import process without needing to track failed imports separately.</p>
 
                             <h5 class="mt-4"><i class="bi bi-play-circle"></i> Audio Previews</h5>
                             <p>Songs added via Deezer include 30-second audio previews. Click the play button next to any song to hear a preview. This helps verify you have the right version of a song.</p>
@@ -298,6 +299,13 @@ $siteBaseUrl = $GLOBALS['config']['site']['base_url'] ?? '';
 
                             <h5 class="mt-4"><i class="bi bi-clock"></i> Event Timing</h5>
                             <p>Events are accessible anytime someone has the QR code or URL - there's no strict time restriction. The start/end times are primarily for your reference and organizing events.</p>
+
+                            <h5 class="mt-4"><i class="bi bi-sliders"></i> Changing Slot Count</h5>
+                            <p>You can edit an event to change the number of performance slots:</p>
+                            <ul>
+                                <li><strong>Increasing slots</strong> - New slots become immediately available for signups. The public page will update automatically.</li>
+                                <li><strong>Decreasing slots</strong> - Any entries in positions beyond the new limit will be <strong>permanently deleted</strong>. For example, reducing from 20 to 15 slots will delete entries in positions 16-20.</li>
+                            </ul>
 
                             <div class="card warning-card mt-4">
                                 <div class="card-body">
@@ -367,7 +375,7 @@ $siteBaseUrl = $GLOBALS['config']['site']['base_url'] ?? '';
                                     <div class="card h-100">
                                         <div class="card-body">
                                             <h5><i class="bi bi-qr-code"></i> Signup Display</h5>
-                                            <p class="text-muted">A full-screen page showing just the QR code with instructions. Perfect for displaying on a TV so attendees can easily scan and sign up.</p>
+                                            <p class="text-muted">A full-screen page showing just the QR code with instructions. Perfect for displaying on a TV so attendees can easily scan and sign up. The layout automatically adapts to the screen orientation and size.</p>
                                             <p class="small">Access: Use <code>signup-display.php?eventid=...</code> or press and hold the event title on the public signup page for 3 seconds.</p>
                                         </div>
                                     </div>
@@ -450,7 +458,7 @@ $siteBaseUrl = $GLOBALS['config']['site']['base_url'] ?? '';
                             <ul>
                                 <li><strong>Overbook slightly</strong> - Some people sign up but don't show. Having a few extra slots helps.</li>
                                 <li><strong>Use "Clear Unfinished" between sessions</strong> - If you're running multiple rounds, clear unfinished slots to start fresh.</li>
-                                <li><strong>Preview songs</strong> - Use the audio preview to check song lengths when planning your lineup.</li>
+                                <li><strong>Preview songs</strong> - Use the 30-second audio preview to check the style and tempo of songs. Song durations are listed in the metadata. Note that previews may not match the exact version in the game.</li>
                             </ul>
 
                             <h5 class="mt-4">Song Library Tips</h5>
