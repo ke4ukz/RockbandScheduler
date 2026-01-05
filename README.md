@@ -4,12 +4,38 @@ A web application for managing Rock Band performance sign-ups at events. Users s
 
 ## Features
 
-- **Event Management**: Create events with start/end times and configurable number of performance slots
-- **QR Code Access**: Generate QR codes for easy event access via mobile devices
-- **Song Library**: Manage songs with Deezer integration for metadata and audio previews
-- **Mobile-First Design**: Optimized for phones and tablets (primary access method)
-- **Admin Panel**: Protected admin interface for managing events, songs, and entries
-- **Time-Restricted Access**: Events are only accessible during their scheduled window
+### Event Management
+- Create events with name, location, start/end times, and configurable number of performance slots (1-255)
+- Automatic QR code generation for easy mobile access
+- Event theming with 16 pre-configured color schemes (8 dark, 8 light)
+- Event status tracking (active, upcoming, past)
+- Configurable default event duration
+
+### Song Library
+- Searchable song database with artist, album, title, year, and duration
+- Deezer integration for automatic metadata lookup and album art
+- 30-second audio previews from Deezer
+- Song popularity tracking (selection count and last selected date)
+- CSV bulk import support
+- Album art stored locally (up to 64KB per image)
+
+### Public Signup
+- Mobile-first responsive design
+- QR code scan to access event signup page
+- Slot claiming with optional performer name and song selection
+- Configurable signup requirements (name required, song required, or both)
+- Real-time slot availability updates
+
+### Admin Panel
+- Dashboard with quick stats and song analytics
+- Event management (create, edit, delete, view details)
+- Song library management with Deezer search
+- Entry management with reorder, mark finished, and bulk clear
+- Settings configuration for signup requirements, default duration, and default theme
+
+### Display Modes
+- **Signup Display**: Full-screen QR code for TV/projector display
+- **Signage**: Performance queue display showing current and upcoming performers
 
 ## Requirements
 
@@ -20,17 +46,8 @@ A web application for managing Rock Band performance sign-ups at events. Users s
 ## Installation
 
 1. Clone/upload files to your web server
-2. Create a MySQL database and import the schema
-3. Copy the config template and configure:
-   ```
-   cp config/rockband_scheduler_config.ini.example config/rockband_scheduler_config.ini
-   ```
-4. Edit the config file with your database credentials and admin token
-5. Set up HTTP Basic Auth on the `/admin` directory (via .htaccess or server config)
-
-## Configuration
-
-The config file should be placed outside the web root at `../../config/rockband_scheduler_config.ini` relative to the project root:
+2. Create a MySQL database and import `schema.sql`
+3. Create the config file at `../../config/rockband_scheduler_config.ini` (relative to project root):
 
 ```ini
 [database]
@@ -46,152 +63,174 @@ token = your_secure_random_token
 base_url = https://yourdomain.com/rockband
 ```
 
-Generate a secure admin token:
+4. Generate a secure admin token:
 ```bash
 openssl rand -hex 32
 ```
 
-## External Dependencies
+5. Set up HTTP Basic Auth on the `/admin` directory (via .htaccess or server config)
 
-This application relies on external services loaded via CDN. Understanding these dependencies is important for production deployment.
+## Configuration
 
-### 1. Bootstrap 5 (CSS Framework)
+### Config File Location
 
-**Used for**: All UI styling and responsive layout
+The config file should be placed outside the web root for security:
+```
+/config/rockband_scheduler_config.ini    # Config file location
+/public_html/rockband/                    # Project root
+```
 
-**CDN URLs**:
-- `https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css`
-- `https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js`
+### Configuration Sections
 
-**If Bootstrap CDN becomes unavailable**:
-- All pages will lose styling and appear as unstyled HTML
-- Modals, dropdowns, and interactive components will not function
-- Mobile responsiveness will be lost
+**[database]** - Database connection settings
+- `host` - MySQL server hostname
+- `name` - Database name
+- `user` - Database username
+- `pass` - Database password
 
-**If Bootstrap version changes**:
-- Pinned to version 5.3.2; should remain available indefinitely on jsDelivr
-- Major version changes (6.x) may require markup updates
+**[admin]** - Admin authentication
+- `token` - Secure token for API authentication (use `openssl rand -hex 32`)
 
-**Mitigation options**:
-- Download Bootstrap files and host locally
-- Use alternative CDNs (cdnjs, unpkg)
-- Self-host via npm/composer package
+**[site]** - Site settings
+- `base_url` - Full URL to the application (used for QR code generation)
 
-### 2. Bootstrap Icons
+**[signup]** - Signup requirements (configurable via admin settings page)
+- `require_name` - Require performer name (1 or 0)
+- `require_song` - Require song selection (1 or 0)
 
-**Used for**: All iconography throughout the UI
+**[event]** - Event defaults (configurable via admin settings page)
+- `default_duration_hours` - Default event duration in hours (1-24)
 
-**CDN URL**:
-- `https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css`
+**[theme]** - Theme settings (configurable via admin settings page)
+- `default_theme_id` - Default theme for new events
 
-**If Bootstrap Icons CDN becomes unavailable**:
-- Icons will not display (empty spaces or boxes)
-- Functionality unaffected, only visual
+## Database Schema
 
-**Mitigation options**:
-- Download and host icon font files locally
-- Replace with alternative icon library (Font Awesome, Heroicons)
+Four main tables:
 
-### 3. Deezer API
+- **events** - Event definitions with UUID primary keys, QR codes stored as BLOBs
+- **songs** - Song library with Deezer metadata and album art BLOBs
+- **entries** - Performance slot assignments linking events to songs
+- **themes** - 16 pre-configured color themes
 
-**Used for**: Song search, metadata auto-fill, album art URLs, audio preview URLs
-
-**Endpoints used**:
-- `https://api.deezer.com/search/track` - Search for songs
-- `https://api.deezer.com/album/{id}` - Get album details (release year)
-
-**If Deezer becomes unavailable**:
-- Song search in the admin panel will fail
-- Auto-fill of song metadata will not work
-- **Workaround**: Songs can still be added manually by filling in all fields
-- Existing songs in the database are unaffected
-- Audio previews for existing songs will stop working (preview_url points to Deezer CDN)
-- Album art for existing songs will stop displaying (album_art_url points to Deezer CDN)
-
-**If Deezer API changes**:
-- The proxy at `/api/deezer.php` would need to be updated to match new response formats
-- Fields used: `id`, `title`, `duration`, `preview`, `artist.name`, `album.id`, `album.title`, `album.cover_medium`, `release_date`
-
-**Rate limits**: Deezer allows 50 requests per 5 seconds. The app makes ~2 API calls per song added (search + album lookup). Normal usage should stay well under limits.
-
-**Mitigation options**:
-- Store album art as binary blobs in the database (currently supported via `album_art` column)
-- Download and store preview MP3s locally (would require additional storage)
-- Use alternative music APIs (MusicBrainz, Last.fm, Spotify)
-
-### 4. QR Server API
-
-**Used for**: Generating QR code images for events
-
-**Endpoint used**:
-- `https://api.qrserver.com/v1/create-qr-code/`
-
-**If QR Server becomes unavailable**:
-- QR code generation during event creation will silently fail
-- Existing QR codes stored in the database will continue to work
-- Events remain fully functional; only QR generation is affected
-
-**If QR Server API changes**:
-- The `generateQrCodeForEvent()` function in `/api/events.php` would need updating
-- Current parameters: `size=300x300&data={url}`
-
-**Mitigation options**:
-- Install a PHP QR code library locally:
-  - `chillerlan/php-qrcode` (lightweight, SVG/PNG output, no external dependencies)
-  - `endroid/qr-code` (full-featured, requires GD or Imagick)
-  - Install via Composer locally, upload `vendor/` folder to host
-- Use alternative QR APIs (Google Charts is deprecated, but others exist)
-- Pre-generate QR codes and store as static images
+UUIDs are stored as binary(16) and converted using MySQL's `UUID_TO_BIN()` and `BIN_TO_UUID()` functions.
 
 ## File Structure
 
 ```
 /
-├── admin/                  # Admin panel (requires HTTP Basic Auth)
-│   ├── default.php         # Dashboard
-│   ├── events.php          # Event management
-│   ├── songs.php           # Song library management
-│   └── entries.php         # Per-event entry management
-├── api/                    # JSON API endpoints
-│   ├── events.php          # Events CRUD (admin only)
-│   ├── songs.php           # Songs CRUD (admin only)
-│   ├── entries.php         # Entries (mixed: public read/create, admin edit)
-│   └── deezer.php          # Deezer search proxy (public)
+├── admin/                      # Admin panel (HTTP Basic Auth protected)
+│   ├── default.php             # Dashboard with stats
+│   ├── events.php              # Event management
+│   ├── songs.php               # Song library management
+│   ├── entries.php             # Per-event entry management
+│   ├── settings.php            # Settings configuration
+│   └── help.php                # Help documentation
+├── api/                        # JSON REST API endpoints
+│   ├── events.php              # Event CRUD (admin)
+│   ├── songs.php               # Song CRUD (admin)
+│   ├── entries.php             # Entries (mixed public/admin)
+│   ├── deezer.php              # Deezer search proxy (public)
+│   ├── themes.php              # Theme listing
+│   └── settings.php            # Settings API (admin)
 ├── includes/
-│   └── helpers.php         # Shared utility functions
-├── config.php              # Configuration loader
-├── db.php                  # Database connection
-├── default.php             # User-facing event page
-└── .htaccess               # URL rewriting rules
+│   └── helpers.php             # Shared utilities
+├── images/
+│   └── Deezer logos            # Deezer branding assets
+├── config.php                  # Configuration loader
+├── db.php                      # Database connection
+├── default.php                 # Public event signup page
+├── signage.php                 # Performance queue display
+├── signup-display.php          # Full-screen QR code display
+├── schema.sql                  # Database schema
+└── .htaccess                   # URL rewriting rules
 ```
 
-## API Authentication
+## API Reference
 
-Admin API endpoints require authentication via one of:
-- `X-Admin-Token` header
-- `admin_token` query parameter
+### Authentication
 
-The token must match the value in your config file.
+Admin endpoints require authentication via:
+- JSON body: `{ "admin_token": "..." }` (recommended)
+- Header: `X-Admin-Token: ...`
+- Query parameter: `?admin_token=...`
+
+### Public Endpoints
+
+**GET /api/entries.php?event_id={uuid}**
+- List entries for an event
+
+**POST /api/entries.php?event_id={uuid}**
+- Create entry (user signup)
+- Body: `{ "position": 1, "performer_name": "...", "song_id": 123 }`
+
+**GET /api/deezer.php?q={query}**
+- Search Deezer for songs
+
+**GET /api/themes.php**
+- List all available themes
+
+### Admin Endpoints
+
+All admin endpoints use POST with `admin_token` in the request body.
+
+**Events** (`/api/events.php`)
+- `{ "action": "list" }` - List events
+- `{ "action": "get", "event_id": "uuid" }` - Get event
+- `{ "action": "create", "name": "...", "start_time": "...", "end_time": "...", "num_entries": 20 }` - Create event
+- `{ "action": "update", "event_id": "uuid", ... }` - Update event
+- `{ "action": "delete", "event_id": "uuid" }` - Delete event
+
+**Songs** (`/api/songs.php`)
+- `{ "action": "list" }` - List songs (supports `limit`, `offset`, `search`)
+- `{ "action": "get", "song_id": 123 }` - Get song
+- `{ "action": "create", "title": "...", "artist": "...", "album": "...", "year": 2020 }` - Create song
+- `{ "action": "update", "song_id": 123, ... }` - Update song
+- `{ "action": "delete", "song_id": 123 }` - Delete song
+
+**Entries** (`/api/entries.php`)
+- `{ "action": "list", "event_id": "uuid" }` - List entries
+- `{ "action": "create", "event_id": "uuid", "position": 1, ... }` - Create/update entry
+- `{ "action": "update", "entry_id": 123, ... }` - Update entry
+- `{ "action": "delete", "entry_id": 123 }` - Delete entry
+- `{ "action": "reorder", "event_id": "uuid", "order": [...] }` - Reorder entries
+
+**Settings** (`/api/settings.php`)
+- `{ "action": "get" }` - Get settings
+- `{ "action": "update", "settings": { ... } }` - Update settings
+
+## External Dependencies
+
+### Bootstrap 5 (CDN)
+- **Used for**: UI styling and responsive layout
+- **Version**: 5.3.2 (pinned)
+- **Fallback**: Download and host locally if CDN unavailable
+
+### Bootstrap Icons (CDN)
+- **Used for**: All iconography
+- **Version**: 1.11.1 (pinned)
+- **Fallback**: Self-host or replace with alternative icon library
+
+### Deezer API
+- **Used for**: Song search, metadata, album art, audio previews
+- **Rate limits**: 50 requests per 5 seconds
+- **Fallback**: Songs can be added manually without Deezer
+
+### QR Server API
+- **Used for**: QR code generation
+- **Fallback**: Use local PHP QR library (chillerlan/php-qrcode or endroid/qr-code)
 
 ## Timezone Handling
 
-Event times are stored and displayed as **venue local time** (no timezone conversion). When creating an event, enter the start and end times as they would appear on a clock at the event location.
+Event times are stored and displayed as **venue local time** (no timezone conversion). Enter times as they would appear on a clock at the event location. This approach works well for in-person events where attendees are at the physical location.
 
-For example, if creating an event in New York that starts at 7:00 PM Eastern:
-- Enter `7:00 PM` in the form
-- Users viewing the event see `7:00 PM`
-- This means 7:00 PM at the venue, regardless of the viewer's timezone
+## Security Features
 
-This approach works well for in-person events where attendees know the physical location.
-
-## Database Schema
-
-The application uses three main tables:
-- `events` - Event definitions with UUID primary keys
-- `songs` - Song library with Deezer metadata
-- `entries` - Performance slot assignments linking events to songs
-
-UUIDs are stored as binary(16) and converted using MySQL's `UUID_TO_BIN()` and `BIN_TO_UUID()` functions.
+- Token-based admin authentication with timing attack protection
+- HTTP Basic Auth on admin directory
+- PDO prepared statements prevent SQL injection
+- HTML output escaping prevents XSS
+- Config file stored outside web root
 
 ## License
 
