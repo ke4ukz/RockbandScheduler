@@ -233,6 +233,20 @@ Event times are stored and displayed as **venue local time** (no timezone conver
 - HTML output escaping prevents XSS
 - Config file stored outside web root
 
+## Deployment
+
+The site is deployed via GitHub and cPanel's Git Version Control. To push updates to the live site:
+
+1. Commit and push changes to GitHub
+2. Log into the hosting control panel
+3. Go to **Websites** → click **Settings** for the RockbandScheduler site
+4. Go to the **Advanced** tab
+5. Click **Manage** under the cPanel section
+6. Click **Git Version Control** under Files
+7. Click **Manage** for the RockbandScheduler repo
+8. Click the **Pull or Deploy** tab
+9. Click **Update from Remote**
+
 ## AI Disclosure
 
 This software was developed with assistance from Claude, an AI assistant by Anthropic. AI tools were used for code generation, documentation, and development guidance throughout the project.
