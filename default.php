@@ -13,6 +13,9 @@ $signupSettings = $GLOBALS['config']['signup'] ?? [];
 $requireName = $signupSettings['require_name'] ?? true;
 $requireSong = $signupSettings['require_song'] ?? true;
 
+// Get default theme ID from config
+$defaultThemeId = $GLOBALS['config']['theme']['default_theme_id'] ?? null;
+
 // Validate event ID and check if event is active
 if (!$eventId) {
     $error = 'No event specified. Please scan a valid QR code.';
@@ -22,6 +25,7 @@ if (!$eventId) {
     try {
         $stmt = $db->prepare('
             SELECT BIN_TO_UUID(e.event_id) as event_id, e.name, e.location, e.start_time, e.end_time, e.num_entries,
+                   e.theme_id,
                    t.primary_color, t.bg_gradient_start, t.bg_gradient_end, t.text_color
             FROM events e
             LEFT JOIN themes t ON e.theme_id = t.theme_id
@@ -33,6 +37,22 @@ if (!$eventId) {
         if (!$event) {
             $error = 'Event not found. Please scan a valid QR code.';
         } else {
+            // If event has no theme, use the default theme from settings
+            if (!$event['theme_id'] && $defaultThemeId) {
+                $themeStmt = $db->prepare('
+                    SELECT primary_color, bg_gradient_start, bg_gradient_end, text_color
+                    FROM themes WHERE theme_id = ?
+                ');
+                $themeStmt->execute([$defaultThemeId]);
+                $defaultTheme = $themeStmt->fetch(PDO::FETCH_ASSOC);
+                if ($defaultTheme) {
+                    $event['primary_color'] = $defaultTheme['primary_color'];
+                    $event['bg_gradient_start'] = $defaultTheme['bg_gradient_start'];
+                    $event['bg_gradient_end'] = $defaultTheme['bg_gradient_end'];
+                    $event['text_color'] = $defaultTheme['text_color'];
+                }
+            }
+
             $now = new DateTime();
             $start = new DateTime($event['start_time']);
             $end = new DateTime($event['end_time']);

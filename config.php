@@ -20,4 +20,11 @@ $GLOBALS['config']['signup']['require_name'] =
 $GLOBALS['config']['signup']['require_song'] =
     ($GLOBALS['config']['signup']['require_song'] ?? '1') === '1';
 
+// Theme settings
+if (!isset($GLOBALS['config']['theme']) || !is_array($GLOBALS['config']['theme'])) {
+    $GLOBALS['config']['theme'] = [];
+}
+$GLOBALS['config']['theme']['default_theme_id'] =
+    $GLOBALS['config']['theme']['default_theme_id'] ?? null;
+
 ?>

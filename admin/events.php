@@ -223,15 +223,17 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
 
         let events = [];
         let themes = [];
+        let defaultThemeId = null;
         let deleteEventId = null;
         let currentViewEventId = null;
         let eventModal, viewEventModal, deleteModal;
 
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', async function() {
             eventModal = new bootstrap.Modal(document.getElementById('eventModal'));
             viewEventModal = new bootstrap.Modal(document.getElementById('viewEventModal'));
             deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
-            loadThemes();
+            await loadThemes();
+            await loadDefaultTheme();
             loadEvents();
 
             document.getElementById('filterStatus').addEventListener('change', renderEvents);
@@ -262,17 +264,32 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
             }
         }
 
-        // Default theme colors (Purple Night)
-        const DEFAULT_THEME = {
-            primary_color: '#6f42c1',
-            bg_gradient_start: '#1a1a2e',
-            bg_gradient_end: '#16213e',
-            text_color: '#ffffff'
-        };
+        async function loadDefaultTheme() {
+            try {
+                const response = await fetch(`${API_BASE}/settings.php`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ admin_token: ADMIN_TOKEN, action: 'get' })
+                });
+                const data = await response.json();
+                if (data.error) throw new Error(data.error);
+                defaultThemeId = data.settings?.theme?.default_theme_id || (themes.length > 0 ? themes[0].theme_id : null);
+            } catch (err) {
+                console.error('Failed to load default theme:', err);
+                defaultThemeId = themes.length > 0 ? themes[0].theme_id : null;
+            }
+        }
+
+        function getDefaultTheme() {
+            if (defaultThemeId) {
+                return themes.find(t => t.theme_id == defaultThemeId) || themes[0] || null;
+            }
+            return themes[0] || null;
+        }
 
         function populateThemeDropdown() {
             const select = document.getElementById('eventTheme');
-            select.innerHTML = '<option value="">Default (Purple Night)</option>';
+            select.innerHTML = '';
             themes.forEach(theme => {
                 const opt = document.createElement('option');
                 opt.value = theme.theme_id;
@@ -289,7 +306,7 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
             const text = document.getElementById('previewText');
 
             const themeId = select.value;
-            const theme = themeId ? themes.find(t => t.theme_id == themeId) : DEFAULT_THEME;
+            const theme = themes.find(t => t.theme_id == themeId);
 
             if (theme) {
                 const textColor = theme.text_color || '#ffffff';
@@ -300,6 +317,8 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
                 button.style.borderColor = theme.primary_color;
                 button.style.color = '#fff';
                 text.style.color = textColor;
+            } else {
+                preview.style.display = 'none';
             }
         }
 
@@ -427,7 +446,7 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
             document.getElementById('eventModalTitle').textContent = 'Create Event';
             document.getElementById('eventForm').reset();
             document.getElementById('eventId').value = '';
-            document.getElementById('eventTheme').value = '';
+            document.getElementById('eventTheme').value = defaultThemeId || '';
 
             // Set default times (start now, end in 4 hours)
             const now = new Date();

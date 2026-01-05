@@ -69,12 +69,38 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
                             <i class="bi bi-info-circle"></i>
                             At least one option must be required. Users must provide either a name, a song, or both.
                         </div>
-
-                        <button class="btn btn-primary" id="saveSettings" onclick="saveSettings()">
-                            <i class="bi bi-check-lg"></i> Save Settings
-                        </button>
-                        <span id="saveStatus" class="ms-2"></span>
                     </div>
+                </div>
+
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-palette"></i> Default Theme</h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted">Select the default color theme for new events.</p>
+
+                        <div class="mb-3">
+                            <label for="defaultTheme" class="form-label">Default Theme</label>
+                            <select class="form-select" id="defaultTheme">
+                                <option value="">Loading themes...</option>
+                            </select>
+                        </div>
+
+                        <div id="themePreview" class="p-3 rounded mb-3" style="display: none;">
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="rounded-circle" id="previewAccent" style="width: 24px; height: 24px;"></div>
+                                <span class="small" id="previewText">Sample Text</span>
+                                <button type="button" class="btn btn-sm ms-auto" id="previewButton">Sign Up</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-4">
+                    <button class="btn btn-primary" id="saveSettings" onclick="saveSettings()">
+                        <i class="bi bi-check-lg"></i> Save Settings
+                    </button>
+                    <span id="saveStatus" class="ms-2"></span>
                 </div>
             </div>
         </div>
@@ -85,7 +111,64 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
         const ADMIN_TOKEN = <?= json_encode($adminToken) ?>;
         const API_BASE = '../api';
 
-        document.addEventListener('DOMContentLoaded', loadSettings);
+        let themes = [];
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            await loadThemes();
+            await loadSettings();
+            document.getElementById('defaultTheme').addEventListener('change', updateThemePreview);
+        });
+
+        async function loadThemes() {
+            try {
+                const response = await fetch(`${API_BASE}/themes.php`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ admin_token: ADMIN_TOKEN, action: 'list' })
+                });
+                const data = await response.json();
+                if (data.error) throw new Error(data.error);
+                themes = data.themes || [];
+                populateThemeDropdown();
+            } catch (err) {
+                console.error('Failed to load themes:', err);
+            }
+        }
+
+        function populateThemeDropdown() {
+            const select = document.getElementById('defaultTheme');
+            select.innerHTML = '';
+            themes.forEach(theme => {
+                const opt = document.createElement('option');
+                opt.value = theme.theme_id;
+                opt.textContent = theme.name;
+                select.appendChild(opt);
+            });
+        }
+
+        function updateThemePreview() {
+            const select = document.getElementById('defaultTheme');
+            const preview = document.getElementById('themePreview');
+            const accent = document.getElementById('previewAccent');
+            const button = document.getElementById('previewButton');
+            const text = document.getElementById('previewText');
+
+            const themeId = select.value;
+            const theme = themes.find(t => t.theme_id == themeId);
+
+            if (theme) {
+                const textColor = theme.text_color || '#ffffff';
+                preview.style.display = 'block';
+                preview.style.background = `linear-gradient(135deg, ${theme.bg_gradient_start} 0%, ${theme.bg_gradient_end} 100%)`;
+                accent.style.backgroundColor = theme.primary_color;
+                button.style.backgroundColor = theme.primary_color;
+                button.style.borderColor = theme.primary_color;
+                button.style.color = '#fff';
+                text.style.color = textColor;
+            } else {
+                preview.style.display = 'none';
+            }
+        }
 
         async function loadSettings() {
             try {
@@ -100,6 +183,16 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
                 const settings = data.settings;
                 document.getElementById('requireName').checked = settings.signup?.require_name ?? true;
                 document.getElementById('requireSong').checked = settings.signup?.require_song ?? true;
+
+                // Set default theme
+                const defaultThemeId = settings.theme?.default_theme_id;
+                if (defaultThemeId) {
+                    document.getElementById('defaultTheme').value = defaultThemeId;
+                } else if (themes.length > 0) {
+                    // Default to first theme if none set
+                    document.getElementById('defaultTheme').value = themes[0].theme_id;
+                }
+                updateThemePreview();
             } catch (err) {
                 console.error('Failed to load settings:', err);
                 showStatus('Failed to load settings', 'danger');
@@ -109,6 +202,7 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
         async function saveSettings() {
             const requireName = document.getElementById('requireName').checked;
             const requireSong = document.getElementById('requireSong').checked;
+            const defaultThemeId = document.getElementById('defaultTheme').value;
 
             // At least one must be required
             if (!requireName && !requireSong) {
@@ -130,6 +224,9 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
                             signup: {
                                 require_name: requireName,
                                 require_song: requireSong
+                            },
+                            theme: {
+                                default_theme_id: defaultThemeId
                             }
                         }
                     })
