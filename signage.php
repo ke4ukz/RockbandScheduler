@@ -21,8 +21,8 @@
  * - Upcoming performers in queue
  * - Auto-refreshes for real-time updates
  */
-require_once 'config.php';
-require_once 'db.php';
+require_once 'includes/config.php';
+require_once 'includes/db.php';
 require_once 'includes/helpers.php';
 
 $db = $GLOBALS['db'];

@@ -26,8 +26,8 @@
  *   { "admin_token": "...", "action": "delete", "event_id": "uuid" } - Delete event
  */
 
-require_once __DIR__ . '/../config.php';
-require_once __DIR__ . '/../db.php';
+require_once __DIR__ . '/../includes/config.php';
+require_once __DIR__ . '/../includes/db.php';
 require_once __DIR__ . '/../includes/helpers.php';
 
 header('Content-Type: application/json');

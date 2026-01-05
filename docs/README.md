@@ -153,11 +153,11 @@ UUIDs are stored as binary(16) and converted using MySQL's `UUID_TO_BIN()` and `
 ├── images/
 │   └── Deezer logos            # Deezer branding assets
 ├── includes/
+│   ├── config.php              # Configuration loader
+│   ├── db.php                  # Database connection
 │   └── helpers.php             # Shared utilities
 ├── .htaccess                   # Directory index and security rules
-├── config.php                  # Configuration loader
 ├── copyright.php               # License/attribution page
-├── db.php                      # Database connection
 ├── default.php                 # Public event signup page
 ├── signage.php                 # Performance queue display
 └── signup-display.php          # Full-screen QR code display

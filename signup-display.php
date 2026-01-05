@@ -19,8 +19,8 @@
  * Simple signage showing a QR code for users to scan to sign up.
  * Designed for display on TVs/screens at events.
  */
-require_once 'config.php';
-require_once 'db.php';
+require_once 'includes/config.php';
+require_once 'includes/db.php';
 require_once 'includes/helpers.php';
 
 $db = $GLOBALS['db'];

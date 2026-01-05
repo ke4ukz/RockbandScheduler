@@ -17,8 +17,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-require_once 'config.php';
-require_once 'db.php';
+require_once 'includes/config.php';
+require_once 'includes/db.php';
 require_once 'includes/helpers.php';
 
 $db = $GLOBALS['db'];

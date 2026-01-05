@@ -54,11 +54,11 @@ A PHP/MySQL web application for managing Rock Band performance sign-ups at event
 │   └── schema.sql          # Database schema
 ├── images/                 # Deezer logo assets
 ├── includes/
+│   ├── config.php          # Config loader
+│   ├── db.php              # Database connection
 │   └── helpers.php         # Shared utilities (h(), jsonResponse(), etc.)
 ├── .htaccess               # Directory index and security rules
-├── config.php              # Config loader
 ├── copyright.php           # License/attribution page
-├── db.php                  # Database connection
 ├── default.php             # Public signup page
 ├── signage.php             # Queue display for TVs
 └── signup-display.php      # Full-screen QR display
