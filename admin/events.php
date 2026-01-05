@@ -123,9 +123,16 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
                         </div>
                         <div class="mb-3">
                             <label for="eventTheme" class="form-label">Color Theme</label>
-                            <select class="form-select" id="eventTheme" name="theme_id">
+                            <select class="form-select" id="eventTheme" name="theme_id" onchange="updateThemePreview()">
                                 <option value="">Default (Purple Night)</option>
                             </select>
+                            <div id="themePreview" class="mt-2 p-3 rounded" style="display: none;">
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="rounded-circle" id="previewAccent" style="width: 24px; height: 24px;"></div>
+                                    <span class="text-white small">Sample Text</span>
+                                    <button type="button" class="btn btn-sm ms-auto" id="previewButton">Sign Up</button>
+                                </div>
+                            </div>
                             <div class="form-text">Choose a color theme for the user-facing signup page</div>
                         </div>
                     </form>
@@ -255,6 +262,13 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
             }
         }
 
+        // Default theme colors (Purple Night)
+        const DEFAULT_THEME = {
+            primary_color: '#6f42c1',
+            bg_gradient_start: '#1a1a2e',
+            bg_gradient_end: '#16213e'
+        };
+
         function populateThemeDropdown() {
             const select = document.getElementById('eventTheme');
             select.innerHTML = '<option value="">Default (Purple Night)</option>';
@@ -262,10 +276,27 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
                 const opt = document.createElement('option');
                 opt.value = theme.theme_id;
                 opt.textContent = theme.name;
-                opt.style.backgroundColor = theme.primary_color;
-                opt.style.color = '#fff';
                 select.appendChild(opt);
             });
+        }
+
+        function updateThemePreview() {
+            const select = document.getElementById('eventTheme');
+            const preview = document.getElementById('themePreview');
+            const accent = document.getElementById('previewAccent');
+            const button = document.getElementById('previewButton');
+
+            const themeId = select.value;
+            const theme = themeId ? themes.find(t => t.theme_id == themeId) : DEFAULT_THEME;
+
+            if (theme) {
+                preview.style.display = 'block';
+                preview.style.background = `linear-gradient(135deg, ${theme.bg_gradient_start} 0%, ${theme.bg_gradient_end} 100%)`;
+                accent.style.backgroundColor = theme.primary_color;
+                button.style.backgroundColor = theme.primary_color;
+                button.style.borderColor = theme.primary_color;
+                button.style.color = '#fff';
+            }
         }
 
         async function loadEvents() {
@@ -399,6 +430,8 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
             const later = new Date(now.getTime() + 4 * 60 * 60 * 1000);
             document.getElementById('startTime').value = formatDateTimeLocal(now.toISOString());
             document.getElementById('endTime').value = formatDateTimeLocal(later.toISOString());
+
+            updateThemePreview();
         }
 
         function editEvent(eventId) {
@@ -414,6 +447,7 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
             document.getElementById('numEntries').value = event.num_entries;
             document.getElementById('eventTheme').value = event.theme_id || '';
 
+            updateThemePreview();
             eventModal.show();
         }
 
