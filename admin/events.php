@@ -357,8 +357,8 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
             }
 
             try {
-                // Pass client's current time for accurate filtering
-                const clientNow = new Date().toISOString().slice(0, 19).replace('T', ' ');
+                // Pass client's current local time for accurate filtering
+                const clientNow = formatLocalDateTime(new Date());
                 const response = await fetch(`${API_BASE}/events.php`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -388,8 +388,8 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
             btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Loading...';
 
             try {
-                // Pass client's current time for accurate filtering
-                const clientNow = new Date().toISOString().slice(0, 19).replace('T', ' ');
+                // Pass client's current local time for accurate filtering
+                const clientNow = formatLocalDateTime(new Date());
                 const response = await fetch(`${API_BASE}/events.php`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -600,6 +600,12 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
             // Format for datetime-local input
             const pad = n => n.toString().padStart(2, '0');
             return `${date.getFullYear()}-${pad(date.getMonth()+1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+        }
+
+        // Format a Date as "YYYY-MM-DD HH:MM:SS" in local time (for API calls)
+        function formatLocalDateTime(date) {
+            const pad = n => n.toString().padStart(2, '0');
+            return `${date.getFullYear()}-${pad(date.getMonth()+1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
         }
 
         function openAddModal() {
