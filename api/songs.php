@@ -92,7 +92,10 @@ try {
         jsonError('Invalid characters in song data (encoding issue)', 400);
     }
 
-    jsonError('Database error', 500);
+    // Return the actual error for debugging (sanitize sensitive info)
+    $safeMsg = preg_replace('/SQLSTATE\[\w+\]:\s*/', '', $msg);
+    $safeMsg = preg_replace('/at row \d+/', '', $safeMsg);
+    jsonError('Database error: ' . $safeMsg, 500);
 }
 
 function listSongs($db) {
