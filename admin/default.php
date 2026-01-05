@@ -54,34 +54,40 @@ if ($db) {
     <div class="container mt-4">
         <h1 class="mb-4">Dashboard</h1>
 
-        <div class="row">
-            <div class="col-md-4 mb-4">
-                <div class="card text-bg-primary">
-                    <div class="card-body">
+        <div class="row row-cols-1 row-cols-md-3 g-4">
+            <div class="col">
+                <div class="card text-bg-primary h-100">
+                    <div class="card-body d-flex flex-column">
                         <h5 class="card-title"><i class="bi bi-music-note-list"></i> Song Library</h5>
                         <p class="card-text display-4"><?= $songCount ?></p>
-                        <a href="songs.php" class="btn btn-light">Manage Songs</a>
+                        <div class="mt-auto">
+                            <a href="songs.php" class="btn btn-light">Manage Songs</a>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <div class="col-md-4 mb-4">
-                <div class="card text-bg-info">
-                    <div class="card-body">
+            <div class="col">
+                <div class="card text-bg-info h-100">
+                    <div class="card-body d-flex flex-column">
                         <h5 class="card-title"><i class="bi bi-calendar-event"></i> Total Events</h5>
                         <p class="card-text display-4"><?= $eventCount ?></p>
-                        <a href="events.php" class="btn btn-light">Manage Events</a>
+                        <div class="mt-auto">
+                            <a href="events.php" class="btn btn-light">Manage Events</a>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <div class="col-md-4 mb-4">
-                <div class="card text-bg-success">
-                    <div class="card-body">
+            <div class="col">
+                <div class="card text-bg-success h-100">
+                    <div class="card-body d-flex flex-column">
                         <h5 class="card-title"><i class="bi bi-broadcast"></i> Active Now</h5>
                         <p class="card-text display-4" id="activeCount">-</p>
-                        <div id="activeEventsList"></div>
-                        <a href="events.php" class="btn btn-light" id="viewEventsBtn">View Events</a>
+                        <div id="activeEventsList" class="mb-2"></div>
+                        <div class="mt-auto">
+                            <a href="events.php" class="btn btn-light" id="viewEventsBtn">View Events</a>
+                        </div>
                     </div>
                 </div>
             </div>
