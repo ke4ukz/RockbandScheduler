@@ -67,6 +67,9 @@ function getSettings() {
             'signup' => [
                 'require_name' => $config['signup']['require_name'] ?? true,
                 'require_song' => $config['signup']['require_song'] ?? true
+            ],
+            'theme' => [
+                'default_theme_id' => $config['theme']['default_theme_id'] ?? null
             ]
         ]
     ]);
@@ -86,6 +89,16 @@ function updateSettings($configPath, $newSettings) {
         }
         if (isset($newSettings['signup']['require_song'])) {
             $config['signup']['require_song'] = $newSettings['signup']['require_song'] ? '1' : '0';
+        }
+    }
+
+    // Update theme settings
+    if (isset($newSettings['theme'])) {
+        if (!isset($config['theme'])) {
+            $config['theme'] = [];
+        }
+        if (isset($newSettings['theme']['default_theme_id'])) {
+            $config['theme']['default_theme_id'] = $newSettings['theme']['default_theme_id'];
         }
     }
 
@@ -133,6 +146,12 @@ function updateSettings($configPath, $newSettings) {
         ($GLOBALS['config']['signup']['require_name'] ?? '1') === '1';
     $GLOBALS['config']['signup']['require_song'] =
         ($GLOBALS['config']['signup']['require_song'] ?? '1') === '1';
+
+    if (!isset($GLOBALS['config']['theme'])) {
+        $GLOBALS['config']['theme'] = [];
+    }
+    $GLOBALS['config']['theme']['default_theme_id'] =
+        $GLOBALS['config']['theme']['default_theme_id'] ?? null;
 
     getSettings();
 }
