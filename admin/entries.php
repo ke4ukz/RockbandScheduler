@@ -81,6 +81,28 @@ if (!$eventId || !isValidUuid($eventId)) {
         .finished-check.checked {
             color: #198754;
         }
+        /* Touch drag styles */
+        .slot-card.touch-dragging {
+            opacity: 0.8;
+            transform: scale(1.02);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 1000;
+        }
+        .drag-handle {
+            cursor: grab;
+            padding: 0.5rem;
+            margin-right: 0.5rem;
+            color: #6c757d;
+            touch-action: none;
+        }
+        .drag-handle:active {
+            cursor: grabbing;
+        }
+        @media (hover: none) and (pointer: coarse) {
+            .drag-handle {
+                font-size: 1.25rem;
+            }
+        }
     </style>
 </head>
 <body>
@@ -136,7 +158,7 @@ if (!$eventId || !isValidUuid($eventId)) {
                     <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
                         <span>Performance Lineup</span>
                         <div class="d-flex gap-2 align-items-center">
-                            <small class="text-muted d-none d-md-inline">Drag to reorder</small>
+                            <small class="text-muted">Drag <i class="bi bi-grip-vertical"></i> to reorder</small>
                             <div class="dropdown">
                                 <button class="btn btn-sm btn-outline-danger dropdown-toggle" type="button" data-bs-toggle="dropdown">
                                     <i class="bi bi-trash"></i> Clear
@@ -424,6 +446,10 @@ if (!$eventId || !isValidUuid($eventId)) {
                                     <i class="bi bi-plus"></i> Add
                                 </button>
                             ` : `
+                                ${!isFinished ? `<i class="bi bi-grip-vertical drag-handle"
+                                   ontouchstart="handleTouchStart(event)"
+                                   ontouchmove="handleTouchMove(event)"
+                                   ontouchend="handleTouchEnd(event)"></i>` : ''}
                                 <i class="bi ${isFinished ? 'bi-check-circle-fill checked' : 'bi-circle'} finished-check me-3"
                                    data-entry-id="${entry.entry_id}"
                                    onclick="event.stopPropagation(); toggleFinished(this, ${entry.entry_id}, ${!isFinished})"
@@ -665,6 +691,121 @@ if (!$eventId || !isValidUuid($eventId)) {
             if (toEntryId) {
                 orderUpdates.push({ entry_id: parseInt(toEntryId), position: fromPos });
             }
+
+            if (orderUpdates.length === 0) return;
+
+            try {
+                const response = await fetch(`${API_BASE}/entries.php`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        admin_token: ADMIN_TOKEN,
+                        action: 'reorder',
+                        event_id: EVENT_ID,
+                        order: orderUpdates
+                    })
+                });
+                const result = await response.json();
+                if (result.error) throw new Error(result.error);
+
+                loadEntries();
+            } catch (err) {
+                alert('Failed to reorder: ' + err.message);
+                loadEntries();
+            }
+        }
+
+        // Touch drag handlers for mobile
+        let touchDragItem = null;
+        let touchStartY = 0;
+        let touchCurrentY = 0;
+        let touchStartTime = 0;
+        const TOUCH_HOLD_DELAY = 150; // ms to hold before drag starts
+
+        function handleTouchStart(e) {
+            const handle = e.target.closest('.drag-handle');
+            if (!handle) return;
+
+            touchStartTime = Date.now();
+            touchStartY = e.touches[0].clientY;
+            touchCurrentY = touchStartY;
+            touchDragItem = handle.closest('.slot-card');
+
+            // Add visual feedback after short delay
+            setTimeout(() => {
+                if (touchDragItem && Date.now() - touchStartTime >= TOUCH_HOLD_DELAY) {
+                    touchDragItem.classList.add('touch-dragging');
+                }
+            }, TOUCH_HOLD_DELAY);
+        }
+
+        function handleTouchMove(e) {
+            if (!touchDragItem) return;
+
+            // Only start dragging after hold delay
+            if (Date.now() - touchStartTime < TOUCH_HOLD_DELAY) return;
+
+            e.preventDefault();
+            touchCurrentY = e.touches[0].clientY;
+
+            // Add dragging class if not already added
+            touchDragItem.classList.add('touch-dragging');
+
+            // Find element under touch point
+            const elemBelow = document.elementFromPoint(
+                e.touches[0].clientX,
+                e.touches[0].clientY
+            );
+            const cardBelow = elemBelow?.closest('.slot-card');
+
+            // Clear previous highlights
+            document.querySelectorAll('.slot-card.drag-over').forEach(el => {
+                el.classList.remove('drag-over');
+            });
+
+            // Highlight target
+            if (cardBelow && cardBelow !== touchDragItem) {
+                cardBelow.classList.add('drag-over');
+            }
+        }
+
+        async function handleTouchEnd(e) {
+            if (!touchDragItem) return;
+
+            const wasDragging = touchDragItem.classList.contains('touch-dragging');
+            touchDragItem.classList.remove('touch-dragging');
+
+            // Find drop target
+            const allCards = document.querySelectorAll('.slot-card');
+            let dropTarget = null;
+
+            allCards.forEach(card => {
+                if (card.classList.contains('drag-over')) {
+                    dropTarget = card;
+                    card.classList.remove('drag-over');
+                }
+            });
+
+            if (!wasDragging || !dropTarget || dropTarget === touchDragItem) {
+                touchDragItem = null;
+                return;
+            }
+
+            // Perform the swap
+            const fromPos = parseInt(touchDragItem.dataset.position);
+            const toPos = parseInt(dropTarget.dataset.position);
+            const fromEntryId = touchDragItem.dataset.entryId;
+            const toEntryId = dropTarget.dataset.entryId;
+
+            const orderUpdates = [];
+            if (fromEntryId) {
+                orderUpdates.push({ entry_id: parseInt(fromEntryId), position: toPos });
+            }
+            if (toEntryId) {
+                orderUpdates.push({ entry_id: parseInt(toEntryId), position: fromPos });
+            }
+
+            touchDragItem = null;
 
             if (orderUpdates.length === 0) return;
 
