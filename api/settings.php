@@ -76,6 +76,10 @@ switch ($action) {
 function getSettings() {
     $config = $GLOBALS['config'];
 
+    // Check if Sightengine is configured (credentials present)
+    $sightengineConfigured = !empty($config['sightengine']['api_user'])
+        && !empty($config['sightengine']['api_secret']);
+
     jsonResponse([
         'settings' => [
             'event' => [
@@ -83,6 +87,19 @@ function getSettings() {
             ],
             'theme' => [
                 'default_theme_id' => $config['theme']['default_theme_id'] ?? null
+            ],
+            'content_filter' => [
+                'available' => $sightengineConfigured,
+                // All profanity filters use levels (0-3)
+                'profanity_sexual' => (int)($config['content_filter']['profanity_sexual'] ?? 0),
+                'profanity_discriminatory' => (int)($config['content_filter']['profanity_discriminatory'] ?? 0),
+                'profanity_insult' => (int)($config['content_filter']['profanity_insult'] ?? 0),
+                'profanity_inappropriate' => (int)($config['content_filter']['profanity_inappropriate'] ?? 0),
+                'profanity_grawlix' => (int)($config['content_filter']['profanity_grawlix'] ?? 0),
+                // Other content blocks are boolean toggles
+                'block_extremism' => (bool)($config['content_filter']['block_extremism'] ?? false),
+                'block_violence' => (bool)($config['content_filter']['block_violence'] ?? false),
+                'block_drugs' => (bool)($config['content_filter']['block_drugs'] ?? false)
             ]
         ]
     ]);
@@ -111,6 +128,41 @@ function updateSettings($configPath, $newSettings) {
         }
         if (isset($newSettings['theme']['default_theme_id'])) {
             $config['theme']['default_theme_id'] = $newSettings['theme']['default_theme_id'];
+        }
+    }
+
+    // Update content filter settings
+    if (isset($newSettings['content_filter'])) {
+        if (!isset($config['content_filter'])) {
+            $config['content_filter'] = [];
+        }
+        $cf = $newSettings['content_filter'];
+
+        // All profanity filters use levels (0-3)
+        if (isset($cf['profanity_sexual'])) {
+            $config['content_filter']['profanity_sexual'] = max(0, min(3, (int)$cf['profanity_sexual']));
+        }
+        if (isset($cf['profanity_discriminatory'])) {
+            $config['content_filter']['profanity_discriminatory'] = max(0, min(3, (int)$cf['profanity_discriminatory']));
+        }
+        if (isset($cf['profanity_insult'])) {
+            $config['content_filter']['profanity_insult'] = max(0, min(3, (int)$cf['profanity_insult']));
+        }
+        if (isset($cf['profanity_inappropriate'])) {
+            $config['content_filter']['profanity_inappropriate'] = max(0, min(3, (int)$cf['profanity_inappropriate']));
+        }
+        if (isset($cf['profanity_grawlix'])) {
+            $config['content_filter']['profanity_grawlix'] = max(0, min(3, (int)$cf['profanity_grawlix']));
+        }
+        // Other content blocks are boolean toggles
+        if (isset($cf['block_extremism'])) {
+            $config['content_filter']['block_extremism'] = $cf['block_extremism'] ? '1' : '0';
+        }
+        if (isset($cf['block_violence'])) {
+            $config['content_filter']['block_violence'] = $cf['block_violence'] ? '1' : '0';
+        }
+        if (isset($cf['block_drugs'])) {
+            $config['content_filter']['block_drugs'] = $cf['block_drugs'] ? '1' : '0';
         }
     }
 

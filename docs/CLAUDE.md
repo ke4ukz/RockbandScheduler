@@ -23,6 +23,7 @@ A PHP/MySQL web application for managing Rock Band performance sign-ups at event
 ### External APIs
 - **Deezer API** - Song search, metadata, album art, 30-second previews (rate limit: 50 req/5 sec)
 - **QR Server API** - QR code generation
+- **Sightengine API** - Optional content filtering for performer names (rule-based text moderation)
 
 ## File Structure
 
@@ -96,6 +97,30 @@ Admin endpoints support two authentication methods:
 ### Slot Management
 - Increasing `num_entries` makes new slots available immediately
 - Decreasing `num_entries` deletes entries beyond new limit (via trigger or API)
+
+### Content Filtering
+Optional performer name filtering powered by Sightengine. Requires API credentials in config:
+```ini
+[sightengine]
+api_user = "your_api_user"
+api_secret = "your_api_secret"
+```
+
+**Configurable filters** (via Admin Settings):
+
+Profanity filters (4 levels each: off, low, medium, high):
+- Sexual language
+- Discriminatory language (slurs, hate speech)
+- Insults
+- Other inappropriate language
+- Symbol substitution / grawlix (@#$%!)
+
+Other content blocks (on/off toggles):
+- Extremism content
+- Violence / self-harm
+- Drugs / medicines
+
+**Fail-open design**: If the Sightengine API is unavailable or returns an error, signups proceed without filtering. This prevents API outages from blocking legitimate users.
 
 ## Database Tables
 

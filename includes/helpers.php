@@ -209,4 +209,163 @@ function getJsonBody() {
 function h($string) {
     return htmlspecialchars($string ?? '', ENT_QUOTES, 'UTF-8');
 }
+
+/**
+ * Check if content filtering is enabled
+ * Returns true if any filter is configured
+ */
+function isContentFilterEnabled() {
+    $config = $GLOBALS['config'];
+
+    // Check if Sightengine credentials are configured
+    if (empty($config['sightengine']['api_user']) || empty($config['sightengine']['api_secret'])) {
+        return false;
+    }
+
+    // Check if any filter is actually enabled
+    // Profanity filters use levels (0=off, 1-3=on), other blocks are boolean
+    $filters = $config['content_filter'] ?? [];
+    return ($filters['profanity_sexual'] ?? 0) > 0
+        || ($filters['profanity_discriminatory'] ?? 0) > 0
+        || ($filters['profanity_insult'] ?? 0) > 0
+        || ($filters['profanity_inappropriate'] ?? 0) > 0
+        || ($filters['profanity_grawlix'] ?? 0) > 0
+        || !empty($filters['block_extremism'])
+        || !empty($filters['block_violence'])
+        || !empty($filters['block_drugs']);
+}
+
+/**
+ * Check text for inappropriate content using Sightengine
+ * Returns null if content is OK, or an error message if blocked
+ */
+function checkContentFilter($text) {
+    $config = $GLOBALS['config'];
+    $filters = $config['content_filter'] ?? [];
+
+    // Skip if no filters enabled
+    if (!isContentFilterEnabled()) {
+        return null;
+    }
+
+    $apiUser = $config['sightengine']['api_user'];
+    $apiSecret = $config['sightengine']['api_secret'];
+
+    // Build the categories string based on enabled filters
+    $categories = [];
+
+    // Profanity check - add if any profanity filter is enabled (all use levels now)
+    $profanityEnabled = ($filters['profanity_sexual'] ?? 0) > 0
+        || ($filters['profanity_discriminatory'] ?? 0) > 0
+        || ($filters['profanity_insult'] ?? 0) > 0
+        || ($filters['profanity_inappropriate'] ?? 0) > 0
+        || ($filters['profanity_grawlix'] ?? 0) > 0;
+
+    if ($profanityEnabled) {
+        $categories[] = 'profanity';
+    }
+    if (!empty($filters['block_extremism'])) {
+        $categories[] = 'extremism';
+    }
+    if (!empty($filters['block_violence'])) {
+        $categories[] = 'self-harm';
+        $categories[] = 'violence';
+    }
+    if (!empty($filters['block_drugs'])) {
+        $categories[] = 'drug';
+        $categories[] = 'medical';
+    }
+
+    if (empty($categories)) {
+        return null;
+    }
+
+    // Call Sightengine API
+    $postData = [
+        'text' => $text,
+        'lang' => 'en',
+        'categories' => implode(',', $categories),
+        'mode' => 'rules',
+        'api_user' => $apiUser,
+        'api_secret' => $apiSecret
+    ];
+
+    $ch = curl_init('https://api.sightengine.com/1.0/text/check.json');
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($postData));
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+
+    $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    if ($httpCode !== 200 || $response === false) {
+        // Log error but don't block submission - fail open
+        error_log("Sightengine API error: HTTP $httpCode");
+        return null;
+    }
+
+    $result = json_decode($response, true);
+    if (json_last_error() !== JSON_ERROR_NONE || !isset($result['status'])) {
+        error_log("Sightengine API error: Invalid response");
+        return null;
+    }
+
+    if ($result['status'] !== 'success') {
+        error_log("Sightengine API error: " . ($result['error']['message'] ?? 'unknown'));
+        return null;
+    }
+
+    // Check profanity matches
+    // All profanity filters use levels: 0=off, 1=low (block severe), 2=medium, 3=high (block all)
+    // Intensity mapping: low=1, medium=2, high=3
+    // Threshold logic: block if intensityLevel >= (4 - threshold)
+    //   threshold=1 (low): block high only (3 >= 3)
+    //   threshold=2 (medium): block medium+ (2,3 >= 2)
+    //   threshold=3 (high): block all (1,2,3 >= 1)
+    if (!empty($result['profanity']['matches'])) {
+        foreach ($result['profanity']['matches'] as $match) {
+            $type = $match['type'] ?? '';
+            $intensity = $match['intensity'] ?? 'low';
+
+            // Map intensity to numeric level
+            $intensityLevel = ['low' => 1, 'medium' => 2, 'high' => 3][$intensity] ?? 1;
+
+            // Map profanity type to config key
+            $typeToConfig = [
+                'sexual' => 'profanity_sexual',
+                'discriminatory' => 'profanity_discriminatory',
+                'insult' => 'profanity_insult',
+                'inappropriate' => 'profanity_inappropriate',
+                'grawlix' => 'profanity_grawlix'
+            ];
+
+            $configKey = $typeToConfig[$type] ?? null;
+            if ($configKey) {
+                $threshold = $filters[$configKey] ?? 0;
+                if ($threshold > 0 && $intensityLevel >= (4 - $threshold)) {
+                    return 'Name contains inappropriate language';
+                }
+            }
+        }
+    }
+
+    // Check other categories
+    if (!empty($filters['block_extremism']) && !empty($result['extremism']['matches'])) {
+        return 'Name contains inappropriate content';
+    }
+    if (!empty($filters['block_violence'])) {
+        if (!empty($result['self-harm']['matches']) || !empty($result['violence']['matches'])) {
+            return 'Name contains inappropriate content';
+        }
+    }
+    if (!empty($filters['block_drugs'])) {
+        if (!empty($result['drug']['matches']) || !empty($result['medical']['matches'])) {
+            return 'Name contains inappropriate content';
+        }
+    }
+
+    return null; // Content is OK
+}
 ?>

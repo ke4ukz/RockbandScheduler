@@ -44,4 +44,28 @@ if (!isset($GLOBALS['config']['theme']) || !is_array($GLOBALS['config']['theme']
 $GLOBALS['config']['theme']['default_theme_id'] =
     $GLOBALS['config']['theme']['default_theme_id'] ?? null;
 
+// Content filter settings (Sightengine)
+if (!isset($GLOBALS['config']['content_filter']) || !is_array($GLOBALS['config']['content_filter'])) {
+    $GLOBALS['config']['content_filter'] = [];
+}
+// Default filter settings - all disabled by default
+// Profanity levels: 0=off, 1=low, 2=medium, 3=high
+$GLOBALS['config']['content_filter']['profanity_sexual'] =
+    (int)($GLOBALS['config']['content_filter']['profanity_sexual'] ?? 0);
+$GLOBALS['config']['content_filter']['profanity_discriminatory'] =
+    (int)($GLOBALS['config']['content_filter']['profanity_discriminatory'] ?? 0);
+$GLOBALS['config']['content_filter']['profanity_insult'] =
+    (int)($GLOBALS['config']['content_filter']['profanity_insult'] ?? 0);
+$GLOBALS['config']['content_filter']['profanity_inappropriate'] =
+    (int)($GLOBALS['config']['content_filter']['profanity_inappropriate'] ?? 0);
+$GLOBALS['config']['content_filter']['profanity_grawlix'] =
+    (int)($GLOBALS['config']['content_filter']['profanity_grawlix'] ?? 0);
+// Other content blocks are boolean toggles
+$GLOBALS['config']['content_filter']['block_extremism'] =
+    ($GLOBALS['config']['content_filter']['block_extremism'] ?? '0') === '1';
+$GLOBALS['config']['content_filter']['block_violence'] =
+    ($GLOBALS['config']['content_filter']['block_violence'] ?? '0') === '1';
+$GLOBALS['config']['content_filter']['block_drugs'] =
+    ($GLOBALS['config']['content_filter']['block_drugs'] ?? '0') === '1';
+
 ?>

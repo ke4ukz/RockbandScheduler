@@ -122,6 +122,105 @@ $csrfToken = getCsrfToken();
                     <span id="saveStatus" class="ms-2"></span>
                 </div>
             </div>
+
+            <div class="col-lg-6">
+                <div class="card" id="contentFilterCard" style="display: none;">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-shield-check"></i> Name Content Filter</h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted">Filter inappropriate performer names during public signup. Powered by Sightengine.</p>
+
+                        <h6 class="mt-3">Profanity Filters</h6>
+
+                        <div class="mb-3">
+                            <label for="profanitySexual" class="form-label">Sexual language</label>
+                            <select class="form-select" id="profanitySexual">
+                                <option value="0">Off</option>
+                                <option value="1">Low (block severe only)</option>
+                                <option value="2">Medium (block moderate+)</option>
+                                <option value="3">High (block all)</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="profanityDiscriminatory" class="form-label">Discriminatory language (slurs, hate speech)</label>
+                            <select class="form-select" id="profanityDiscriminatory">
+                                <option value="0">Off</option>
+                                <option value="1">Low (block severe only)</option>
+                                <option value="2">Medium (block moderate+)</option>
+                                <option value="3">High (block all)</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="profanityInsult" class="form-label">Insults</label>
+                            <select class="form-select" id="profanityInsult">
+                                <option value="0">Off</option>
+                                <option value="1">Low (block severe only)</option>
+                                <option value="2">Medium (block moderate+)</option>
+                                <option value="3">High (block all)</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="profanityInappropriate" class="form-label">Other inappropriate language</label>
+                            <select class="form-select" id="profanityInappropriate">
+                                <option value="0">Off</option>
+                                <option value="1">Low (block severe only)</option>
+                                <option value="2">Medium (block moderate+)</option>
+                                <option value="3">High (block all)</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="profanityGrawlix" class="form-label">Symbol substitution (@#$%!)</label>
+                            <select class="form-select" id="profanityGrawlix">
+                                <option value="0">Off</option>
+                                <option value="1">Low (block severe only)</option>
+                                <option value="2">Medium (block moderate+)</option>
+                                <option value="3">High (block all)</option>
+                            </select>
+                        </div>
+
+                        <h6 class="mt-4">Other Content Blocks</h6>
+
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" id="blockExtremism">
+                            <label class="form-check-label" for="blockExtremism">
+                                Extremism content
+                            </label>
+                        </div>
+
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" id="blockViolence">
+                            <label class="form-check-label" for="blockViolence">
+                                Violence / self-harm
+                            </label>
+                        </div>
+
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" id="blockDrugs">
+                            <label class="form-check-label" for="blockDrugs">
+                                Drugs / medicines
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card" id="contentFilterDisabled" style="display: none;">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-shield-check"></i> Name Content Filter</h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted">Content filtering is not available. To enable it, add Sightengine API credentials to your config file:</p>
+                        <pre class="bg-body-secondary p-2 rounded"><code>[sightengine]
+api_user = "your_api_user"
+api_secret = "your_api_secret"</code></pre>
+                        <p class="small text-muted mb-0">Get free API credentials at <a href="https://sightengine.com" target="_blank">sightengine.com</a></p>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -213,6 +312,27 @@ $csrfToken = getCsrfToken();
                     document.getElementById('defaultTheme').value = themes[0].theme_id;
                 }
                 updateThemePreview();
+
+                // Content filter settings
+                const cf = settings.content_filter || {};
+                if (cf.available) {
+                    document.getElementById('contentFilterCard').style.display = 'block';
+                    document.getElementById('contentFilterDisabled').style.display = 'none';
+
+                    // Set filter values (all profanity filters use levels)
+                    document.getElementById('profanitySexual').value = cf.profanity_sexual ?? 0;
+                    document.getElementById('profanityDiscriminatory').value = cf.profanity_discriminatory ?? 0;
+                    document.getElementById('profanityInsult').value = cf.profanity_insult ?? 0;
+                    document.getElementById('profanityInappropriate').value = cf.profanity_inappropriate ?? 0;
+                    document.getElementById('profanityGrawlix').value = cf.profanity_grawlix ?? 0;
+                    // Other content blocks are toggles
+                    document.getElementById('blockExtremism').checked = cf.block_extremism ?? false;
+                    document.getElementById('blockViolence').checked = cf.block_violence ?? false;
+                    document.getElementById('blockDrugs').checked = cf.block_drugs ?? false;
+                } else {
+                    document.getElementById('contentFilterCard').style.display = 'none';
+                    document.getElementById('contentFilterDisabled').style.display = 'block';
+                }
             } catch (err) {
                 console.error('Failed to load settings:', err);
                 showStatus('Failed to load settings', 'danger');
@@ -232,6 +352,32 @@ $csrfToken = getCsrfToken();
             const btn = document.getElementById('saveSettings');
             btn.disabled = true;
 
+            // Build settings object
+            const settingsData = {
+                event: {
+                    default_duration_hours: defaultDuration
+                },
+                theme: {
+                    default_theme_id: defaultThemeId
+                }
+            };
+
+            // Include content filter settings if available
+            if (document.getElementById('contentFilterCard').style.display !== 'none') {
+                settingsData.content_filter = {
+                    // All profanity filters use levels (0-3)
+                    profanity_sexual: parseInt(document.getElementById('profanitySexual').value) || 0,
+                    profanity_discriminatory: parseInt(document.getElementById('profanityDiscriminatory').value) || 0,
+                    profanity_insult: parseInt(document.getElementById('profanityInsult').value) || 0,
+                    profanity_inappropriate: parseInt(document.getElementById('profanityInappropriate').value) || 0,
+                    profanity_grawlix: parseInt(document.getElementById('profanityGrawlix').value) || 0,
+                    // Other content blocks are toggles
+                    block_extremism: document.getElementById('blockExtremism').checked,
+                    block_violence: document.getElementById('blockViolence').checked,
+                    block_drugs: document.getElementById('blockDrugs').checked
+                };
+            }
+
             try {
                 const response = await fetch(`${API_BASE}/settings.php`, {
                     method: 'POST',
@@ -239,14 +385,7 @@ $csrfToken = getCsrfToken();
                     body: JSON.stringify({
                         csrf_token: CSRF_TOKEN,
                         action: 'update',
-                        settings: {
-                            event: {
-                                default_duration_hours: defaultDuration
-                            },
-                            theme: {
-                                default_theme_id: defaultThemeId
-                            }
-                        }
+                        settings: settingsData
                     })
                 });
                 const data = await response.json();

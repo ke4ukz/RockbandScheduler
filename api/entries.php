@@ -207,6 +207,13 @@ function userCreateEntry($db, $eventId, $data) {
     if (mb_strlen($performerName) > 150) {
         jsonError('performer_name is too long (max 150 characters)');
     }
+
+    // Check content filter for public signup
+    $filterError = checkContentFilter($performerName);
+    if ($filterError) {
+        jsonError($filterError);
+    }
+
     if (empty($songId)) {
         jsonError('song_id is required');
     }
