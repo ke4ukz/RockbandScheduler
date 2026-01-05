@@ -43,6 +43,12 @@ A PHP/MySQL web application for managing Rock Band performance sign-ups at event
 │   ├── deezer.php          # Deezer search proxy
 │   ├── themes.php          # Theme listing
 │   └── settings.php        # Settings API
+├── docs/                   # Documentation (blocked by .htaccess)
+│   ├── CLAUDE.md           # AI development notes
+│   ├── README.md           # Project documentation
+│   ├── config.sample.ini   # Sample config file template
+│   ├── deezer notes.txt    # Deezer API notes
+│   └── schema.sql          # Database schema
 ├── includes/
 │   └── helpers.php         # Shared utilities (h(), jsonResponse(), etc.)
 ├── images/                 # Deezer logo assets
@@ -51,8 +57,7 @@ A PHP/MySQL web application for managing Rock Band performance sign-ups at event
 ├── default.php             # Public signup page
 ├── signage.php             # Queue display for TVs
 ├── signup-display.php      # Full-screen QR display
-├── copyright.php           # License/attribution page
-└── schema.sql              # Database schema
+└── copyright.php           # License/attribution page
 ```
 
 ## Key Patterns
@@ -114,7 +119,7 @@ Admin endpoints accept token via:
 
 ## Pending Tasks
 
-- **Clean up repo for deployment**: The website pulls content from the repo. Need to delete documentation files that shouldn't be available on the web server (e.g., CLAUDE.md, "deezer notes.txt", possibly others). Consider using .htaccess rules or a deployment script to exclude these files.
+None currently.
 
 ## UI Conventions
 

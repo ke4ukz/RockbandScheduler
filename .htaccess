@@ -1,6 +1,6 @@
 
 # php -- BEGIN cPanel-generated handler, do not edit
-# Set the “ea-php84” package as the default “PHP” programming language.
+# Set the "ea-php84" package as the default "PHP" programming language.
 <IfModule mime_module>
   AddHandler application/x-httpd-ea-php84___lsphp .php .php8 .phtml
 </IfModule>
@@ -10,6 +10,10 @@
     DirectoryIndex default.php default.html default.htm
 </IfModule>
 
+# ------------------------------------------------------------------
+#  Disable directory listing
+# ------------------------------------------------------------------
+Options -Indexes
 
 # ------------------------------------------------------------------
 #  Deny access to any file that starts with a dot or ends with .ini
