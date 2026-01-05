@@ -66,6 +66,12 @@ token = your_secure_random_token
 
 [site]
 base_url = https://yourdomain.com/rockband
+
+[event]
+default_duration_hours = 4
+
+[theme]
+default_theme_id = 1
 ```
 
 4. Generate a secure admin token:
@@ -121,6 +127,15 @@ Four main tables:
 - **themes** - 16 pre-configured color themes
 
 UUIDs are stored as binary(16) and converted using MySQL's `UUID_TO_BIN()` and `BIN_TO_UUID()` functions.
+
+### Foreign Key Constraints
+
+The database enforces referential integrity with the following cascade rules:
+
+- **Deleting an event**: All entries for that event are automatically deleted (`ON DELETE CASCADE`)
+- **Deleting a song**: Entries referencing that song have their `song_id` set to NULL (`ON DELETE SET NULL`), preserving the performer name and slot
+- **Deleting a theme**: Blocked if any events use that theme (`ON DELETE RESTRICT`); reassign events first
+- **Updating event/song IDs**: Changes cascade to related entries automatically
 
 ## File Structure
 
@@ -226,28 +241,30 @@ All admin endpoints use POST with `admin_token` in the request body.
 
 ## External Dependencies
 
-### Bootstrap 5 (CDN)
+### [Bootstrap 5](https://getbootstrap.com/) (CDN)
 - **Used for**: UI styling and responsive layout
 - **Version**: 5.3.2 (pinned)
 - **Fallback**: Download and host locally if CDN unavailable
 
-### Bootstrap Icons (CDN)
+### [Bootstrap Icons](https://icons.getbootstrap.com/) (CDN)
 - **Used for**: All iconography
 - **Version**: 1.11.1 (pinned)
 - **Fallback**: Self-host or replace with alternative icon library
 
-### Deezer API
+### [Deezer API](https://developers.deezer.com/api)
 - **Used for**: Song search, metadata, album art, audio previews
-- **Rate limits**: 50 requests per 5 seconds
-- **Fallback**: Songs can be added manually without Deezer
+- **Rate limits**: 50 requests per 5 seconds (enforced in bulk import only; not a concern in normal use)
+- **Fallback**: Songs can be added manually without Deezer. If Deezer becomes unavailable, existing songs continue to work but lose audio previews; new songs must be entered manually with all metadata.
 
-### QR Server API
+### [QR Server API](https://goqr.me/api/)
 - **Used for**: QR code generation
 - **Fallback**: Use local PHP QR library (chillerlan/php-qrcode or endroid/qr-code)
 
 ## Timezone Handling
 
 Event times are stored and displayed as **venue local time** (no timezone conversion). Enter times as they would appear on a clock at the event location. This approach works well for in-person events where attendees are at the physical location.
+
+If an admin is managing an event remotely from a different timezone, the event may not appear as "active" in the dashboard since their computer clock differs from the venue's local time. This has no functional impact—events are not locked by time or date, and all management features remain fully accessible regardless of the displayed status.
 
 ## Security Features
 
