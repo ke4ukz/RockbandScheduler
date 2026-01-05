@@ -120,14 +120,13 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
                     </table>
                 </div>
                 <div id="loadMoreSection" class="text-center py-3" style="display: none;">
-                    <button class="btn btn-outline-primary" onclick="loadMoreSongs()">
-                        <i class="bi bi-arrow-down-circle"></i> Load More
-                    </button>
-                    <span class="text-muted ms-2" id="loadedCount"></span>
+                    <span class="text-muted" id="loadedCount"></span>
                 </div>
                 <div id="loadingMore" class="text-center py-3" style="display: none;">
-                    <span class="spinner-border spinner-border-sm"></span> Loading...
+                    <span class="spinner-border spinner-border-sm"></span> Loading more...
                 </div>
+                <!-- Sentinel element for intersection observer -->
+                <div id="loadMoreSentinel" style="height: 1px;"></div>
             </div>
         </div>
     </div>
@@ -272,6 +271,19 @@ $adminToken = $GLOBALS['config']['admin']['token'] ?? '';
                 // Clean up URL
                 window.history.replaceState({}, '', window.location.pathname);
             }
+
+            // Set up intersection observer for infinite scroll
+            const sentinel = document.getElementById('loadMoreSentinel');
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting && !isLoading && songs.length < totalSongs) {
+                        loadMoreSongs();
+                    }
+                });
+            }, {
+                rootMargin: '100px' // Start loading 100px before sentinel is visible
+            });
+            observer.observe(sentinel);
         });
 
         async function loadSongs(append = false) {
