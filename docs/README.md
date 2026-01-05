@@ -72,7 +72,13 @@ base_url = https://yourdomain.com/rockband
 openssl rand -hex 32
 ```
 
-5. Set up HTTP Basic Auth on the `/admin` directory (via .htaccess or server config)
+5. Set up HTTP Basic Auth on the `/admin` directory (see below)
+
+### Admin Directory Protection
+
+The `/admin` directory must be protected with HTTP Basic Auth. In cPanel, use **Directory Privacy** to password-protect the admin folder. This will auto-generate an `.htaccess` file with the appropriate settings.
+
+The `admin/.htaccess` file is excluded from version control (in `.gitignore`) because it contains server-specific paths.
 
 ## Configuration
 
