@@ -100,10 +100,6 @@ if (!$eventId) {
             align-items: center;
         }
 
-        .content {
-            order: -1;
-        }
-
         .title {
             font-size: 8vw;
             font-weight: 700;
@@ -151,29 +147,18 @@ if (!$eventId) {
         /* Landscape orientation adjustments */
         @media (orientation: landscape) {
             .container {
-                display: flex;
-                flex-direction: row;
+                display: grid;
+                grid-template-columns: auto 1fr;
+                grid-template-rows: auto auto;
                 align-items: center;
-                justify-content: center;
-                gap: 5vw;
+                justify-items: start;
+                gap: 2vh 5vw;
                 height: 100vh;
                 padding: 2vh;
             }
 
-            .content {
-                order: 0;
-                display: flex;
-                flex-direction: column;
-                justify-content: center;
-                text-align: left;
-            }
-
-            .title {
-                font-size: 6vh;
-                margin-bottom: 2vh;
-            }
-
             .qr-container {
+                grid-row: 1 / 3;
                 padding: 2vh;
                 border-radius: 1.5vh;
                 margin-bottom: 0;
@@ -186,8 +171,15 @@ if (!$eventId) {
                 max-height: 80vh;
             }
 
+            .title {
+                font-size: 6vh;
+                margin-bottom: 0;
+                align-self: end;
+            }
+
             .instruction {
                 font-size: 4vh;
+                align-self: start;
             }
         }
     </style>
@@ -199,6 +191,7 @@ if (!$eventId) {
     </div>
 <?php else: ?>
     <div class="container">
+        <div class="title">Scan to Sign Up</div>
         <div class="qr-container">
             <?php if ($event['qr_image']): ?>
                 <img src="data:image/png;base64,<?= $event['qr_image'] ?>" alt="QR Code to sign up">
@@ -206,10 +199,7 @@ if (!$eventId) {
                 <div class="qr-error">QR code not available</div>
             <?php endif; ?>
         </div>
-        <div class="content">
-            <div class="title">Scan to Sign Up</div>
-            <div class="instruction">Point your phone camera at the code</div>
-        </div>
+        <div class="instruction">Point your phone camera at the code</div>
     </div>
 <?php endif; ?>
 </body>
