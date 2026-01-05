@@ -32,32 +32,33 @@ $csrfToken = getCsrfToken();
     <title>Import Songs - Rockband Admin</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <script src="admin-theme.js"></script>
     <style>
         .import-row {
-            border-bottom: 1px solid #dee2e6;
+            border-bottom: 1px solid var(--bs-border-color);
             padding: 0.75rem 0;
         }
         .import-row:last-child {
             border-bottom: none;
         }
-        .import-row.success { background-color: #d1e7dd; }
-        .import-row.warning { background-color: #fff3cd; }
-        .import-row.error { background-color: #f8d7da; }
-        .import-row.pending { background-color: #f8f9fa; }
-        .import-row.skipped { background-color: #e9ecef; opacity: 0.7; }
+        .import-row.success { background-color: var(--bs-success-bg-subtle); }
+        .import-row.warning { background-color: var(--bs-warning-bg-subtle); }
+        .import-row.error { background-color: var(--bs-danger-bg-subtle); }
+        .import-row.pending { background-color: var(--bs-tertiary-bg); }
+        .import-row.skipped { background-color: var(--bs-secondary-bg); opacity: 0.7; }
         .deezer-option {
             cursor: pointer;
             padding: 0.5rem;
-            border: 1px solid #dee2e6;
+            border: 1px solid var(--bs-border-color);
             border-radius: 0.375rem;
             margin-bottom: 0.5rem;
         }
         .deezer-option:hover {
-            background-color: #f8f9fa;
+            background-color: var(--bs-tertiary-bg);
         }
         .deezer-option.selected {
-            border-color: #0d6efd;
-            background-color: #e7f1ff;
+            border-color: var(--bs-primary);
+            background-color: var(--bs-primary-bg-subtle);
         }
         .deezer-thumb {
             width: 40px;
@@ -67,15 +68,15 @@ $csrfToken = getCsrfToken();
         .progress-section {
             position: sticky;
             top: 0;
-            background: white;
+            background: var(--bs-body-bg);
             z-index: 100;
             padding: 1rem 0;
-            border-bottom: 1px solid #dee2e6;
+            border-bottom: 1px solid var(--bs-border-color);
         }
     </style>
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <nav class="navbar navbar-expand-lg bg-body-tertiary">
         <div class="container-fluid">
             <a class="navbar-brand" href="default.php">Rockband Admin</a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
@@ -99,6 +100,9 @@ $csrfToken = getCsrfToken();
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item">
                         <a class="nav-link" href="help.php" title="Help"><i class="bi bi-question-circle"></i><span class="d-lg-none ms-2">Help</span></a>
+                    </li>
+                    <li class="nav-item">
+                        <button class="btn nav-link" onclick="toggleAdminTheme()" title="Toggle theme"><i id="themeToggleIcon" class="bi bi-moon-fill"></i><span class="d-lg-none ms-2">Theme</span></button>
                     </li>
                 </ul>
             </div>

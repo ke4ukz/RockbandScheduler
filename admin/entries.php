@@ -39,6 +39,7 @@ if (!$eventId || !isValidUuid($eventId)) {
     <title>Manage Entries - Rockband Admin</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <script src="admin-theme.js"></script>
     <style>
         .slot-card {
             transition: all 0.2s;
@@ -82,7 +83,7 @@ if (!$eventId || !isValidUuid($eventId)) {
         }
         .slot-card.finished {
             opacity: 0.5;
-            background-color: #f8f9fa;
+            background-color: var(--bs-tertiary-bg);
         }
         .slot-card.finished .fw-bold {
             text-decoration: line-through;
@@ -132,7 +133,7 @@ if (!$eventId || !isValidUuid($eventId)) {
         <div class="spinner-border"></div>
     </div>
 
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <nav class="navbar navbar-expand-lg bg-body-tertiary">
         <div class="container-fluid">
             <a class="navbar-brand" href="default.php">Rockband Admin</a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
@@ -156,6 +157,9 @@ if (!$eventId || !isValidUuid($eventId)) {
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item">
                         <a class="nav-link" href="help.php" title="Help"><i class="bi bi-question-circle"></i><span class="d-lg-none ms-2">Help</span></a>
+                    </li>
+                    <li class="nav-item">
+                        <button class="btn nav-link" onclick="toggleAdminTheme()" title="Toggle theme"><i id="themeToggleIcon" class="bi bi-moon-fill"></i><span class="d-lg-none ms-2">Theme</span></button>
                     </li>
                 </ul>
             </div>

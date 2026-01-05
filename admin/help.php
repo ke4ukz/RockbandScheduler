@@ -32,6 +32,7 @@ $siteBaseUrl = $GLOBALS['config']['site']['base_url'] ?? '';
     <title>Help - Rockband Admin</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <script src="admin-theme.js"></script>
     <style>
         .toc {
             position: sticky;
@@ -61,10 +62,10 @@ $siteBaseUrl = $GLOBALS['config']['site']['base_url'] ?? '';
             border-left: 4px solid var(--bs-warning);
         }
         kbd {
-            background-color: #eee;
+            background-color: var(--bs-tertiary-bg);
             border-radius: 3px;
-            border: 1px solid #b4b4b4;
-            color: #333;
+            border: 1px solid var(--bs-border-color);
+            color: var(--bs-body-color);
             display: inline-block;
             font-size: 0.85em;
             font-weight: 700;
@@ -75,7 +76,7 @@ $siteBaseUrl = $GLOBALS['config']['site']['base_url'] ?? '';
     </style>
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <nav class="navbar navbar-expand-lg bg-body-tertiary">
         <div class="container-fluid">
             <a class="navbar-brand" href="default.php">Rockband Admin</a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
@@ -99,6 +100,9 @@ $siteBaseUrl = $GLOBALS['config']['site']['base_url'] ?? '';
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item">
                         <a class="nav-link active" href="help.php" title="Help"><i class="bi bi-question-circle"></i><span class="d-lg-none ms-2">Help</span></a>
+                    </li>
+                    <li class="nav-item">
+                        <button class="btn nav-link" onclick="toggleAdminTheme()" title="Toggle theme"><i id="themeToggleIcon" class="bi bi-moon-fill"></i><span class="d-lg-none ms-2">Theme</span></button>
                     </li>
                 </ul>
             </div>
