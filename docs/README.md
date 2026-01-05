@@ -127,31 +127,40 @@ UUIDs are stored as binary(16) and converted using MySQL's `UUID_TO_BIN()` and `
 ```
 /
 ├── admin/                      # Admin panel (HTTP Basic Auth protected)
+│   ├── .htaccess               # Auth config (gitignored, created by cPanel)
+│   ├── admin-theme.js          # Dark/light mode toggle script
 │   ├── default.php             # Dashboard with stats
-│   ├── events.php              # Event management
-│   ├── songs.php               # Song library management
 │   ├── entries.php             # Per-event entry management
+│   ├── events.php              # Event management
+│   ├── help.php                # Help documentation
 │   ├── import.php              # CSV bulk song import
 │   ├── settings.php            # Settings configuration
-│   └── help.php                # Help documentation
+│   └── songs.php               # Song library management
 ├── api/                        # JSON REST API endpoints
-│   ├── events.php              # Event CRUD (admin)
-│   ├── songs.php               # Song CRUD (admin)
-│   ├── entries.php             # Entries (mixed public/admin)
 │   ├── deezer.php              # Deezer search proxy (public)
-│   ├── themes.php              # Theme listing
-│   └── settings.php            # Settings API (admin)
-├── includes/
-│   └── helpers.php             # Shared utilities
+│   ├── entries.php             # Entries (mixed public/admin)
+│   ├── events.php              # Event CRUD (admin)
+│   ├── settings.php            # Settings API (admin)
+│   ├── songs.php               # Song CRUD (admin)
+│   └── themes.php              # Theme listing
+├── docs/                       # Documentation (blocked by .htaccess)
+│   ├── .htaccess               # Denies all web access
+│   ├── CLAUDE.md               # AI development notes
+│   ├── README.md               # Project documentation
+│   ├── config.sample.ini       # Sample config file template
+│   ├── deezer notes.txt        # Deezer API notes
+│   └── schema.sql              # Database schema
 ├── images/
 │   └── Deezer logos            # Deezer branding assets
+├── includes/
+│   └── helpers.php             # Shared utilities
+├── .htaccess                   # Directory index and security rules
 ├── config.php                  # Configuration loader
+├── copyright.php               # License/attribution page
 ├── db.php                      # Database connection
 ├── default.php                 # Public event signup page
 ├── signage.php                 # Performance queue display
-├── signup-display.php          # Full-screen QR code display
-├── schema.sql                  # Database schema
-└── .htaccess                   # URL rewriting rules
+└── signup-display.php          # Full-screen QR code display
 ```
 
 ## API Reference

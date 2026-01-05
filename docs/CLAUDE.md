@@ -29,35 +29,39 @@ A PHP/MySQL web application for managing Rock Band performance sign-ups at event
 ```
 /                           # Public web root
 ├── admin/                  # Admin panel (HTTP Basic Auth protected)
+│   ├── .htaccess           # Auth config (gitignored, created by cPanel)
+│   ├── admin-theme.js      # Dark/light mode toggle script
 │   ├── default.php         # Dashboard
-│   ├── events.php          # Event CRUD
-│   ├── songs.php           # Song library management
 │   ├── entries.php         # Per-event entry management
+│   ├── events.php          # Event CRUD
+│   ├── help.php            # Documentation
 │   ├── import.php          # CSV song import
 │   ├── settings.php        # System settings
-│   └── help.php            # Documentation
+│   └── songs.php           # Song library management
 ├── api/                    # JSON REST endpoints
+│   ├── deezer.php          # Deezer search proxy
 │   ├── entries.php         # Entry CRUD (public + admin)
 │   ├── events.php          # Event CRUD (admin only)
+│   ├── settings.php        # Settings API
 │   ├── songs.php           # Song CRUD (admin only)
-│   ├── deezer.php          # Deezer search proxy
-│   ├── themes.php          # Theme listing
-│   └── settings.php        # Settings API
+│   └── themes.php          # Theme listing
 ├── docs/                   # Documentation (blocked by .htaccess)
+│   ├── .htaccess           # Denies all web access
 │   ├── CLAUDE.md           # AI development notes
 │   ├── README.md           # Project documentation
 │   ├── config.sample.ini   # Sample config file template
 │   ├── deezer notes.txt    # Deezer API notes
 │   └── schema.sql          # Database schema
+├── images/                 # Deezer logo assets
 ├── includes/
 │   └── helpers.php         # Shared utilities (h(), jsonResponse(), etc.)
-├── images/                 # Deezer logo assets
+├── .htaccess               # Directory index and security rules
 ├── config.php              # Config loader
+├── copyright.php           # License/attribution page
 ├── db.php                  # Database connection
 ├── default.php             # Public signup page
 ├── signage.php             # Queue display for TVs
-├── signup-display.php      # Full-screen QR display
-└── copyright.php           # License/attribution page
+└── signup-display.php      # Full-screen QR display
 ```
 
 ## Key Patterns
