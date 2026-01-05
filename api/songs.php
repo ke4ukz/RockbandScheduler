@@ -214,11 +214,20 @@ function createSong($db, $data) {
     if (!empty($data['album_art_url'])) {
         $albumArt = fetchImageAsBlob($data['album_art_url']);
     } elseif (!empty($data['album_art_base64'])) {
-        // Decode base64 album art (from manual upload)
-        $albumArt = base64_decode($data['album_art_base64']);
-        if ($albumArt === false) {
-            $albumArt = null;
+        // Decode and validate base64 album art (from manual upload)
+        $decoded = base64_decode($data['album_art_base64'], true);
+        if ($decoded === false) {
+            jsonError('Invalid base64 encoding for album art', 400);
         }
+        // Validate it's actually an image
+        if (validateImageData($decoded) === null) {
+            jsonError('Invalid image data. Allowed types: JPEG, PNG, GIF, WebP', 400);
+        }
+        // Check size limit (64KB for BLOB)
+        if (strlen($decoded) > 65535) {
+            jsonError('Album art too large (max 64KB)', 400);
+        }
+        $albumArt = $decoded;
     }
 
     $stmt = $db->prepare('
@@ -294,6 +303,33 @@ function deleteSong($db, $songId) {
     jsonResponse(['success' => true]);
 }
 
+/**
+ * Validate that data is an actual image
+ * Returns the MIME type if valid, or null if not a valid image
+ */
+function validateImageData($imageData) {
+    if (empty($imageData)) {
+        return null;
+    }
+
+    // Check MIME type using magic bytes
+    $finfo = new finfo(FILEINFO_MIME_TYPE);
+    $mimeType = $finfo->buffer($imageData);
+
+    $allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    if (!in_array($mimeType, $allowedTypes)) {
+        return null;
+    }
+
+    // Verify it's actually parseable as an image
+    $imageInfo = @getimagesizefromstring($imageData);
+    if ($imageInfo === false) {
+        return null;
+    }
+
+    return $mimeType;
+}
+
 function fetchImageAsBlob($url, $maxSize = 65535) {
     // Try cURL first, fallback to file_get_contents
     if (function_exists('curl_init')) {
@@ -324,10 +360,9 @@ function fetchImageAsBlob($url, $maxSize = 65535) {
         return null;
     }
 
-    // Verify it's actually an image
-    $finfo = new finfo(FILEINFO_MIME_TYPE);
-    $mimeType = $finfo->buffer($imageData);
-    if (strpos($mimeType, 'image/') !== 0) {
+    // Verify it's actually a valid image
+    $mimeType = validateImageData($imageData);
+    if ($mimeType === null) {
         return null;
     }
 

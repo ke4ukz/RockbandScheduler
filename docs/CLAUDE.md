@@ -172,7 +172,7 @@ The site is deployed via GitHub and cPanel's Git Version Control. To push update
 
 **Medium Priority:**
 - [ ] **SSRF in album art fetching** (`api/songs.php:297-346`) - `fetchImageAsBlob()` accepts user-provided URLs without blocking internal/private IP ranges. An attacker could probe internal network services. **Fix**: Validate URL scheme is http/https and block private IPs (10.x, 172.16-31.x, 192.168.x, 169.254.x, localhost).
-- [ ] **Base64 album art not validated** (`api/songs.php:216-222`) - Manual base64 uploads aren't checked to be actual images before storing. **Fix**: Apply same MIME type validation as `fetchImageAsBlob()`.
+- [x] **Base64 album art not validated** - Added `validateImageData()` helper that checks MIME type via magic bytes and verifies image is parseable. Applied to both base64 uploads and URL fetches. Rejects non-image data with clear error message.
 
 **Low Priority:**
 - [ ] **Song selection count not decremented** - When an entry's song is changed via admin edit, the new song's `selection_count` is incremented but the old song's count is not decremented. Stats may be slightly inflated over time.
