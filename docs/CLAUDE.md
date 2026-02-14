@@ -195,6 +195,14 @@ The site is deployed via GitHub and cPanel's Git Version Control. To push update
 - Icons from Bootstrap Icons library
 - Responsive breakpoints via Bootstrap grid
 
+## Documentation Sync
+
+The user guide content exists in two places that must be kept in sync:
+- **`docs/README.md`** - Standalone markdown documentation (read by developers/users browsing the repo)
+- **`admin/help.php`** - In-app help page (read by admins using the application)
+
+When updating user-facing documentation (managing songs, events, entries, display modes, settings, tips, etc.) in either file, update the other to match.
+
 ## License
 
 GPL v3 - All source files have license header comments

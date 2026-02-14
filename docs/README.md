@@ -42,6 +42,163 @@ A web application for managing Rock Band performance sign-ups at events. Users s
 - **Signup Display**: Full-screen QR code for TV/projector display (hidden access via 3-second press on event title), responsive to screen orientation and size
 - **Signage**: Performance queue display showing current and upcoming performers
 
+## User Guide: Public Signup
+
+The public signup page is the attendee-facing side of the application. Users reach it by scanning a QR code displayed at the event or by following a direct link.
+
+### Signing Up
+
+The signup process has two steps:
+
+1. **Choose a song** - Users search or scroll through the song library and tap a song to select it. Songs with Deezer data include a play button for a 30-second audio preview. After selecting a song, tap "Next" to continue.
+2. **Enter your name** - Users type their performer name and tap "Sign Up" to confirm.
+
+After signing up, a confirmation screen shows the assigned slot number (e.g., "#3"). Users can then sign up another person if needed.
+
+### Slot Availability
+
+The signup page shows a live counter (e.g., "3 of 10 spots filled") that updates automatically every few seconds. When all slots are full, the signup form is replaced with an "All spots are filled!" message. If a slot opens up (because an admin cleared an entry or increased the slot count), the signup form reappears automatically without the user needing to refresh.
+
+### Hidden Shortcut: Signup Display
+
+Pressing and holding the event title at the top of the signup page for 3 seconds opens the full-screen QR code display. This provides a quick way to switch to the TV-friendly view without a visible link that might confuse attendees.
+
+## Admin Guide
+
+The admin panel is accessed at `/admin/` and is protected by HTTP Basic Auth. After logging in, you'll see a navigation bar with links to the Dashboard, Songs, Events, and Settings pages.
+
+### Getting Started
+
+A typical setup workflow is:
+
+1. **Build your song library** - Add the songs available in your Rock Band game
+2. **Create an event** - Set the name, time, location, and number of performance slots
+3. **Display the QR code** - Show the event's QR code on a TV or monitor so attendees can scan and sign up
+4. **Manage the lineup** - Use the entries page to track performances, reorder the queue, and mark slots as finished
+
+### Dashboard
+
+The dashboard shows at-a-glance stats: total songs in the library, number of upcoming events, and any currently active events. Active events link directly to their entries page for quick access. The dashboard also displays song statistics including most/least popular songs, duration extremes, and selection activity.
+
+### Managing the Song Library
+
+The **Songs** page is where you maintain the list of songs users can choose from during signup.
+
+**Adding songs via Deezer search (recommended):**
+Click "Add Song", then use the Deezer search box at the top of the modal. Search for a song, click a result, and all fields (title, artist, album, year, duration, album art) are filled in automatically. Click "Save Song" to add it to the library.
+
+**Adding songs manually:**
+If a song isn't available on Deezer, fill in the form fields directly without using the Deezer search. Title, artist, album, and year are required.
+
+**Bulk import from CSV:**
+Click "Import CSV" to upload a CSV file with `Song` (or `Title`) and `Artist` columns. The import tool automatically searches Deezer for each song:
+- **Matched** songs (green) are ready to import with full metadata.
+- **Need review** songs (yellow) found multiple possible matches - select the correct one from the options shown.
+- **Not found** songs (red) can be retried with a different search query, entered manually, or skipped.
+
+The import page lets you resolve all issues before committing anything to the database.
+
+**Editing and deleting songs:**
+Use the pencil icon to edit a song's details or the trash icon to delete it. Deleting a song that is referenced by existing event entries will clear the song reference from those entries but preserve the performer name and slot.
+
+**Audio previews:**
+Songs added via Deezer have a play button for 30-second audio previews. This is available on both the Songs page and the Entries page.
+
+### Managing Events
+
+The **Events** page displays events organized by status: Active (happening now), Upcoming, and Past. Past events are hidden by default and can be loaded on demand.
+
+**Creating an event:**
+Click "Create Event" and fill in:
+- **Event Name** - A descriptive name (e.g., "Friday Night Rock Band")
+- **Location** - Optional venue name or room number
+- **Start/End Time** - Enter times as they would appear on a clock at the venue (no timezone conversion is applied)
+- **Performance Slots** - How many signups to allow (1-255)
+- **Color Theme** - Choose from 16 color schemes (8 dark, 8 light) that style the public signup page
+
+A QR code is generated automatically when the event is created. You can view it from the event detail modal, and the signup URL can be copied to share directly.
+
+**Editing an event:**
+Click the "Edit" button on any event card to change its details. Adjusting the slot count has immediate effects:
+- **Increasing slots** makes new slots available for signups right away.
+- **Decreasing slots** permanently deletes any entries in positions beyond the new limit (e.g., reducing from 20 to 15 deletes entries in slots 16-20).
+
+**Deleting an event:**
+Deleting an event permanently removes it and all of its entries. A confirmation dialog warns about this before proceeding.
+
+**Event timing:**
+Events are accessible anytime someone has the QR code or URL - there is no strict time-based lockout. The start/end times are primarily for your organizational reference and for sorting events by status on the admin page.
+
+### Managing Entries (The Performance Lineup)
+
+Click "Manage" on any event card to open the entries page, which shows all performance slots for that event.
+
+**Viewing the lineup:**
+Each slot shows its number, the performer's name, their selected song with album art, and action buttons. Empty slots display an "Add" button. The page automatically refreshes every 5 seconds to show new signups as they come in; you can also click the "Refresh" button manually.
+
+**Adding an entry manually:**
+Click "Add" on any empty slot to open the entry editor. Enter a performer name, optionally select a song from the library, and save.
+
+**Editing an entry:**
+Click the pencil icon on a filled slot to change the performer name or song selection.
+
+**Reordering entries:**
+Use the up/down arrow buttons on each entry to swap it with the adjacent slot. This is useful for accommodating schedule changes.
+
+**Marking entries as finished:**
+Click the circle icon next to an entry to mark it as finished. Finished entries are visually grayed out with a strikethrough on the performer name, and their reorder/edit buttons are hidden. Click the check icon again to unmark.
+
+**Clearing entries:**
+The "Clear" dropdown in the card header provides two options:
+- **Clear Unfinished** - Removes all entries not yet marked as finished (useful for resetting between rounds)
+- **Clear All Entries** - Removes every entry for the event
+
+### Display Modes
+
+Two special pages are designed for TVs and large screens at the event:
+
+**Signup Display** (`signup-display.php?eventid=...`):
+A full-screen view showing only the event's QR code with scanning instructions. The layout adapts to the screen's orientation and size. This is ideal for a TV near the entrance so attendees can easily scan and sign up. Access it from the event detail modal in admin, or by pressing and holding the event title on the public signup page for 3 seconds.
+
+**Signage Display** (`signage.php?eventid=...`):
+Shows the current performer prominently on the left (with album art, song title, and artist) and an "Up Next" queue of upcoming performers on the right. This page polls for updates every 3 seconds and includes a live clock. When all performances are finished, it displays a "That's a wrap!" message. Ideal for a screen near the performance area.
+
+For the best experience, use a browser in full-screen mode (F11 on most browsers).
+
+### Settings
+
+The **Settings** page provides system-wide configuration:
+
+**Event Defaults:**
+- **Default Event Duration** - Sets how many hours after the start time the end time defaults to when creating a new event (1-24 hours).
+
+**Default Theme:**
+- **Default Theme** - Which color theme is pre-selected when creating new events. A preview swatch shows the selected theme's gradient and accent color.
+
+**Name Content Filter (optional):**
+If Sightengine API credentials are configured, this section appears with controls for filtering inappropriate performer names during public signup. Without credentials, instructions for setting up Sightengine are shown instead.
+
+Profanity filters have four sensitivity levels (Off, Low, Medium, High) across five categories: sexual language, discriminatory language, insults, other inappropriate language, and symbol substitution. Additional on/off toggles are available for extremism, violence/self-harm, and drug references.
+
+The content filter uses a fail-open design: if the Sightengine API is unavailable, signups proceed without filtering rather than blocking legitimate users.
+
+**Admin Theme Toggle:**
+The sun/moon icon in the navigation bar toggles between dark and light mode for the admin panel. This preference is saved per-browser in localStorage and is independent of the public-facing event themes.
+
+### Tips for Running an Event
+
+**Before the event:**
+- Build your song library ahead of time - it's easier without the pressure of a live event.
+- Create the event and test the QR code from a phone to make sure everything works.
+- Set up your display screen with the signup display page in full-screen mode.
+
+**During the event:**
+- Keep the entries page open on a phone or tablet to manage the lineup on the go.
+- Mark performances as finished as they complete to track progress through the queue.
+- Use reordering if someone needs to go earlier or later in the lineup.
+- If you run out of slots, edit the event to increase the slot count - new slots become available immediately.
+- Use "Clear Unfinished" between rounds to reset for a new set of signups.
+
 ## Requirements
 
 - PHP 7.4+
