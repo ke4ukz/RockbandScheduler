@@ -195,7 +195,11 @@ function listEntries($db, $eventId, $isAdmin) {
             ORDER BY artist, title
             LIMIT ? OFFSET ?
         ');
-        $stmt->execute([$searchPattern, $searchPattern, $songsLimit, $songsOffset]);
+        $stmt->bindValue(1, $searchPattern, PDO::PARAM_STR);
+        $stmt->bindValue(2, $searchPattern, PDO::PARAM_STR);
+        $stmt->bindValue(3, $songsLimit, PDO::PARAM_INT);
+        $stmt->bindValue(4, $songsOffset, PDO::PARAM_INT);
+        $stmt->execute();
     } else {
         $stmt = $db->prepare('
             SELECT song_id, artist, title, deezer_id,
@@ -204,7 +208,9 @@ function listEntries($db, $eventId, $isAdmin) {
             ORDER BY artist, title
             LIMIT ? OFFSET ?
         ');
-        $stmt->execute([$songsLimit, $songsOffset]);
+        $stmt->bindValue(1, $songsLimit, PDO::PARAM_INT);
+        $stmt->bindValue(2, $songsOffset, PDO::PARAM_INT);
+        $stmt->execute();
     }
     $songs = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
