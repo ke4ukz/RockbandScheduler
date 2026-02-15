@@ -653,7 +653,7 @@ $deezerLogo = $isLightText ? 'images/Vertical-mw-rgb.svg' : 'images/Vertical-mb-
                 <div class="song-info" id="successSongInfo">-</div>
 
                 <button class="btn-primary-action mt-4" id="signupAgainBtn">
-                    Sign Up Another Person
+                    Return to Song Selection
                 </button>
             </div>
         </div>
