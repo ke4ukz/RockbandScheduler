@@ -439,6 +439,19 @@ All admin endpoints use POST with `admin_token` in the request body.
 - **Rate limits**: Free tier allows 2,000 requests/month (max 500/day); paid plans available for higher volume
 - **Fallback**: Fail-open design - if Sightengine is unavailable or returns an error, signups proceed without filtering. Content moderation is a convenience feature, not a hard requirement. If the service goes offline or credentials expire, the only impact is that inappropriate names won't be blocked.
 
+## Troubleshooting
+
+### PHP Error Log
+
+The application logs errors via PHP's `error_log()`. A `.user.ini` file in the project root configures PHP to write logs to `~/logs/rockband_error.log` (outside the web root). If this file is missing or the configured path is not writable, PHP falls back to the default location — on shared hosting (e.g., cPanel) this is often the application directory itself (e.g., `api/error_log` or `error_log` in the project root) rather than the standard Apache location.
+
+Log messages are prefixed by subsystem:
+- `Entries API error:` - Entry operations
+- `Events API error:` - Event operations
+- `Songs API error:` - Song operations
+- `Database connection error:` - Startup connection failure
+- `Sightengine API error:` - Content filter issues
+
 ## Timezone Handling
 
 Event times are stored and displayed as **venue local time** (no timezone conversion). Enter times as they would appear on a clock at the event location. This approach works well for in-person events where attendees are at the physical location.
