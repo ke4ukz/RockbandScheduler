@@ -18,7 +18,11 @@
  *
  * All requests are POST with JSON body containing admin_token and action:
  *
- * POST /api/songs.php
+ * PUBLIC (no auth):
+ *   GET  /api/songs.php                                            - List songs (paginated)
+ *        Query params: search, limit, offset
+ *
+ * ADMIN (POST with admin_token in body):
  *   { "admin_token": "...", "action": "list" }                    - List all songs
  *   { "admin_token": "...", "action": "get", "song_id": 123 }     - Get single song
  *   { "admin_token": "...", "action": "create", "title": "...", ... } - Create song
@@ -32,15 +36,74 @@ require_once __DIR__ . '/../includes/helpers.php';
 
 header('Content-Type: application/json');
 
-// All songs endpoints require admin auth
-requireAdminAuth();
-
 $db = $GLOBALS['db'];
 if (!$db) {
     jsonError('Database connection failed', 500);
 }
 
 $method = $_SERVER['REQUEST_METHOD'];
+
+// Public GET: paginated song list for song browser
+if ($method === 'GET') {
+    $limit = max(1, min(500, (int)($_GET['limit'] ?? 500)));
+    $offset = max(0, (int)($_GET['offset'] ?? 0));
+    $search = trim($_GET['search'] ?? '');
+
+    try {
+        if ($search) {
+            $pattern = '%' . $search . '%';
+            $countStmt = $db->prepare('SELECT COUNT(*) FROM songs WHERE artist LIKE ? OR title LIKE ?');
+            $countStmt->execute([$pattern, $pattern]);
+            $total = (int)$countStmt->fetchColumn();
+
+            $stmt = $db->prepare('
+                SELECT song_id, artist, title, deezer_id,
+                       TO_BASE64(album_art) as album_art
+                FROM songs
+                WHERE artist LIKE ? OR title LIKE ?
+                ORDER BY artist, title
+                LIMIT ? OFFSET ?
+            ');
+            $stmt->bindValue(1, $pattern, PDO::PARAM_STR);
+            $stmt->bindValue(2, $pattern, PDO::PARAM_STR);
+            $stmt->bindValue(3, $limit, PDO::PARAM_INT);
+            $stmt->bindValue(4, $offset, PDO::PARAM_INT);
+            $stmt->execute();
+        } else {
+            $countStmt = $db->query('SELECT COUNT(*) FROM songs');
+            $total = (int)$countStmt->fetchColumn();
+
+            $stmt = $db->prepare('
+                SELECT song_id, artist, title, deezer_id,
+                       TO_BASE64(album_art) as album_art
+                FROM songs
+                ORDER BY artist, title
+                LIMIT ? OFFSET ?
+            ');
+            $stmt->bindValue(1, $limit, PDO::PARAM_INT);
+            $stmt->bindValue(2, $offset, PDO::PARAM_INT);
+            $stmt->execute();
+        }
+
+        $songs = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        foreach ($songs as &$song) {
+            $song['song_id'] = (int)$song['song_id'];
+        }
+
+        jsonResponse([
+            'songs' => $songs,
+            'total' => $total,
+            'limit' => $limit,
+            'offset' => $offset
+        ]);
+    } catch (PDOException $e) {
+        error_log('Songs API error: ' . $e->getMessage());
+        jsonError('Database error', 500);
+    }
+}
+
+// All POST endpoints require admin auth
+requireAdminAuth();
 
 // Only accept POST
 if ($method !== 'POST') {

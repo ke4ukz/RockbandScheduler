@@ -23,15 +23,42 @@ require_once 'includes/helpers.php';
 
 $db = $GLOBALS['db'];
 $eventId = $_GET['eventid'] ?? null;
+$viewMode = $_GET['view'] ?? null; // 'songs' for song browser
 $error = null;
 $event = null;
+$activeEvents = [];
+$showUpcoming = $GLOBALS['config']['landing']['show_upcoming_events'] ?? false;
 
 // Get default theme ID from config
 $defaultThemeId = $GLOBALS['config']['theme']['default_theme_id'] ?? null;
 
-// Validate event ID and check if event is active
-if (!$eventId) {
-    $error = 'No event specified. Please scan a valid QR code.';
+// Song browser mode (no event context)
+if (!$eventId && $viewMode === 'songs') {
+    // Handled in the HTML section below — no event lookup needed
+} elseif (!$eventId) {
+    // Landing page: query for active (and optionally upcoming) events
+    if ($db) {
+        try {
+            // Fetch all non-ended events; active vs upcoming is determined
+            // client-side via JavaScript using the browser's local clock
+            // (same approach as the admin events page)
+            $stmt = $db->query('
+                SELECT BIN_TO_UUID(e.event_id) as event_id, e.name, e.location,
+                       e.start_time, e.end_time, e.num_entries, e.allow_upcoming_signup,
+                       t.primary_color, t.bg_gradient_start, t.bg_gradient_end, t.text_color
+                FROM events e
+                LEFT JOIN themes t ON e.theme_id = t.theme_id
+                WHERE e.end_time >= NOW()
+                ORDER BY e.start_time ASC
+            ');
+            $activeEvents = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log('Active events query error: ' . $e->getMessage());
+        }
+    }
+    if (empty($activeEvents)) {
+        $error = 'No active events. Please scan a valid QR code.';
+    }
 } elseif (!isValidUuid($eventId)) {
     $error = 'Invalid event link. Please scan a valid QR code.';
 } else {
@@ -549,16 +576,641 @@ if (!$eventId) {
         .signup-step.active {
             display: block;
         }
+
+        /* Events listing page */
+        .events-page {
+            min-height: 100vh;
+            padding: 2rem 1rem;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .events-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .events-header i {
+            font-size: 3rem;
+            opacity: 0.7;
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+
+        .events-header h1 {
+            font-size: 1.5rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .events-header p {
+            opacity: 0.7;
+            font-size: 0.95rem;
+        }
+
+        .events-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .event-card-link {
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .event-card {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-left: 4px solid var(--primary-color);
+            border-radius: 10px;
+            padding: 1rem 1.25rem;
+            transition: background 0.2s, transform 0.1s;
+        }
+
+        .event-card-link:hover .event-card {
+            background: rgba(255, 255, 255, 0.14);
+            transform: translateY(-1px);
+        }
+
+        .event-card-link:active .event-card {
+            transform: translateY(0);
+        }
+
+        .event-card.upcoming-info {
+            opacity: 0.7;
+        }
+
+        .event-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 0.75rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .event-name {
+            font-weight: 600;
+            font-size: 1.1rem;
+            line-height: 1.3;
+        }
+
+        .badge-active {
+            flex-shrink: 0;
+            background: #198754;
+            color: #fff;
+            font-size: 0.7rem;
+            font-weight: 600;
+            padding: 0.2rem 0.6rem;
+            border-radius: 50px;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+
+        .badge-upcoming {
+            flex-shrink: 0;
+            background: rgba(13, 110, 253, 0.3);
+            color: #8bb8fd;
+            font-size: 0.7rem;
+            font-weight: 600;
+            padding: 0.2rem 0.6rem;
+            border-radius: 50px;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+
+        .event-detail {
+            font-size: 0.85rem;
+            opacity: 0.75;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .event-detail:last-child {
+            margin-bottom: 0;
+        }
+
+        .browse-songs-btn {
+            display: block;
+            text-align: center;
+            margin-top: 1.5rem;
+            padding: 0.75rem 1.5rem;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            color: inherit;
+            text-decoration: none;
+            font-size: 0.95rem;
+            transition: background 0.2s;
+        }
+
+        .browse-songs-btn:hover {
+            background: rgba(255, 255, 255, 0.14);
+            color: inherit;
+        }
+
+        .trademark-notice {
+            text-align: center;
+            margin-top: 2rem;
+            padding: 0 1rem;
+            font-size: 0.75rem;
+            opacity: 0.5;
+            line-height: 1.4;
+        }
+
+        /* Song browser page */
+        .song-browser {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 1rem;
+        }
+
+        .song-browser-header {
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+
+        .song-browser-header h1 {
+            font-size: 1.25rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .song-browser-header p {
+            opacity: 0.7;
+            font-size: 0.9rem;
+        }
+
+        .song-browser-back {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            color: inherit;
+            opacity: 0.7;
+            text-decoration: none;
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+        }
+
+        .song-browser-back:hover {
+            opacity: 1;
+            color: inherit;
+        }
     </style>
 </head>
 <body>
-<?php if ($error): ?>
+<?php if ($viewMode === 'songs' && !$event): ?>
+    <!-- Song Browser (standalone or event-linked) -->
+    <div class="song-browser">
+        <a href="./" class="song-browser-back"><i class="bi bi-arrow-left"></i> Back to events</a>
+        <div class="song-browser-header">
+            <i class="bi bi-music-note-beamed" style="font-size: 2rem; opacity: 0.7;"></i>
+            <h1>Song Library</h1>
+            <p>Browse available songs</p>
+        </div>
+        <input type="text" class="form-control mb-3" id="browserSearch" placeholder="Search songs...">
+        <div class="song-list" id="browserResults">
+            <div class="text-center py-3"><div class="spinner-border spinner-border-sm"></div> Loading...</div>
+        </div>
+    </div>
+    <a href="copyright.php" class="copyright-link">&copy; 2026</a>
+    <script>
+        const API_BASE = 'api';
+        let browserSongs = [];
+        let browserDisplayed = 0;
+        let browserFiltered = [];
+        let browserLoading = false;
+        let currentAudio = null;
+        let currentDeezerId = null;
+        const SONGS_PER_BATCH = 20;
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            document.getElementById('browserSearch').addEventListener('input', filterBrowserSongs);
+            window.addEventListener('scroll', handleBrowserScroll);
+            await loadBrowserSongs();
+        });
+
+        async function loadBrowserSongs() {
+            try {
+                const response = await fetch(`${API_BASE}/songs.php`);
+                const data = await response.json();
+                if (data.error) throw new Error(data.error);
+                browserSongs = data.songs || [];
+                renderBrowserList(browserSongs);
+            } catch (err) {
+                document.getElementById('browserResults').innerHTML =
+                    '<div class="text-center py-3 text-danger">Failed to load songs.</div>';
+            }
+        }
+
+        function renderBrowserItem(song) {
+            return `
+                <div class="song-item" data-song-id="${song.song_id}">
+                    ${song.album_art
+                        ? `<img src="data:image/jpeg;base64,${song.album_art}" class="song-art">`
+                        : '<div class="song-art bg-secondary"></div>'}
+                    <div class="song-details">
+                        <div class="song-title">${escapeHtml(song.title)}</div>
+                        <div class="song-artist">${escapeHtml(song.artist)}</div>
+                    </div>
+                    ${song.deezer_id ? `
+                        <i class="bi bi-play-circle preview-btn"
+                           onclick="togglePreview(this)"
+                           data-deezer-id="${song.deezer_id}"></i>
+                    ` : ''}
+                </div>
+            `;
+        }
+
+        function renderBrowserList(songs) {
+            const container = document.getElementById('browserResults');
+            browserDisplayed = 0;
+            browserFiltered = songs;
+
+            if (songs.length === 0) {
+                const query = document.getElementById('browserSearch').value;
+                container.innerHTML = query
+                    ? '<div class="text-center py-3" style="opacity:0.6">No matching songs</div>'
+                    : '<div class="text-center py-3" style="opacity:0.6">No songs available</div>';
+                return;
+            }
+
+            const batch = songs.slice(0, SONGS_PER_BATCH);
+            let html = batch.map(s => renderBrowserItem(s)).join('');
+            browserDisplayed = batch.length;
+            if (browserDisplayed < songs.length) {
+                html += '<div class="song-list-loading"><div class="spinner-border spinner-border-sm"></div> Scroll for more songs...</div>';
+            }
+            container.innerHTML = html;
+        }
+
+        function filterBrowserSongs() {
+            const query = document.getElementById('browserSearch').value.toLowerCase();
+            if (!query) { renderBrowserList(browserSongs); return; }
+            const filtered = browserSongs.filter(s =>
+                s.title.toLowerCase().includes(query) || s.artist.toLowerCase().includes(query)
+            );
+            renderBrowserList(filtered);
+        }
+
+        function handleBrowserScroll() {
+            const nearBottom = (window.innerHeight + window.scrollY) >= (document.body.offsetHeight - 200);
+            if (nearBottom && !browserLoading && browserDisplayed < browserFiltered.length) {
+                browserLoading = true;
+                const container = document.getElementById('browserResults');
+                const loadingEl = container.querySelector('.song-list-loading');
+                const batch = browserFiltered.slice(browserDisplayed, browserDisplayed + SONGS_PER_BATCH);
+                const html = batch.map(s => renderBrowserItem(s)).join('');
+                if (loadingEl) loadingEl.remove();
+                container.insertAdjacentHTML('beforeend', html);
+                browserDisplayed += batch.length;
+                if (browserDisplayed < browserFiltered.length) {
+                    container.insertAdjacentHTML('beforeend',
+                        '<div class="song-list-loading"><div class="spinner-border spinner-border-sm"></div> Loading more songs...</div>');
+                }
+                browserLoading = false;
+            }
+        }
+
+        async function togglePreview(el) {
+            const deezerId = el.dataset.deezerId;
+            if (currentAudio) {
+                currentAudio.pause();
+                document.querySelectorAll('.preview-btn').forEach(btn => {
+                    btn.classList.remove('playing', 'loading', 'error');
+                    btn.classList.replace('bi-stop-circle', 'bi-play-circle');
+                    btn.classList.replace('bi-arrow-repeat', 'bi-play-circle');
+                    btn.classList.replace('bi-exclamation-triangle', 'bi-play-circle');
+                });
+                if (currentDeezerId === deezerId) { currentAudio = null; currentDeezerId = null; return; }
+            }
+            el.classList.add('loading');
+            el.classList.replace('bi-play-circle', 'bi-arrow-repeat');
+            try {
+                const response = await fetch(`${API_BASE}/deezer.php?track_id=${deezerId}`);
+                const data = await response.json();
+                if (data.error || !data.preview) throw new Error(data.error || 'No preview');
+                currentAudio = new Audio(data.preview);
+                currentDeezerId = deezerId;
+                el.classList.remove('loading');
+                el.classList.add('playing');
+                el.classList.replace('bi-arrow-repeat', 'bi-stop-circle');
+                await currentAudio.play();
+                currentAudio.addEventListener('ended', () => {
+                    el.classList.remove('playing');
+                    el.classList.replace('bi-stop-circle', 'bi-play-circle');
+                    currentAudio = null; currentDeezerId = null;
+                });
+                currentAudio.addEventListener('error', () => showPreviewError(el));
+            } catch (err) { showPreviewError(el); }
+        }
+
+        function showPreviewError(el) {
+            el.classList.remove('playing', 'loading');
+            el.classList.add('error');
+            el.classList.replace('bi-arrow-repeat', 'bi-exclamation-triangle');
+            el.classList.replace('bi-stop-circle', 'bi-exclamation-triangle');
+            currentAudio = null; currentDeezerId = null;
+            setTimeout(() => { el.classList.remove('error'); el.classList.replace('bi-exclamation-triangle', 'bi-play-circle'); }, 2000);
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+<?php elseif (!empty($activeEvents)): ?>
+    <!-- Events Listing -->
+    <div class="events-page">
+        <div class="events-header">
+            <i class="bi bi-music-note-beamed"></i>
+            <h1>Rockband Scheduler</h1>
+            <p>Select an event to sign up</p>
+        </div>
+        <div class="events-list">
+            <?php foreach ($activeEvents as $ev):
+                $accentColor = $ev['primary_color'] ?? '#6f42c1';
+                $signupHref = '?eventid=' . h($ev['event_id']);
+                $browseHref = '?eventid=' . h($ev['event_id']) . '&view=songs';
+                $allowEarly = !empty($ev['allow_upcoming_signup']);
+            ?>
+            <a href="<?= $signupHref ?>" class="event-card-link"
+               data-start="<?= h($ev['start_time']) ?>"
+               data-end="<?= h($ev['end_time']) ?>"
+               data-allow-early="<?= $allowEarly ? '1' : '0' ?>"
+               data-signup-href="<?= $signupHref ?>"
+               data-browse-href="<?= $browseHref ?>"
+               data-show-upcoming="<?= $showUpcoming ? '1' : '0' ?>">
+                <div class="event-card" style="border-left-color: <?= h($accentColor) ?>">
+                    <div class="event-card-header">
+                        <span class="event-name"><?= h($ev['name']) ?></span>
+                        <span class="badge-active">Live Now</span>
+                    </div>
+                    <?php if ($ev['location']): ?>
+                        <div class="event-detail">
+                            <i class="bi bi-geo-alt"></i> <?= h($ev['location']) ?>
+                        </div>
+                    <?php endif; ?>
+                    <div class="event-detail event-time-detail">
+                        <i class="bi bi-clock"></i>
+                        <span class="event-time-text"></span>
+                    </div>
+                    <div class="event-detail event-signup-status" style="display: none;"></div>
+                </div>
+            </a>
+            <?php endforeach; ?>
+        </div>
+
+        <a href="?view=songs" class="browse-songs-btn">
+            <i class="bi bi-music-note-list"></i> Browse Song Library
+        </a>
+
+        <div class="trademark-notice">
+            Rock Band&trade; is a trademark of Harmonix Music Systems, Inc. This application is not affiliated with or endorsed by Harmonix.
+        </div>
+    </div>
+    <a href="copyright.php" class="copyright-link">&copy; 2026</a>
+    <script>
+    // Determine active/upcoming status using browser's local clock
+    // (same approach as admin events page — avoids server timezone mismatches)
+    document.querySelectorAll('.event-card-link[data-start]').forEach(link => {
+        const now = new Date();
+        const start = new Date(link.dataset.start);
+        const end = new Date(link.dataset.end);
+        const isActive = now >= start && now <= end;
+        const allowEarly = link.dataset.allowEarly === '1';
+        const showUpcoming = link.dataset.showUpcoming === '1';
+        const card = link.querySelector('.event-card');
+        const badge = link.querySelector('.badge-active, .badge-upcoming');
+
+        // Hide upcoming events if show_upcoming is off
+        if (!isActive && !showUpcoming) {
+            link.style.display = 'none';
+            return;
+        }
+
+        // Set badge
+        if (isActive) {
+            badge.className = 'badge-active';
+            badge.textContent = 'Live Now';
+        } else {
+            badge.className = 'badge-upcoming';
+            badge.textContent = 'Upcoming';
+        }
+
+        // Set link, card style, and signup status for upcoming events
+        const statusEl = link.querySelector('.event-signup-status');
+        if (isActive) {
+            link.href = link.dataset.signupHref;
+        } else if (allowEarly) {
+            link.href = link.dataset.signupHref;
+            statusEl.innerHTML = '<i class="bi bi-pencil-square"></i> Early signup open';
+            statusEl.style.display = '';
+        } else {
+            link.href = link.dataset.browseHref;
+            card.classList.add('upcoming-info');
+            statusEl.innerHTML = '<i class="bi bi-eye"></i> Browse songs only';
+            statusEl.style.display = '';
+        }
+
+        // Format time display using browser locale
+        const startDate = start.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+        const startTime = start.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+        const endTime = end.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+        const today = new Date();
+        const isToday = start.getFullYear() === today.getFullYear()
+            && start.getMonth() === today.getMonth()
+            && start.getDate() === today.getDate();
+
+        const timeText = link.querySelector('.event-time-text');
+        timeText.textContent = isToday
+            ? `Today, ${startTime} \u2013 ${endTime}`
+            : `${startDate}, ${startTime} \u2013 ${endTime}`;
+    });
+
+    // If all cards are hidden (no active events and show_upcoming off), show the error state
+    const visibleCards = document.querySelectorAll('.event-card-link[data-start]:not([style*="display: none"])');
+    if (visibleCards.length === 0) {
+        const eventsPage = document.querySelector('.events-page');
+        if (eventsPage) {
+            eventsPage.innerHTML = '<div class="events-header"><i class="bi bi-exclamation-circle"></i><h1>Oops!</h1><p>No active events. Please scan a valid QR code.</p></div>';
+        }
+    }
+    </script>
+<?php elseif ($error): ?>
     <div class="error-page">
         <i class="bi bi-exclamation-circle"></i>
         <h1>Oops!</h1>
         <p><?= h($error) ?></p>
     </div>
+    <div class="trademark-notice">
+        Rock Band&trade; is a trademark of Harmonix Music Systems, Inc. This application is not affiliated with or endorsed by Harmonix.
+    </div>
     <a href="copyright.php" class="copyright-link">&copy; 2026</a>
+<?php elseif ($viewMode === 'songs' && $event): ?>
+    <!-- Song Browser (event-linked) -->
+    <div class="song-browser">
+        <a href="./" class="song-browser-back"><i class="bi bi-arrow-left"></i> Back to events</a>
+        <div class="song-browser-header">
+            <i class="bi bi-music-note-beamed" style="font-size: 2rem; opacity: 0.7;"></i>
+            <h1><?= h($event['name']) ?></h1>
+            <p>Available songs</p>
+        </div>
+        <input type="text" class="form-control mb-3" id="browserSearch" placeholder="Search songs...">
+        <div class="song-list" id="browserResults">
+            <div class="text-center py-3"><div class="spinner-border spinner-border-sm"></div> Loading...</div>
+        </div>
+    </div>
+    <a href="copyright.php" class="copyright-link">&copy; 2026</a>
+    <script>
+        const API_BASE = 'api';
+        const EVENT_ID = <?= json_encode($eventId) ?>;
+        let browserSongs = [];
+        let browserDisplayed = 0;
+        let browserFiltered = [];
+        let browserLoading = false;
+        let currentAudio = null;
+        let currentDeezerId = null;
+        const SONGS_PER_BATCH = 20;
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            document.getElementById('browserSearch').addEventListener('input', filterBrowserSongs);
+            window.addEventListener('scroll', handleBrowserScroll);
+            await loadBrowserSongs();
+        });
+
+        async function loadBrowserSongs() {
+            try {
+                // Use entries endpoint to get songs for this event
+                const response = await fetch(`${API_BASE}/entries.php?event_id=${EVENT_ID}`);
+                const data = await response.json();
+                if (data.error) throw new Error(data.error);
+                browserSongs = data.songs || [];
+                renderBrowserList(browserSongs);
+            } catch (err) {
+                document.getElementById('browserResults').innerHTML =
+                    '<div class="text-center py-3 text-danger">Failed to load songs.</div>';
+            }
+        }
+
+        function renderBrowserItem(song) {
+            return `
+                <div class="song-item" data-song-id="${song.song_id}">
+                    ${song.album_art
+                        ? `<img src="data:image/jpeg;base64,${song.album_art}" class="song-art">`
+                        : '<div class="song-art bg-secondary"></div>'}
+                    <div class="song-details">
+                        <div class="song-title">${escapeHtml(song.title)}</div>
+                        <div class="song-artist">${escapeHtml(song.artist)}</div>
+                    </div>
+                    ${song.deezer_id ? `
+                        <i class="bi bi-play-circle preview-btn"
+                           onclick="togglePreview(this)"
+                           data-deezer-id="${song.deezer_id}"></i>
+                    ` : ''}
+                </div>
+            `;
+        }
+
+        function renderBrowserList(songs) {
+            const container = document.getElementById('browserResults');
+            browserDisplayed = 0;
+            browserFiltered = songs;
+            if (songs.length === 0) {
+                const query = document.getElementById('browserSearch').value;
+                container.innerHTML = query
+                    ? '<div class="text-center py-3" style="opacity:0.6">No matching songs</div>'
+                    : '<div class="text-center py-3" style="opacity:0.6">No songs available</div>';
+                return;
+            }
+            const batch = songs.slice(0, SONGS_PER_BATCH);
+            let html = batch.map(s => renderBrowserItem(s)).join('');
+            browserDisplayed = batch.length;
+            if (browserDisplayed < songs.length) {
+                html += '<div class="song-list-loading"><div class="spinner-border spinner-border-sm"></div> Scroll for more songs...</div>';
+            }
+            container.innerHTML = html;
+        }
+
+        function filterBrowserSongs() {
+            const query = document.getElementById('browserSearch').value.toLowerCase();
+            if (!query) { renderBrowserList(browserSongs); return; }
+            const filtered = browserSongs.filter(s =>
+                s.title.toLowerCase().includes(query) || s.artist.toLowerCase().includes(query)
+            );
+            renderBrowserList(filtered);
+        }
+
+        function handleBrowserScroll() {
+            const nearBottom = (window.innerHeight + window.scrollY) >= (document.body.offsetHeight - 200);
+            if (nearBottom && !browserLoading && browserDisplayed < browserFiltered.length) {
+                browserLoading = true;
+                const container = document.getElementById('browserResults');
+                const loadingEl = container.querySelector('.song-list-loading');
+                const batch = browserFiltered.slice(browserDisplayed, browserDisplayed + SONGS_PER_BATCH);
+                const html = batch.map(s => renderBrowserItem(s)).join('');
+                if (loadingEl) loadingEl.remove();
+                container.insertAdjacentHTML('beforeend', html);
+                browserDisplayed += batch.length;
+                if (browserDisplayed < browserFiltered.length) {
+                    container.insertAdjacentHTML('beforeend',
+                        '<div class="song-list-loading"><div class="spinner-border spinner-border-sm"></div> Loading more songs...</div>');
+                }
+                browserLoading = false;
+            }
+        }
+
+        async function togglePreview(el) {
+            const deezerId = el.dataset.deezerId;
+            if (currentAudio) {
+                currentAudio.pause();
+                document.querySelectorAll('.preview-btn').forEach(btn => {
+                    btn.classList.remove('playing', 'loading', 'error');
+                    btn.classList.replace('bi-stop-circle', 'bi-play-circle');
+                    btn.classList.replace('bi-arrow-repeat', 'bi-play-circle');
+                    btn.classList.replace('bi-exclamation-triangle', 'bi-play-circle');
+                });
+                if (currentDeezerId === deezerId) { currentAudio = null; currentDeezerId = null; return; }
+            }
+            el.classList.add('loading');
+            el.classList.replace('bi-play-circle', 'bi-arrow-repeat');
+            try {
+                const response = await fetch(`${API_BASE}/deezer.php?track_id=${deezerId}`);
+                const data = await response.json();
+                if (data.error || !data.preview) throw new Error(data.error || 'No preview');
+                currentAudio = new Audio(data.preview);
+                currentDeezerId = deezerId;
+                el.classList.remove('loading');
+                el.classList.add('playing');
+                el.classList.replace('bi-arrow-repeat', 'bi-stop-circle');
+                await currentAudio.play();
+                currentAudio.addEventListener('ended', () => {
+                    el.classList.remove('playing');
+                    el.classList.replace('bi-stop-circle', 'bi-play-circle');
+                    currentAudio = null; currentDeezerId = null;
+                });
+                currentAudio.addEventListener('error', () => showPreviewError(el));
+            } catch (err) { showPreviewError(el); }
+        }
+
+        function showPreviewError(el) {
+            el.classList.remove('playing', 'loading');
+            el.classList.add('error');
+            el.classList.replace('bi-arrow-repeat', 'bi-exclamation-triangle');
+            el.classList.replace('bi-stop-circle', 'bi-exclamation-triangle');
+            currentAudio = null; currentDeezerId = null;
+            setTimeout(() => { el.classList.remove('error'); el.classList.replace('bi-exclamation-triangle', 'bi-play-circle'); }, 2000);
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
 <?php else: ?>
 <?php
 // Determine if text color is light or dark to choose appropriate Deezer logo

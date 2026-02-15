@@ -25,9 +25,9 @@ CREATE TABLE `entries` (
   `entry_id` bigint UNSIGNED NOT NULL,
   `event_id` binary(16) NOT NULL,
   `song_id` bigint UNSIGNED DEFAULT NULL,
-  `position` tinyint UNSIGNED NOT NULL,
+  `position` int UNSIGNED NOT NULL,
   `performer_name` varchar(150) NOT NULL DEFAULT '',
-  `finished` tinyint(1) NOT NULL DEFAULT '0',
+  `finished` tinyint NOT NULL DEFAULT '0',
   `modified` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
@@ -44,7 +44,8 @@ CREATE TABLE `events` (
   `location` varchar(255) DEFAULT NULL,
   `start_time` datetime NOT NULL,
   `end_time` datetime NOT NULL,
-  `num_entries` tinyint UNSIGNED NOT NULL,
+  `num_entries` int UNSIGNED NOT NULL,
+  `allow_upcoming_signup` tinyint NOT NULL DEFAULT '0',
   `qr_image` blob,
   `created` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `modified` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP

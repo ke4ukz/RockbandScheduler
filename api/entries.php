@@ -503,6 +503,13 @@ function reorderEntries($db, $eventId, $data) {
     try {
         $stmt = $db->prepare('UPDATE entries SET position = ? WHERE entry_id = ? AND event_id = UUID_TO_BIN(?)');
 
+        // First pass: set all to temporary high positions to avoid
+        // unique constraint violations during the swap
+        foreach ($data['order'] as $i => $item) {
+            $stmt->execute([1000000 + $i, (int)$item['entry_id'], $eventId]);
+        }
+
+        // Second pass: set to the actual positions
         foreach ($data['order'] as $item) {
             $stmt->execute([(int)$item['position'], (int)$item['entry_id'], $eventId]);
         }

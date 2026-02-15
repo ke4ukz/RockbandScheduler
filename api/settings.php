@@ -88,6 +88,9 @@ function getSettings() {
             'theme' => [
                 'default_theme_id' => $config['theme']['default_theme_id'] ?? null
             ],
+            'landing' => [
+                'show_upcoming_events' => (bool)($config['landing']['show_upcoming_events'] ?? false),
+            ],
             'content_filter' => [
                 'available' => $sightengineConfigured,
                 // All profanity filters use levels (0-3)
@@ -128,6 +131,17 @@ function updateSettings($configPath, $newSettings) {
         }
         if (isset($newSettings['theme']['default_theme_id'])) {
             $config['theme']['default_theme_id'] = $newSettings['theme']['default_theme_id'];
+        }
+    }
+
+    // Update landing page settings
+    if (isset($newSettings['landing'])) {
+        if (!isset($config['landing'])) {
+            $config['landing'] = [];
+        }
+        $lp = $newSettings['landing'];
+        if (isset($lp['show_upcoming_events'])) {
+            $config['landing']['show_upcoming_events'] = $lp['show_upcoming_events'] ? '1' : '0';
         }
     }
 

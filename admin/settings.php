@@ -115,6 +115,23 @@ $csrfToken = getCsrfToken();
                     </div>
                 </div>
 
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-house-door"></i> Landing Page</h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted">Controls what visitors see at the root URL without an event link. Active events are always shown.</p>
+
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" id="showUpcomingEvents">
+                            <label class="form-check-label" for="showUpcomingEvents">
+                                Show upcoming events on landing page
+                            </label>
+                            <div class="form-text">Events that haven't started yet will appear alongside active events. Early signup is controlled per-event.</div>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="mt-4">
                     <button class="btn btn-primary" id="saveSettings" onclick="saveSettings()">
                         <i class="bi bi-check-lg"></i> Save Settings
@@ -313,6 +330,10 @@ api_secret = "your_api_secret"</code></pre>
                 }
                 updateThemePreview();
 
+                // Landing page settings
+                const lp = settings.landing || {};
+                document.getElementById('showUpcomingEvents').checked = lp.show_upcoming_events ?? false;
+
                 // Content filter settings
                 const cf = settings.content_filter || {};
                 if (cf.available) {
@@ -359,6 +380,9 @@ api_secret = "your_api_secret"</code></pre>
                 },
                 theme: {
                     default_theme_id: defaultThemeId
+                },
+                landing: {
+                    show_upcoming_events: document.getElementById('showUpcomingEvents').checked
                 }
             };
 

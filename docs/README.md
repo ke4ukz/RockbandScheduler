@@ -5,7 +5,7 @@ A web application for managing Rock Band performance sign-ups at events. Users s
 ## Features
 
 ### Event Management
-- Create events with name, location, start/end times, and configurable number of performance slots (1-255)
+- Create events with name, location, start/end times, and configurable number of performance slots
 - Automatic QR code generation for easy mobile access
 - Event theming with 16 pre-configured color schemes (8 dark, 8 light)
 - Event status tracking (active, upcoming, past)
@@ -20,9 +20,17 @@ A web application for managing Rock Band performance sign-ups at events. Users s
 - CSV bulk import (Song/Title and Artist columns, Deezer fetches remaining metadata)
 - Album art stored locally (up to 64KB per image)
 
+### Landing Page
+- Root URL shows active events as clickable cards (no QR code required)
+- Optional display of upcoming events (configurable in admin settings)
+- Per-event "allow early signup" option controls whether upcoming events accept signups or show read-only song browsing; upcoming event cards display "Early signup open" or "Browse songs only" to set visitor expectations
+- Standalone song browser for browsing the full library without an event context
+- Event-linked song browser for read-only song browsing on upcoming events
+- Trademark disclaimer displayed on publicly accessible pages
+
 ### Public Signup
 - Mobile-first responsive design with two-step signup flow
-- QR code scan to access event signup page
+- QR code scan or landing page card to access event signup page
 - Step 1: Search and select a song from the library
 - Step 2: Enter performer name and confirm signup
 - Automatic slot assignment (next available slot)
@@ -41,6 +49,22 @@ A web application for managing Rock Band performance sign-ups at events. Users s
 ### Display Modes
 - **Signup Display**: Full-screen QR code for TV/projector display (hidden access via 3-second press on event title), responsive to screen orientation and size
 - **Signage**: Performance queue display showing current and upcoming performers
+
+## User Guide: Landing Page
+
+Visiting the root URL without an event ID shows the landing page. If there are active events, they appear as clickable cards — tap one to go directly to its signup page. If there are no active events, a message prompts users to scan a QR code.
+
+A "Browse Song Library" button below the event cards opens a standalone song browser where users can search, view album art, and listen to 30-second audio previews without being tied to any event.
+
+### Upcoming Events
+
+By default, only currently active events appear on the landing page. An admin can enable "Show upcoming events" in Settings to also display events that haven't started yet. These appear with a blue "Upcoming" badge (active events get a green "Live Now" badge).
+
+Each upcoming event card displays a status line indicating what visitors can do, controlled by the event's "Allow early signup" setting (configured when creating or editing the event):
+- **Off** (default): Card shows "Browse songs only" — tapping opens a read-only song browser for that event, letting users preview available songs.
+- **On**: Card shows "Early signup open" — tapping opens the normal signup flow, allowing users to pre-register.
+
+Active/upcoming status is determined using the visitor's browser clock (not the server clock), so it always matches the local time at the venue.
 
 ## User Guide: Public Signup
 
@@ -113,8 +137,9 @@ Click "Create Event" and fill in:
 - **Event Name** - A descriptive name (e.g., "Friday Night Rock Band")
 - **Location** - Optional venue name or room number
 - **Start/End Time** - Enter times as they would appear on a clock at the venue (no timezone conversion is applied)
-- **Performance Slots** - How many signups to allow (1-255)
+- **Performance Slots** - How many signups to allow
 - **Color Theme** - Choose from 16 color schemes (8 dark, 8 light) that style the public signup page
+- **Allow early signup** - When checked, users can sign up for this event before it starts. When unchecked, upcoming visitors can browse the song list but not sign up.
 
 A QR code is generated automatically when the event is created. You can view it from the event detail modal, and the signup URL can be copied to share directly.
 
@@ -175,6 +200,9 @@ The **Settings** page provides system-wide configuration:
 **Default Theme:**
 - **Default Theme** - Which color theme is pre-selected when creating new events. A preview swatch shows the selected theme's gradient and accent color.
 
+**Landing Page:**
+- **Show upcoming events** - Display events that haven't started yet on the public landing page alongside active events. Whether each upcoming event allows signup is controlled per-event (see "Allow early signup" in event settings).
+
 **Name Content Filter (optional):**
 If Sightengine API credentials are configured, this section appears with controls for filtering inappropriate performer names during public signup. Without credentials, instructions for setting up Sightengine are shown instead.
 
@@ -229,6 +257,9 @@ default_duration_hours = 4
 
 [theme]
 default_theme_id = 1
+
+[landing]
+show_upcoming_events = 0
 ```
 
 4. Generate a secure admin token:
@@ -276,6 +307,9 @@ The config file should be placed outside the web root for security. Example dire
 
 **[theme]** - Theme settings (configurable via admin settings page)
 - `default_theme_id` - Default theme for new events
+
+**[landing]** - Landing page settings (configurable via admin settings page)
+- `show_upcoming_events` - Show upcoming events on the landing page (0=off, 1=on)
 
 **[sightengine]** - Optional content filtering (requires free account at sightengine.com)
 - `api_user` - Sightengine API user ID
@@ -330,7 +364,7 @@ The database enforces referential integrity with the following cascade rules:
 │   ├── entries.php             # Entries (mixed public/admin)
 │   ├── events.php              # Event CRUD (admin)
 │   ├── settings.php            # Settings API (admin)
-│   ├── songs.php               # Song CRUD (admin)
+│   ├── songs.php               # Song CRUD (admin) + public GET for song browser
 │   └── themes.php              # Theme listing
 ├── docs/                       # Documentation (blocked by .htaccess)
 │   ├── .htaccess               # Denies all web access
@@ -347,7 +381,7 @@ The database enforces referential integrity with the following cascade rules:
 │   └── helpers.php             # Shared utilities
 ├── .htaccess                   # Directory index and security rules
 ├── copyright.php               # License/attribution page
-├── default.php                 # Public event signup page
+├── default.php                 # Landing page, song browser, and public event signup
 ├── signage.php                 # Performance queue display
 └── signup-display.php          # Full-screen QR code display
 ```
@@ -381,6 +415,10 @@ Admin endpoints support two authentication methods:
 **GET /api/deezer.php?q={query}**
 - Search Deezer for songs
 
+**GET /api/songs.php**
+- Paginated song list for public song browser
+- Query params: `search`, `limit` (max 500), `offset`
+
 **GET /api/themes.php**
 - List all available themes
 
@@ -395,7 +433,7 @@ All admin endpoints use POST with `admin_token` in the request body.
 - `{ "action": "update", "event_id": "uuid", ... }` - Update event
 - `{ "action": "delete", "event_id": "uuid" }` - Delete event
 
-**Songs** (`/api/songs.php`)
+**Songs** (`/api/songs.php`) — Also supports public GET (see above)
 - `{ "action": "list" }` - List songs (supports `limit`, `offset`, `search`)
 - `{ "action": "get", "song_id": 123 }` - Get song
 - `{ "action": "create", "title": "...", "artist": "...", "album": "...", "year": 2020 }` - Create song

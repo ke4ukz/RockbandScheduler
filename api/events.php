@@ -100,6 +100,7 @@ try {
 function listEvents($db, $excludePast = false, $onlyPast = false, $clientTime = null) {
     $sql = '
         SELECT BIN_TO_UUID(e.event_id) as event_id, e.name, e.location, e.start_time, e.end_time, e.num_entries,
+               e.allow_upcoming_signup,
                TO_BASE64(e.qr_image) as qr_image, e.created, e.modified, e.theme_id,
                t.name as theme_name, t.primary_color, t.bg_gradient_start, t.bg_gradient_end, t.text_color
         FROM events e
@@ -131,6 +132,7 @@ function listEvents($db, $excludePast = false, $onlyPast = false, $clientTime = 
     foreach ($events as &$event) {
         $event['num_entries'] = (int)$event['num_entries'];
         $event['theme_id'] = $event['theme_id'] ? (int)$event['theme_id'] : null;
+        $event['allow_upcoming_signup'] = (bool)$event['allow_upcoming_signup'];
     }
 
     jsonResponse(['events' => $events]);
@@ -143,6 +145,7 @@ function getEvent($db, $eventId) {
 
     $stmt = $db->prepare('
         SELECT BIN_TO_UUID(e.event_id) as event_id, e.name, e.location, e.start_time, e.end_time, e.num_entries,
+               e.allow_upcoming_signup,
                TO_BASE64(e.qr_image) as qr_image, e.created, e.modified, e.theme_id,
                t.name as theme_name, t.primary_color, t.bg_gradient_start, t.bg_gradient_end, t.text_color
         FROM events e
@@ -158,6 +161,7 @@ function getEvent($db, $eventId) {
 
     $event['num_entries'] = (int)$event['num_entries'];
     $event['theme_id'] = $event['theme_id'] ? (int)$event['theme_id'] : null;
+    $event['allow_upcoming_signup'] = (bool)$event['allow_upcoming_signup'];
 
     jsonResponse(['event' => $event]);
 }
@@ -190,14 +194,17 @@ function createEvent($db, $data) {
     // Validate theme_id if provided
     $themeId = isset($data['theme_id']) && $data['theme_id'] !== '' ? (int)$data['theme_id'] : null;
 
+    // Allow early signup for upcoming events (per-event setting)
+    $allowUpcomingSignup = !empty($data['allow_upcoming_signup']) ? 1 : 0;
+
     // Generate UUID in PHP to avoid race condition with name lookup
     $stmt = $db->query('SELECT UUID()');
     $eventId = $stmt->fetchColumn();
 
     // Insert with the pre-generated UUID
     $stmt = $db->prepare('
-        INSERT INTO events (event_id, name, location, start_time, end_time, num_entries, theme_id)
-        VALUES (UUID_TO_BIN(?), ?, ?, ?, ?, ?, ?)
+        INSERT INTO events (event_id, name, location, start_time, end_time, num_entries, theme_id, allow_upcoming_signup)
+        VALUES (UUID_TO_BIN(?), ?, ?, ?, ?, ?, ?, ?)
     ');
 
     $stmt->execute([
@@ -207,7 +214,8 @@ function createEvent($db, $data) {
         date('Y-m-d H:i:s', $startTime),
         date('Y-m-d H:i:s', $endTime),
         $numEntries,
-        $themeId
+        $themeId,
+        $allowUpcomingSignup
     ]);
 
     // Auto-generate QR code for the new event
@@ -273,6 +281,11 @@ function updateEvent($db, $eventId, $data) {
     if (array_key_exists('theme_id', $data)) {
         $fields[] = 'theme_id = ?';
         $values[] = $data['theme_id'] !== '' && $data['theme_id'] !== null ? (int)$data['theme_id'] : null;
+    }
+
+    if (array_key_exists('allow_upcoming_signup', $data)) {
+        $fields[] = 'allow_upcoming_signup = ?';
+        $values[] = !empty($data['allow_upcoming_signup']) ? 1 : 0;
     }
 
     if (empty($fields)) {

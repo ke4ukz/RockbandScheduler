@@ -190,6 +190,13 @@ $csrfToken = getCsrfToken();
                             </div>
                             <div class="form-text">Choose a color theme for the user-facing signup page</div>
                         </div>
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="allowUpcomingSignup" name="allow_upcoming_signup">
+                            <label class="form-check-label" for="allowUpcomingSignup">
+                                Allow early signup
+                            </label>
+                            <div class="form-text">Let users sign up before this event starts. When off, upcoming visitors can browse songs but not sign up.</div>
+                        </div>
                     </form>
                 </div>
                 <div class="modal-footer">
@@ -670,6 +677,7 @@ $csrfToken = getCsrfToken();
             document.getElementById('eventForm').reset();
             document.getElementById('eventId').value = '';
             document.getElementById('eventTheme').value = defaultThemeId || '';
+            document.getElementById('allowUpcomingSignup').checked = false;
 
             // Set default times (start now, end based on configured duration)
             const now = new Date();
@@ -696,6 +704,7 @@ $csrfToken = getCsrfToken();
             document.getElementById('endTime').value = formatDateTimeLocal(event.end_time);
             document.getElementById('numEntries').value = event.num_entries;
             document.getElementById('eventTheme').value = event.theme_id || '';
+            document.getElementById('allowUpcomingSignup').checked = event.allow_upcoming_signup || false;
 
             updateThemePreview();
             eventModal.show();
@@ -757,7 +766,8 @@ $csrfToken = getCsrfToken();
                 start_time: document.getElementById('startTime').value,
                 end_time: document.getElementById('endTime').value,
                 num_entries: parseInt(document.getElementById('numEntries').value),
-                theme_id: themeVal ? parseInt(themeVal) : null
+                theme_id: themeVal ? parseInt(themeVal) : null,
+                allow_upcoming_signup: document.getElementById('allowUpcomingSignup').checked
             };
 
             // Validate times

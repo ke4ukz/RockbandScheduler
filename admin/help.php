@@ -123,6 +123,7 @@ $siteBaseUrl = $GLOBALS['config']['site']['base_url'] ?? '';
                         <a href="#managing-songs">Managing Songs</a>
                         <a href="#managing-events">Managing Events</a>
                         <a href="#managing-entries">Managing Entries</a>
+                        <a href="#landing-page">Landing Page</a>
                         <a href="#display-modes">Display Modes</a>
                         <a href="#settings">Settings</a>
                         <a href="#tips">Tips & Best Practices</a>
@@ -291,6 +292,7 @@ $siteBaseUrl = $GLOBALS['config']['site']['base_url'] ?? '';
                                 <li><strong>Start/End Time</strong> - When the event runs (enter times as they appear at the venue)</li>
                                 <li><strong>Performance Slots</strong> - How many performances you want to allow</li>
                                 <li><strong>Theme</strong> - Color scheme for the signup page</li>
+                                <li><strong>Allow early signup</strong> - When checked, users can sign up for this event before it starts. When unchecked, visitors to an upcoming event can browse the song list but not sign up.</li>
                             </ul>
 
                             <h5 class="mt-4"><i class="bi bi-qr-code"></i> QR Codes</h5>
@@ -368,6 +370,41 @@ $siteBaseUrl = $GLOBALS['config']['site']['base_url'] ?? '';
                     </div>
                 </section>
 
+                <!-- Landing Page -->
+                <section id="landing-page" class="section-anchor mb-5">
+                    <div class="card">
+                        <div class="card-header">
+                            <h4 class="mb-0"><i class="bi bi-house-door"></i> Landing Page</h4>
+                        </div>
+                        <div class="card-body">
+                            <p>Visiting the root URL without an event ID shows the landing page. Active events appear as clickable cards that link directly to the signup page.</p>
+
+                            <h5 class="mt-4"><i class="bi bi-calendar-event"></i> Upcoming Events</h5>
+                            <p>By default, only active events are shown. Enable "Show upcoming events" in <a href="settings.php">Settings</a> to also display events that haven't started yet.</p>
+                            <p>Each event card shows a status badge:</p>
+                            <ul>
+                                <li><strong>Live Now</strong> <span class="badge bg-success">Live Now</span> - Event is currently active</li>
+                                <li><strong>Upcoming</strong> <span class="badge bg-primary">Upcoming</span> - Event hasn't started yet</li>
+                            </ul>
+                            <p>Upcoming events also display a status line indicating what visitors can do:</p>
+                            <ul>
+                                <li><strong>"Early signup open"</strong> - The event has "Allow early signup" enabled; tapping opens the normal signup flow</li>
+                                <li><strong>"Browse songs only"</strong> - Early signup is off; tapping opens a read-only song browser for that event</li>
+                            </ul>
+
+                            <h5 class="mt-4"><i class="bi bi-music-note-list"></i> Song Browser</h5>
+                            <p>A "Browse Song Library" button below the event cards opens a standalone song browser where users can search, view album art, and listen to 30-second audio previews without being tied to any event.</p>
+
+                            <div class="card tip-card mt-4">
+                                <div class="card-body">
+                                    <h6><i class="bi bi-lightbulb"></i> Tip</h6>
+                                    <p class="mb-0">The landing page determines active/upcoming status using the visitor's browser clock, so it always matches the local time at the venue.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
                 <!-- Display Modes -->
                 <section id="display-modes" class="section-anchor mb-5">
                     <div class="card">
@@ -429,6 +466,9 @@ $siteBaseUrl = $GLOBALS['config']['site']['base_url'] ?? '';
 
                             <h5 class="mt-4"><i class="bi bi-palette"></i> Default Theme</h5>
                             <p>Choose which color theme is pre-selected when creating new events.</p>
+
+                            <h5 class="mt-4"><i class="bi bi-house-door"></i> Landing Page</h5>
+                            <p><strong>Show upcoming events</strong> - Display events that haven't started yet on the public landing page alongside active events. Whether each upcoming event allows signup is controlled per-event (see "Allow early signup" in event settings).</p>
 
                             <h5 class="mt-4"><i class="bi bi-moon-stars"></i> Admin Dark/Light Mode</h5>
                             <p>The admin panel supports dark and light mode. Click the sun/moon icon in the navigation bar to toggle between modes. Your preference is saved in your browser's localStorage, so it persists across sessions.</p>

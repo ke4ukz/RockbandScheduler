@@ -44,6 +44,13 @@ if (!isset($GLOBALS['config']['theme']) || !is_array($GLOBALS['config']['theme']
 $GLOBALS['config']['theme']['default_theme_id'] =
     $GLOBALS['config']['theme']['default_theme_id'] ?? null;
 
+// Landing page settings
+if (!isset($GLOBALS['config']['landing']) || !is_array($GLOBALS['config']['landing'])) {
+    $GLOBALS['config']['landing'] = [];
+}
+$GLOBALS['config']['landing']['show_upcoming_events'] =
+    ($GLOBALS['config']['landing']['show_upcoming_events'] ?? '0') === '1';
+
 // Content filter settings (Sightengine)
 if (!isset($GLOBALS['config']['content_filter']) || !is_array($GLOBALS['config']['content_filter'])) {
     $GLOBALS['config']['content_filter'] = [];
