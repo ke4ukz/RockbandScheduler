@@ -483,6 +483,20 @@ The site is deployed via GitHub and cPanel's Git Version Control. To push update
 8. Click the **Pull or Deploy** tab
 9. Click **Update from Remote**
 
+## Future Ideas
+
+- **Song metadata fields** — Add genre, content advisory, and custom tags to the song library
+- **Event-level song filtering** — When creating an event, optionally filter the available song list by criteria such as:
+  - Hide songs with content advisories (e.g., explicit lyrics)
+  - Restrict to specific genres
+  - Filter by custom tags (user-defined labels that can be assigned to songs and selected per event)
+
+- **Persistent CSV import sessions** — Store in-progress CSV imports on the server so the import can be resumed if the browser tab is closed or the connection drops. Currently the entire import state is held client-side and lost if the page is unloaded.
+
+### Known Issues
+
+- **Import CSV button placement** — On large song libraries, the Import CSV button at the bottom of the Songs page requires excessive scrolling to reach. Needs to be relocated to the top of the page, duplicated at the bottom, or made into a floating/sticky button.
+
 ## AI Disclosure
 
 This software was developed with assistance from Claude, an AI assistant by Anthropic. AI tools were used for code generation, documentation, and development guidance throughout the project.
